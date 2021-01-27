@@ -18,3 +18,6 @@ gcc -o eg-static -I./include -L./lib-static \
 	-lopencore-amrwb \
 	-framework CoreAudio \
 	example.c
+
+./eg-static s00.wav s00-out.wav
+

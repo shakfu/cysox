@@ -4,7 +4,7 @@ cdef extern from "include/sox.h":
     ctypedef int sox_int32_t
     # ctypedef sox_int32_t sox_int24_t
     # ctypedef sox_uint32_t sox_uint24_t
-    # ctypedef sox_int32_t sox_sample_t
+    ctypedef sox_int32_t sox_sample_t
     ctypedef double sox_rate_t
     ctypedef char ** sox_comments_t
 
@@ -125,18 +125,33 @@ cdef extern from "include/sox.h":
         size_t       input_bufsiz;
         sox_int32_t  ranqd1
         # private #
-        # char * stdin_in_use_by
-        # char * stdout_in_use_by
-        # char * subsystem
-        # char       * tmp_path
-        # sox_bool     use_magi
-        # sox_bool     use_threads
-        # size_t       log2_dft_min_size;
+        char * stdin_in_use_by
+        char * stdout_in_use_by
+        char * subsystem
+        char       * tmp_path
+        sox_bool     use_magi
+        sox_bool     use_threads
+        size_t       log2_dft_min_size;
 
 
     ctypedef struct sox_effects_globals_t:
         sox_plot_t plot                # To help the user choose effect & options */
         sox_globals_t * global_info    # Pointer to associated SoX globals */
+
+
+    # ctypedef sox_effect_handler_t * (*sox_effect_fn_t)(void)
+
+    ctypedef struct sox_effect_handler_t:
+        char * name
+        char * usage
+        unsigned int flags
+        # sox_effect_handler_getopts getopts
+        # sox_effect_handler_start start
+        # sox_effect_handler_flow flow
+        # sox_effect_handler_drain drain
+        # sox_effect_handler_stop stop
+        # sox_effect_handler_kill kill
+        size_t       priv_size
 
 
 
@@ -146,21 +161,22 @@ cdef extern from "include/sox.h":
         sox_signalinfo_t         out_signal;    # Information about the outgoing data stream
         sox_encodinginfo_t       * in_encoding;  # Information about the incoming data encoding
         sox_encodinginfo_t       * out_encoding; # Information about the outgoing data encoding
-        #sox_effect_handler_t     handler;   # The handler for this effect
+        sox_effect_handler_t     handler;   # The handler for this effect
         sox_uint64_t         clips;         # increment if clipping occurs
         size_t               flows;         # 1 if MCHAN, number of chans otherwise
         size_t               flow;          # flow number
         void                 * priv;        # Effect's private data area (each flow has a separate copy)
         # The following items are private to the libSoX effects chain functions.
-        # sox_sample_t             * obuf;    # output buffer
-        # size_t                obeg;      # output buffer: start of valid data section
-        # size_t                oend;      # output buffer: one past valid data section (oend-obeg is length of current content)
-        # size_t                imin;          # minimum input buffer content required for calling this effect's flow function; set via lsx_effect_set_imin()
+        sox_sample_t         * obuf;    # output buffer
+        size_t                obeg;      # output buffer: start of valid data section
+        size_t                oend;      # output buffer: one past valid data section (oend-obeg is length of current content)
+        size_t                imin;          # minimum input buffer content required for calling this effect's flow function; set via lsx_effect_set_imin()
 
 
 
 
-    ctypedef struct sox_effect_handler_t
+
+    # ctypedef struct sox_effect_handler_t
     ctypedef struct sox_format_handler_t
 
     ctypedef struct sox_effects_chain_t:
@@ -170,8 +186,8 @@ cdef extern from "include/sox.h":
         sox_encodinginfo_t * in_enc       # Input encoding
         sox_encodinginfo_t * out_enc      # Output encoding
         # The following items are private to the libSoX effects chain functions.
-        # size_t table_size;                       # Size of effects table (including unused entries)
-        # sox_sample_t *il_buf;                    # Channel interleave buffer
+        size_t table_size                       # Size of effects table (including unused entries)
+        sox_sample_t *il_buf                    # Channel interleave buffer
 
     ctypedef int (* sox_flow_effects_callback)(
         sox_bool all_done,
