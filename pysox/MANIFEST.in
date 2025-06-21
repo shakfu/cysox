@@ -1,0 +1,7 @@
+exclude *.py
+include setup.py versioninfo.py
+include MANIFEST.in version.txt CHANGES.txt
+recursive-include pysox *.pxd *.pyx *.c
+recursive-include examples *.py Makefile
+recursive-include tests *.py *.pyx
+recursive-include disthelper *.py
