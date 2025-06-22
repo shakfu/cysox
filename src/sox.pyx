@@ -1,6 +1,670 @@
 cimport sox
 
 
+cdef class SignalInfo:
+    cdef sox_signalinfo_t* ptr
+    cdef bint owner
+
+    def __cinit__(self):
+        self.ptr = NULL
+        self.owner = False
+
+    def __dealloc__(self):
+        if self.ptr is not NULL and self.owner is True:
+            if self.ptr.mult is not NULL:
+                free(self.ptr.mult)
+            free(self.ptr)
+            self.ptr = NULL
+
+    def __init__(self, rate: float = 0.0, channels: int = 0, precision: int = 0, length: int = 0, mult: float = 0.0):
+        self.ptr = <sox_signalinfo_t*>malloc(sizeof(sox_signalinfo_t))
+        self.rate = rate
+        self.channels = channels
+        self.precision = precision
+        self.length = length
+        self.mult = mult
+        self.owner = True
+
+    @staticmethod
+    cdef SignalInfo from_ptr(sox_signalinfo_t* ptr, bint owner=False):
+        cdef SignalInfo wrapper = SignalInfo.__new__(SignalInfo)
+        wrapper.ptr = ptr
+        wrapper.owner = owner
+        return wrapper
+
+    @property
+    def rate(self) -> sox_rate_t:
+        """samples per second, 0 if unknown"""
+        return self.ptr.rate
+
+    @rate.setter
+    def rate(self, sox_rate_t value):
+        self.ptr.rate = value
+
+    @property
+    def channels(self) -> int:
+        """number of sound channels, 0 if unknown"""
+        return self.ptr.channels
+
+    @channels.setter
+    def channels(self, int value):
+        self.ptr.channels = value
+
+    @property
+    def precision(self) -> int:
+        """bits per sample, 0 if unknown"""
+        return self.ptr.precision
+
+    @precision.setter
+    def precision(self, int value):
+        self.ptr.precision = value
+
+    @property
+    def length(self) -> sox_uint64_t:
+        """samples * chans in file, 0 if unknown, -1 if unspecified"""
+        return self.ptr.length
+
+    @length.setter
+    def length(self, sox_uint64_t value):
+        self.ptr.length = value
+
+    @property
+    def mult(self) -> float:
+        """Effects headroom multiplier may be null"""
+        if not self.ptr.mult:
+            return 0.0
+        return self.ptr.mult[0]
+
+    @mult.setter
+    def mult(self, float value):
+        if value == 0.0:
+            self.ptr.mult = NULL
+        elif self.ptr.mult is NULL:
+            self.ptr.mult = <double*>malloc(sizeof(double))
+            self.ptr.mult[0] = value
+        else:
+            self.ptr.mult[0] = value
+
+
+cdef class EncodingInfo:
+    cdef sox_encodinginfo_t* ptr
+    cdef bint owner
+
+    def __cinit__(self):
+        self.ptr = NULL
+        self.owner = False
+
+    def __dealloc__(self):
+        if self.ptr is not NULL and self.owner is True:
+            free(self.ptr)
+            self.ptr = NULL
+
+    def __init__(self, encoding: int = 0, bits_per_sample: int = 0, compression: float = 0.0, 
+                 reverse_bytes: int = 0, reverse_nibbles: int = 0, reverse_bits: int = 0, 
+                 opposite_endian: bool = False):
+        self.ptr = <sox_encodinginfo_t*>malloc(sizeof(sox_encodinginfo_t))
+        self.encoding = encoding
+        self.bits_per_sample = bits_per_sample
+        self.compression = compression
+        self.reverse_bytes = reverse_bytes
+        self.reverse_nibbles = reverse_nibbles
+        self.reverse_bits = reverse_bits
+        self.opposite_endian = opposite_endian
+        self.owner = True
+
+    @staticmethod
+    cdef EncodingInfo from_ptr(sox_encodinginfo_t* ptr, bint owner=False):
+        cdef EncodingInfo wrapper = EncodingInfo.__new__(EncodingInfo)
+        wrapper.ptr = ptr
+        wrapper.owner = owner
+        return wrapper
+
+    @property
+    def encoding(self) -> sox_encoding_t:
+        """format of sample numbers"""
+        return self.ptr.encoding
+
+    @encoding.setter
+    def encoding(self, sox_encoding_t value):
+        self.ptr.encoding = value
+
+    @property
+    def bits_per_sample(self) -> int:
+        """0 if unknown or variable uncompressed value if lossless compressed value if lossy"""
+        return self.ptr.bits_per_sample
+
+    @bits_per_sample.setter
+    def bits_per_sample(self, unsigned value):
+        self.ptr.bits_per_sample = value
+
+    @property
+    def compression(self) -> float:
+        """compression factor (where applicable)"""
+        return self.ptr.compression
+
+    @compression.setter
+    def compression(self, double value):
+        self.ptr.compression = value
+
+    @property
+    def reverse_bytes(self) -> int:
+        """Should bytes be reversed?"""
+        return self.ptr.reverse_bytes
+
+    @reverse_bytes.setter
+    def reverse_bytes(self, sox_option_t value):
+        self.ptr.reverse_bytes = value
+
+    @property
+    def reverse_nibbles(self) -> int:
+        """Should nibbles be reversed?"""
+        return self.ptr.reverse_nibbles
+
+    @reverse_nibbles.setter
+    def reverse_nibbles(self, sox_option_t value):
+        self.ptr.reverse_nibbles = value
+
+    @property
+    def reverse_bits(self) -> int:
+        """Should bits be reversed?"""
+        return self.ptr.reverse_bits
+
+    @reverse_bits.setter
+    def reverse_bits(self, sox_option_t value):
+        self.ptr.reverse_bits = value
+
+    @property
+    def opposite_endian(self) -> bool:
+        """If set to true, the format should reverse its default endianness."""
+        return self.ptr.opposite_endian
+
+    @opposite_endian.setter
+    def opposite_endian(self, sox_bool value):
+        self.ptr.opposite_endian = value
+
+
+cdef class LoopInfo:
+    cdef sox_loopinfo_t* ptr
+    cdef bint owner
+
+    def __cinit__(self):
+        self.ptr = NULL
+        self.owner = False
+
+    def __dealloc__(self):
+        if self.ptr is not NULL and self.owner is True:
+            free(self.ptr)
+            self.ptr = NULL
+
+    def __init__(self, start: int = 0, length: int = 0, count: int = 0, type: int = 0):
+        self.ptr = <sox_loopinfo_t*>malloc(sizeof(sox_loopinfo_t))
+        self.start = start
+        self.length = length
+        self.count = count
+        self.type = type
+        self.owner = True
+
+    @staticmethod
+    cdef LoopInfo from_ptr(sox_loopinfo_t* ptr, bint owner=False):
+        cdef LoopInfo wrapper = LoopInfo.__new__(LoopInfo)
+        wrapper.ptr = ptr
+        wrapper.owner = owner
+        return wrapper
+
+    @property
+    def start(self) -> sox_uint64_t:
+        """first sample"""
+        return self.ptr.start
+
+    @start.setter
+    def start(self, sox_uint64_t value):
+        self.ptr.start = value
+
+    @property
+    def length(self) -> sox_uint64_t:
+        """length"""
+        return self.ptr.length
+
+    @length.setter
+    def length(self, sox_uint64_t value):
+        self.ptr.length = value
+
+    @property
+    def count(self) -> int:
+        """number of repeats, 0=forever"""
+        return self.ptr.count
+
+    @count.setter
+    def count(self, unsigned value):
+        self.ptr.count = value
+
+    @property
+    def type(self) -> int:
+        """0=no, 1=forward, 2=forward/back (see sox_loop_* for valid values)"""
+        return self.ptr.type
+
+    @type.setter
+    def type(self, unsigned char value):
+        self.ptr.type = value
+
+
+cdef class InstrInfo:
+    cdef sox_instrinfo_t* ptr
+    cdef bint owner
+
+    def __cinit__(self):
+        self.ptr = NULL
+        self.owner = False
+
+    def __dealloc__(self):
+        if self.ptr is not NULL and self.owner is True:
+            free(self.ptr)
+            self.ptr = NULL
+
+    def __init__(self, MIDInote: int = 0, MIDIlow: int = 0, MIDIhi: int = 0, 
+                 loopmode: int = 0, nloops: int = 0):
+        self.ptr = <sox_instrinfo_t*>malloc(sizeof(sox_instrinfo_t))
+        self.MIDInote = MIDInote
+        self.MIDIlow = MIDIlow
+        self.MIDIhi = MIDIhi
+        self.loopmode = loopmode
+        self.nloops = nloops
+        self.owner = True
+
+    @staticmethod
+    cdef InstrInfo from_ptr(sox_instrinfo_t* ptr, bint owner=False):
+        cdef InstrInfo wrapper = InstrInfo.__new__(InstrInfo)
+        wrapper.ptr = ptr
+        wrapper.owner = owner
+        return wrapper
+
+    @property
+    def MIDInote(self) -> int:
+        """for unity pitch playback"""
+        return self.ptr.MIDInote
+
+    @MIDInote.setter
+    def MIDInote(self, signed char value):
+        self.ptr.MIDInote = value
+
+    @property
+    def MIDIlow(self) -> int:
+        """MIDI pitch-bend low range"""
+        return self.ptr.MIDIlow
+
+    @MIDIlow.setter
+    def MIDIlow(self, signed char value):
+        self.ptr.MIDIlow = value
+
+    @property
+    def MIDIhi(self) -> int:
+        """MIDI pitch-bend high range"""
+        return self.ptr.MIDIhi
+
+    @MIDIhi.setter
+    def MIDIhi(self, signed char value):
+        self.ptr.MIDIhi = value
+
+    @property
+    def loopmode(self) -> int:
+        """0=no, 1=forward, 2=forward/back (see sox_loop_* values)"""
+        return self.ptr.loopmode
+
+    @loopmode.setter
+    def loopmode(self, unsigned char value):
+        self.ptr.loopmode = value
+
+    @property
+    def nloops(self) -> int:
+        """number of active loops (max SOX_MAX_NLOOPS)"""
+        return self.ptr.nloops
+
+    @nloops.setter
+    def nloops(self, unsigned value):
+        self.ptr.nloops = value
+
+
+cdef class FileInfo:
+    cdef sox_fileinfo_t* ptr
+    cdef bint owner
+
+    def __cinit__(self):
+        self.ptr = NULL
+        self.owner = False
+
+    def __dealloc__(self):
+        if self.ptr is not NULL and self.owner is True:
+            free(self.ptr)
+            self.ptr = NULL
+
+    def __init__(self, buf: bytes = None, size: int = 0, count: int = 0, pos: int = 0):
+        self.ptr = <sox_fileinfo_t*>malloc(sizeof(sox_fileinfo_t))
+        self.buf = buf
+        self.size = size
+        self.count = count
+        self.pos = pos
+        self.owner = True
+
+    @staticmethod
+    cdef FileInfo from_ptr(sox_fileinfo_t* ptr, bint owner=False):
+        cdef FileInfo wrapper = FileInfo.__new__(FileInfo)
+        wrapper.ptr = ptr
+        wrapper.owner = owner
+        return wrapper
+
+    @property
+    def buf(self) -> bytes:
+        """Pointer to data buffer"""
+        if self.ptr.buf == NULL:
+            return None
+        return self.ptr.buf[:self.ptr.size]
+
+    @buf.setter
+    def buf(self, bytes value):
+        if value is None:
+            self.ptr.buf = NULL
+        else:
+            self.ptr.buf = value
+
+    @property
+    def size(self) -> int:
+        """Size of buffer in bytes"""
+        return self.ptr.size
+
+    @size.setter
+    def size(self, size_t value):
+        self.ptr.size = value
+
+    @property
+    def count(self) -> int:
+        """Count read into buffer"""
+        return self.ptr.count
+
+    @count.setter
+    def count(self, size_t value):
+        self.ptr.count = value
+
+    @property
+    def pos(self) -> int:
+        """Position in buffer"""
+        return self.ptr.pos
+
+    @pos.setter
+    def pos(self, size_t value):
+        self.ptr.pos = value
+
+
+cdef class OOB:
+    cdef sox_oob_t* ptr
+    cdef bint owner
+
+    def __cinit__(self):
+        self.ptr = NULL
+        self.owner = False
+
+    def __dealloc__(self):
+        if self.ptr is not NULL and self.owner is True:
+            free(self.ptr)
+            self.ptr = NULL
+
+    def __init__(self):
+        self.ptr = <sox_oob_t*>malloc(sizeof(sox_oob_t))
+        self.owner = True
+
+    @staticmethod
+    cdef OOB from_ptr(sox_oob_t* ptr, bint owner=False):
+        cdef OOB wrapper = OOB.__new__(OOB)
+        wrapper.ptr = ptr
+        wrapper.owner = owner
+        return wrapper
+
+    # @property
+    # def comments(self) -> sox_comments_t:
+    #     """Comment strings in id=value format."""
+    #     return self.ptr.comments
+
+    # @comments.setter
+    # def comments(self, sox_comments_t value):
+    #     self.ptr.comments = value
+
+    @property
+    def instr(self) -> InstrInfo:
+        """Instrument specification"""
+        return InstrInfo.from_ptr(&self.ptr.instr, False)
+
+    @property
+    def loops(self) -> list:
+        """Looping specification"""
+        result = []
+        for i in range(8):
+            result.append(LoopInfo.from_ptr(&self.ptr.loops[i], False))
+        return result
+
+
+cdef class VersionInfo:
+    cdef sox_version_info_t* ptr
+    cdef bint owner
+
+    def __cinit__(self):
+        self.ptr = NULL
+        self.owner = False
+
+    def __dealloc__(self):
+        if self.ptr is not NULL and self.owner is True:
+            free(self.ptr)
+            self.ptr = NULL
+
+    @staticmethod
+    cdef VersionInfo from_ptr(sox_version_info_t* ptr, bint owner=False):
+        cdef VersionInfo wrapper = VersionInfo.__new__(VersionInfo)
+        wrapper.ptr = ptr
+        wrapper.owner = owner
+        return wrapper
+
+    @property
+    def size(self) -> int:
+        """structure size = sizeof(sox_version_info_t)"""
+        return self.ptr.size
+
+    @property
+    def flags(self) -> sox_version_flags_t:
+        """feature flags = popen | magic | threads | memopen"""
+        return self.ptr.flags
+
+    @property
+    def version_code(self) -> sox_uint32_t:
+        """version number = 0x140400"""
+        return self.ptr.version_code
+
+    @property
+    def version(self) -> str:
+        """version string = sox_version(), for example, 14.4.0"""
+        if self.ptr.version == NULL:
+            return None
+        return self.ptr.version.decode()
+
+    @property
+    def version_extra(self) -> str:
+        """version extra info or null = PACKAGE_EXTRA, for example, beta"""
+        if self.ptr.version_extra == NULL:
+            return None
+        return self.ptr.version_extra.decode()
+
+    @property
+    def time(self) -> str:
+        """build time = __DATE__ __TIME__, for example, Jan  7 2010 03:31:50"""
+        if self.ptr.time == NULL:
+            return None
+        return self.ptr.time.decode()
+
+    @property
+    def distro(self) -> str:
+        """distro or null = DISTRO, for example, Debian"""
+        if self.ptr.distro == NULL:
+            return None
+        return self.ptr.distro.decode()
+
+    @property
+    def compiler(self) -> str:
+        """compiler info or null, for example, msvc 160040219"""
+        if self.ptr.compiler == NULL:
+            return None
+        return self.ptr.compiler.decode()
+
+    @property
+    def arch(self) -> str:
+        """arch, for example, 1248 48 44 L OMP"""
+        if self.ptr.arch == NULL:
+            return None
+        return self.ptr.arch.decode()
+
+
+cdef class Globals:
+    cdef sox_globals_t* ptr
+    cdef bint owner
+
+    def __cinit__(self):
+        self.ptr = NULL
+        self.owner = False
+
+    def __dealloc__(self):
+        if self.ptr is not NULL and self.owner is True:
+            free(self.ptr)
+            self.ptr = NULL
+
+    @staticmethod
+    cdef Globals from_ptr(sox_globals_t* ptr, bint owner=False):
+        cdef Globals wrapper = Globals.__new__(Globals)
+        wrapper.ptr = ptr
+        wrapper.owner = owner
+        return wrapper
+
+    @property
+    def verbosity(self) -> int:
+        """messages are only written if globals.verbosity >= message.level"""
+        return self.ptr.verbosity
+
+    @verbosity.setter
+    def verbosity(self, unsigned value):
+        self.ptr.verbosity = value
+
+    @property
+    def repeatable(self) -> bool:
+        """true to use pre-determined timestamps and PRNG seed"""
+        return self.ptr.repeatable
+
+    @repeatable.setter
+    def repeatable(self, sox_bool value):
+        self.ptr.repeatable = value
+
+    @property
+    def bufsiz(self) -> int:
+        """Default size (in bytes) used by libSoX for blocks of sample data."""
+        return self.ptr.bufsiz
+
+    @bufsiz.setter
+    def bufsiz(self, size_t value):
+        self.ptr.bufsiz = value
+
+    @property
+    def input_bufsiz(self) -> int:
+        """Default size (in bytes) used by libSoX for blocks of input sample data."""
+        return self.ptr.input_bufsiz
+
+    @input_bufsiz.setter
+    def input_bufsiz(self, size_t value):
+        self.ptr.input_bufsiz = value
+
+    @property
+    def ranqd1(self) -> int:
+        """Can be used to re-seed libSoX's PRNG"""
+        return self.ptr.ranqd1
+
+    @ranqd1.setter
+    def ranqd1(self, sox_int32_t value):
+        self.ptr.ranqd1 = value
+
+    @property
+    def stdin_in_use_by(self) -> str:
+        """Private: tracks the name of the handler currently using stdin"""
+        if self.ptr.stdin_in_use_by == NULL:
+            return None
+        return self.ptr.stdin_in_use_by.decode()
+
+    @property
+    def stdout_in_use_by(self) -> str:
+        """Private: tracks the name of the handler currently using stdout"""
+        if self.ptr.stdout_in_use_by == NULL:
+            return None
+        return self.ptr.stdout_in_use_by.decode()
+
+    @property
+    def subsystem(self) -> str:
+        """Private: tracks the name of the handler currently writing an output message"""
+        if self.ptr.subsystem == NULL:
+            return None
+        return self.ptr.subsystem.decode()
+
+    @property
+    def tmp_path(self) -> str:
+        """Private: client-configured path to use for temporary files"""
+        if self.ptr.tmp_path == NULL:
+            return None
+        return self.ptr.tmp_path.decode()
+
+    @property
+    def use_magic(self) -> bool:
+        """Private: true if client has requested use of 'magic' file-type detection"""
+        return self.ptr.use_magic
+
+    @property
+    def use_threads(self) -> bool:
+        """Private: true if client has requested parallel effects processing"""
+        return self.ptr.use_threads
+
+    @property
+    def log2_dft_min_size(self) -> int:
+        """Log to base 2 of minimum size (in bytes) used by libSoX for DFT (filtering)."""
+        return self.ptr.log2_dft_min_size
+
+
+cdef class EffectsGlobals:
+    cdef sox_effects_globals_t* ptr
+    cdef bint owner
+
+    def __cinit__(self):
+        self.ptr = NULL
+        self.owner = False
+
+    def __dealloc__(self):
+        if self.ptr is not NULL and self.owner is True:
+            free(self.ptr)
+            self.ptr = NULL
+
+    @staticmethod
+    cdef EffectsGlobals from_ptr(sox_effects_globals_t* ptr, bint owner=False):
+        cdef EffectsGlobals wrapper = EffectsGlobals.__new__(EffectsGlobals)
+        wrapper.ptr = ptr
+        wrapper.owner = owner
+        return wrapper
+
+    @property
+    def plot(self) -> sox_plot_t:
+        """To help the user choose effect & options"""
+        return self.ptr.plot
+
+    @plot.setter
+    def plot(self, sox_plot_t value):
+        self.ptr.plot = value
+
+    @property
+    def global_info(self) -> Globals:
+        """Pointer to associated SoX globals"""
+        if self.ptr.global_info == NULL:
+            return None
+        return Globals.from_ptr(self.ptr.global_info, False)
+
+
 def version() -> str:
     """Returns version number string of libSoX, for example, 14.4.0."""
     return (<const char*>sox_version()).decode()

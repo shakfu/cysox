@@ -226,42 +226,35 @@ cdef extern from "sox.h":
         va_list ap          # Message format parameters.
     )
 
-
     # Callback to retrieve information about a format handler,
     # used by sox_format_tab_t.fn.
     # @returns format handler information.
     ctypedef sox_format_handler_t * (* sox_format_fn_t)()
-
 
     # Callback to get information about an effect handler,
     # used by the table returned from sox_get_effect_fns(void).
     # @returns Pointer to information about an effect handler.
     ctypedef sox_effect_handler_t * (*sox_effect_fn_t)()
 
-
     # Callback to initialize reader (decoder), used by
     # sox_format_handler.startread.
     # @returns SOX_SUCCESS if successful.
     ctypedef int (* sox_format_handler_startread)(sox_format_t * ft)
-
 
     # Callback to read (decode) a block of samples,
     # used by sox_format_handler.read.
     # @returns number of samples read, or 0 if unsuccessful.
     ctypedef size_t (* sox_format_handler_read)(sox_format_t * ft, sox_sample_t *buf, size_t len)
 
-
     # Callback to close reader (decoder),
     # used by sox_format_handler.stopread.
     # @returns SOX_SUCCESS if successful.
     ctypedef int (* sox_format_handler_stopread)(sox_format_t * ft)
 
-
     # Callback to initialize writer (encoder),
     # used by sox_format_handler.startwrite.
     # @returns SOX_SUCCESS if successful.
     ctypedef int (* sox_format_handler_startwrite)(sox_format_t * ft)
-
 
     # Callback to write (encode) a block of samples,
     # used by sox_format_handler.write.
@@ -272,12 +265,10 @@ cdef extern from "sox.h":
         size_t len # Capacity of buf, measured in samples.
         )
 
-
     # Callback to close writer (decoder),
     # used by sox_format_handler.stopwrite.
     # @returns SOX_SUCCESS if successful.
     ctypedef int (* sox_format_handler_stopwrite)(sox_format_t * ft)
-
 
     # Callback to reposition reader,
     # used by sox_format_handler.seek.
@@ -286,7 +277,6 @@ cdef extern from "sox.h":
         sox_format_t * ft,
         sox_uint64_t offset # Sample offset to which reader should be positioned.
         )
-
 
     # Callback to parse command-line arguments (called once per effect),
     # used by sox_effect_handler.getopts.
@@ -297,12 +287,10 @@ cdef extern from "sox.h":
         char *argv[] # Array of command-line arguments.
         )
 
-
     # Callback to initialize effect (called once per flow),
     # used by sox_effect_handler.start.
     # @returns SOX_SUCCESS if successful.
     ctypedef int (* sox_effect_handler_start)(sox_effect_t * effp)
-
 
     # Callback to process samples,
     # used by sox_effect_handler.flow.
@@ -315,7 +303,6 @@ cdef extern from "sox.h":
         size_t *osamp # On entry, contains capacity of obuf on exit, contains number of samples written.
         )
 
-
     # Callback to finish getting output after input is complete,
     # used by sox_effect_handler.drain.
     # @returns SOX_SUCCESS if successful.
@@ -325,24 +312,20 @@ cdef extern from "sox.h":
         size_t *osamp # On entry, contains capacity of obuf on exit, contains number of samples written.
         )
 
-
     # Callback to shut down effect (called once per flow),
     # used by sox_effect_handler.stop.
     # @returns SOX_SUCCESS if successful.
     ctypedef int (* sox_effect_handler_stop)(sox_effect_t * effp)
-
 
     # Callback to shut down effect (called once per effect),
     # used by sox_effect_handler.kill.
     # @returns SOX_SUCCESS if successful.
     ctypedef int (* sox_effect_handler_kill)(sox_effect_t * effp)
 
-
     # Callback called while flow is running (called once per buffer),
     # used by sox_flow_effects.callback.
     # @returns SOX_SUCCESS to continue, other value to abort flow.
     ctypedef int (* sox_flow_effects_callback)(sox_bool all_done, void * client_data)
-
 
     # Callback for enumerating the contents of a playlist,
     # used by the sox_parse_playlist function.
@@ -354,7 +337,7 @@ cdef extern from "sox.h":
 
     # Information about a build of libSoX, returned from the sox_version_info function.
     ctypedef struct sox_version_info_t:
-        size_t       size           # structure size = sizeof(sox_version_info_t)
+        size_t size                 # structure size = sizeof(sox_version_info_t)
         sox_version_flags_t flags   # feature flags = popen | magic | threads | memopen
         sox_uint32_t version_code   # version number = 0x140400
         char * version              # version string = sox_version(), for example, "14.4.0"
@@ -375,12 +358,10 @@ cdef extern from "sox.h":
 
         # Default size (in bytes) used by libSoX for blocks of sample data.
         # Plugins should use similarly-sized buffers to get best performance.
-
         size_t       bufsiz
 
         # Default size (in bytes) used by libSoX for blocks of input sample data.
         # Plugins should use similarly-sized buffers to get best performance.
-
         size_t       input_bufsiz
 
         sox_int32_t  ranqd1  # Can be used to re-seed libSoX's PRNG
@@ -394,7 +375,6 @@ cdef extern from "sox.h":
         
         # Log to base 2 of minimum size (in bytes) used by libSoX for DFT (filtering).
         # Plugins should use similarly-sized DFTs to get best performance.
-
         size_t       log2_dft_min_size 
 
 
