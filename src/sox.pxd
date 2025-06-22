@@ -164,10 +164,10 @@ cdef extern from "sox.h":
     cdef int SOX_24BIT_CLIP_COUNT(int i, int clips)
 
     cdef int SOX_24BIT_CLIP_COUNT(int i, int clips)
-    cdef int SOX_SIZE_MAX
+    cdef size_t SOX_SIZE_MAX
     cdef int SOX_UNSPEC
-    cdef int SOX_UNKNOWN_LEN
-    cdef int SOX_IGNORE_LENGTH
+    cdef sox_uint64_t SOX_UNKNOWN_LEN
+    cdef sox_uint64_t SOX_IGNORE_LENGTH
     cdef int SOX_DEFAULT_RATE
     cdef int SOX_DEFAULT_PRECISION
     cdef int SOX_DEFAULT_ENCODING
@@ -340,12 +340,12 @@ cdef extern from "sox.h":
         size_t size                 # structure size = sizeof(sox_version_info_t)
         sox_version_flags_t flags   # feature flags = popen | magic | threads | memopen
         sox_uint32_t version_code   # version number = 0x140400
-        char * version              # version string = sox_version(), for example, "14.4.0"
-        char * version_extra        # version extra info or null = "PACKAGE_EXTRA", for example, "beta"
-        char * time                 # build time = "__DATE__ __TIME__", for example, "Jan  7 2010 03:31:50"
-        char * distro               # distro or null = "DISTRO", for example, "Debian"
-        char * compiler             # compiler info or null, for example, "msvc 160040219"
-        char * arch                 # arch, for example, "1248 48 44 L OMP"
+        const char * version        # version string = sox_version(), for example, "14.4.0"
+        const char * version_extra  # version extra info or null = "PACKAGE_EXTRA", for example, "beta"
+        const char * time           # build time = "__DATE__ __TIME__", for example, "Jan  7 2010 03:31:50"
+        const char * distro         # distro or null = "DISTRO", for example, "Debian"
+        const char * compiler       # compiler info or null, for example, "msvc 160040219"
+        const char * arch           # arch, for example, "1248 48 44 L OMP"
         # new info should be added at the end for version backwards-compatibility.
 
 
@@ -366,9 +366,9 @@ cdef extern from "sox.h":
 
         sox_int32_t  ranqd1  # Can be used to re-seed libSoX's PRNG
 
-        char * stdin_in_use_by      # Private: tracks the name of the handler currently using stdin
-        char * stdout_in_use_by     # Private: tracks the name of the handler currently using stdout
-        char * subsystem            # Private: tracks the name of the handler currently writing an output message
+        const char * stdin_in_use_by      # Private: tracks the name of the handler currently using stdin
+        const char * stdout_in_use_by     # Private: tracks the name of the handler currently using stdout
+        const char * subsystem            # Private: tracks the name of the handler currently writing an output message
         char * tmp_path             # Private: client-configured path to use for temporary files
         sox_bool     use_magic      # Private: true if client has requested use of 'magic' file-type detection
         sox_bool     use_threads    # Private: true if client has requested parallel effects processing
@@ -390,8 +390,8 @@ cdef extern from "sox.h":
     # Basic information about an encoding.
     ctypedef struct sox_encodings_info_t:
         sox_encodings_flags_t flags  # lossy once (lossy1), lossy twice (lossy2), or lossless (none).
-        char * name                  # encoding name.
-        char * desc                  # encoding description.
+        const char * name            # encoding name.
+        const char * desc            # encoding description.
 
 
     # Encoding parameters.
@@ -433,8 +433,8 @@ cdef extern from "sox.h":
     # Handler structure defined by each format.
     ctypedef struct sox_format_handler_t:
         unsigned     sox_lib_version_code  # Checked on load must be 1st in struct*/
-        char         * description   # short description of format
-        char         ** names # null-terminated array of filename extensions that are handled by this format
+        const char   * description   # short description of format
+        const char   ** names        # null-terminated array of filename extensions that are handled by this format
         unsigned int flags                 # File flags (SOX_FILE_* values).
         sox_format_handler_startread startread # called to initialize reader (decoder)
         sox_format_handler_read read       # called to read (decode) a block of samples
@@ -530,8 +530,8 @@ cdef extern from "sox.h":
 
     # Effect handler information.
     ctypedef struct sox_effect_handler_t:
-        char * name;        # Effect name
-        char * usage;       # Short explanation of parameters accepted by effect
+        const char * name;  # Effect name
+        const char * usage; # Short explanation of parameters accepted by effect
         unsigned int flags; # Combination of SOX_EFF_* flags
         sox_effect_handler_getopts getopts; # Called to parse command-line arguments (called once per effect).
         sox_effect_handler_start start;     # Called to initialize effect (called once per flow).

@@ -1,7 +1,64 @@
 cimport sox
 
+CONSTANTS = {
+    'int8_max': SOX_INT8_MAX,
+    'int16_max': SOX_INT16_MAX,
+    'int24_max': SOX_INT24_MAX,
+    'sample_precision': SOX_SAMPLE_PRECISION,
+    'sample_max': SOX_SAMPLE_MAX,
+    'sample_min': SOX_SAMPLE_MIN,
+    'sample_neg': SOX_SAMPLE_NEG,
+
+    'size_max': SOX_SIZE_MAX,
+    'unspec': SOX_UNSPEC,
+    'unknown_len': SOX_UNKNOWN_LEN,
+    'ignore_length': SOX_IGNORE_LENGTH,
+    'default_rate': SOX_DEFAULT_RATE,
+    'default_precision': SOX_DEFAULT_PRECISION,
+    'default_encoding': SOX_DEFAULT_ENCODING,
+    'loop_none': SOX_LOOP_NONE,
+    'loop_8': SOX_LOOP_8,
+    'loop_sustain_decay': SOX_LOOP_SUSTAIN_DECAY,
+    'max_nloops': SOX_MAX_NLOOPS,
+
+    'file_nostdio': SOX_FILE_NOSTDIO,
+    'file_stdin': SOX_FILE_DEVICE,
+
+    'file_phony': SOX_FILE_PHONY,
+    'file_rewind': SOX_FILE_REWIND,
+    'file_bit_rev': SOX_FILE_BIT_REV,
+    'file_nib_rev': SOX_FILE_NIB_REV,
+    'file_endian': SOX_FILE_ENDIAN,
+    'file_endbig': SOX_FILE_ENDBIG,
+    'file_mono': SOX_FILE_MONO,
+    'file_stereo': SOX_FILE_STEREO,
+    'file_quad': SOX_FILE_QUAD,
+
+    'file_chans': SOX_FILE_CHANS,
+    'file_lit_end': SOX_FILE_LIT_END,
+    'file_big_end': SOX_FILE_BIG_END,
+
+    'eff_chan': SOX_EFF_CHAN,
+    'eff_rate': SOX_EFF_RATE,
+    'eff_prec': SOX_EFF_PREC,
+    'eff_length': SOX_EFF_LENGTH,
+    'eff_mchan': SOX_EFF_MCHAN,
+    'eff_null': SOX_EFF_NULL,
+    'eff_deprecated': SOX_EFF_DEPRECATED,
+    'eff_gain': SOX_EFF_GAIN,
+    'eff_modify': SOX_EFF_MODIFY,
+    'eff_alpha': SOX_EFF_ALPHA,
+    'eff_internal': SOX_EFF_INTERNAL,
+    'seek_set': SOX_SEEK_SET,
+}
+
+
 
 cdef class SignalInfo:
+    """Signal parameters
+
+    members should be set to SOX_UNSPEC (= 0) if unknown.
+    """
     cdef sox_signalinfo_t* ptr
     cdef bint owner
 
@@ -665,6 +722,8 @@ cdef class EffectsGlobals:
         return Globals.from_ptr(self.ptr.global_info, False)
 
 
+
+
 def version() -> str:
     """Returns version number string of libSoX, for example, 14.4.0."""
     return (<const char*>sox_version()).decode()
@@ -672,7 +731,7 @@ def version() -> str:
 
 def version_info():
     """Returns information about this build of libsox."""
-    cdef sox_version_info_t* info = sox_version_info()
+    cdef const sox_version_info_t* info = sox_version_info()
     if info == NULL:
         return None
     
@@ -711,9 +770,9 @@ def get_globals():
     }
 
 
-def get_encodings_info():
+def get_encodings_info() -> list[dist]:
     """Returns a pointer to the list of available encodings."""
-    cdef sox_encodings_info_t* encodings = sox_get_encodings_info()
+    cdef const sox_encodings_info_t* encodings = sox_get_encodings_info()
     if encodings == NULL:
         return []
     
@@ -804,7 +863,7 @@ def append_comment(comments, item: str):
 def find_format(name: str, ignore_devices: bool = False):
     """Finds a format handler by name."""
     cdef bytes name_bytes = name.encode('utf-8')
-    cdef sox_format_handler_t* handler = sox_find_format(name_bytes, ignore_devices)
+    cdef const sox_format_handler_t* handler = sox_find_format(name_bytes, ignore_devices)
     if handler == NULL:
         return None
     
@@ -828,7 +887,7 @@ def get_effects_globals():
 def find_effect(name: str):
     """Finds the effect handler with the given name."""
     cdef bytes name_bytes = name.encode('utf-8')
-    cdef sox_effect_handler_t* handler = sox_find_effect(name_bytes)
+    cdef const sox_effect_handler_t* handler = sox_find_effect(name_bytes)
     if handler == NULL:
         return None
     
