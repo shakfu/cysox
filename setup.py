@@ -1,21 +1,20 @@
 from glob import glob
-from distutils.core import setup
-from distutils.extension import Extension
+from pathlib import Path
+from setuptools import setup, Extension
 from Cython.Build import cythonize
 from os.path import join, dirname, basename
 
-root = dirname(__file__)
+root = Path(__file__).parent
 
-LIB_DIR = 'lib-static'
-
-INCLUDES = [join(root, "include")]
-EXTRA_OBJECTS = [p for p in glob(join(LIB_DIR, '*'))]
+LIB_DIR = root / "lib"
+INCLUDE_DIR = root / "include"
+EXTRA_OBJECTS = [str(p) for p in LIB_DIR.glob('*.a')]
 
 extensions = [
-    Extension("cysox", ["cysox.pyx"],
+    Extension("sox", ["src/sox.pyx"],
         #libraries=LIBNAME,
-        include_dirs=INCLUDES,
-        #library_dirs=LIBDIRS+['/usr/local/lib'],
+        include_dirs=[str(INCLUDE_DIR)],
+        library_dirs=[str(LIB_DIR)],
         extra_objects=EXTRA_OBJECTS,
         extra_link_args=['-framework', 'Foundation'],
     )
