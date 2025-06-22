@@ -1,5 +1,5 @@
 
-.PHONY: all build clean
+.PHONY: all build clean test
 
 all: build
 
@@ -9,3 +9,6 @@ build: clean
 
 clean:
 	@rm -rf build sox.*.so
+
+test:
+	@pytest
