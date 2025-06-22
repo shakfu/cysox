@@ -827,7 +827,7 @@ def get_globals():
     }
 
 
-def get_encodings_info() -> list[dist]:
+def get_encodings_info() -> list[dict]:
     """Returns a pointer to the list of available encodings."""
     cdef const sox_encodings_info_t* encodings = sox_get_encodings_info()
     if encodings == NULL:
