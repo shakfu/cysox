@@ -722,6 +722,63 @@ cdef class EffectsGlobals:
         return Globals.from_ptr(self.ptr.global_info, False)
 
 
+cdef class FormatData:
+    cdef sox_format_t* ptr
+    cdef bint owner
+
+    def __cinit__(self):
+        self.ptr = NULL
+        self.owner = False
+
+    def __dealloc__(self):
+        if self.ptr is not NULL and self.owner is True:
+            sox_close(self.ptr)
+            self.ptr = NULL
+
+    def __init__(self, str filename, SignalInfo signal = None, EncodingInfo encoding = None):
+        """Opens a decoding session for a file. Returned handle must be closed with sox_close().
+        
+        returns The handle for the new session, or null on failure.
+        """
+        self.ptr = sox_open_read(
+            filename.encode(), 
+            signal.ptr if signal else NULL,
+            encoding.ptr if encoding else NULL,
+            NULL
+        )
+        if self.ptr is NULL:
+            raise MemoryError
+
+
+    @staticmethod
+    cdef FormatData from_ptr(sox_format_t* ptr, bint owner=False):
+        cdef FormatData wrapper = FormatData.__new__(FormatData)
+        wrapper.ptr = ptr
+        wrapper.owner = owner
+        return wrapper
+
+    @property
+    def filename(self) -> str:
+        return self.ptr.filename.decode()
+
+    @property
+    def signal(self) -> SignalInfo:
+        return SignalInfo.from_ptr(&self.ptr.signal)
+
+    @property
+    def encoding(self) -> EncodingInfo:
+        return EncodingInfo.from_ptr(&self.ptr.encoding)
+
+    @property
+    def filetype(self) -> str:
+        return self.ptr.filetype.decode()
+
+
+
+
+
+
+
 
 
 def version() -> str:
