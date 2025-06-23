@@ -17,4 +17,4 @@ clean:
 	@find . -type d -path ".*_cache"  -exec rm -rf {} \; -prune
 
 test:
-	@pytest
+	@pytest -v
