@@ -1,3 +1,26 @@
+"""sox.pyx - a thin wrapper around libsox
+
+classes:
+
+- [x] SignalInfo
+- [ ] EncodingsInfo
+- [x] EncodingInfo
+- [x] LoopInfo
+- [x] InstrInfo
+- [x] FileInfo
+- [x] OutOfBand
+- [x] VersionInfo
+- [x] Globals
+- [x] EffectsGlobals
+- [x] Format
+- [ ] FormatHandler
+- [ ] FormatTab
+- [ ] EffectHandler
+- [ ] Effect
+- [ ] EffectsChain
+
+"""
+
 cimport sox
 
 CONSTANTS = {
@@ -51,7 +74,6 @@ CONSTANTS = {
     'eff_internal': SOX_EFF_INTERNAL,
     'seek_set': SOX_SEEK_SET,
 }
-
 
 
 cdef class SignalInfo:
@@ -451,7 +473,7 @@ cdef class FileInfo:
         self.ptr.pos = value
 
 
-cdef class OOB:
+cdef class OutOfBand:
     cdef sox_oob_t* ptr
     cdef bint owner
 
@@ -469,8 +491,8 @@ cdef class OOB:
         self.owner = True
 
     @staticmethod
-    cdef OOB from_ptr(sox_oob_t* ptr, bint owner=False):
-        cdef OOB wrapper = OOB.__new__(OOB)
+    cdef OutOfBand from_ptr(sox_oob_t* ptr, bint owner=False):
+        cdef OutOfBand wrapper = OutOfBand.__new__(OutOfBand)
         wrapper.ptr = ptr
         wrapper.owner = owner
         return wrapper
@@ -722,7 +744,7 @@ cdef class EffectsGlobals:
         return Globals.from_ptr(self.ptr.global_info, False)
 
 
-cdef class FormatData:
+cdef class Format:
     cdef sox_format_t* ptr
     cdef bint owner
 
@@ -751,8 +773,8 @@ cdef class FormatData:
 
 
     @staticmethod
-    cdef FormatData from_ptr(sox_format_t* ptr, bint owner=False):
-        cdef FormatData wrapper = FormatData.__new__(FormatData)
+    cdef Format from_ptr(sox_format_t* ptr, bint owner=False):
+        cdef Format wrapper = Format.__new__(Format)
         wrapper.ptr = ptr
         wrapper.owner = owner
         return wrapper

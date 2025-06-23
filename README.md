@@ -18,7 +18,7 @@ Towards a cython wrapper for [libsox](https://github.com/chirlu/sox)
 
 ```python
 >>> import sox
->>> f = sox.FormatData('tests/s00.wav')
+>>> f = sox.Format('tests/s00.wav')
 >>> f.filetype
 'wav'
 >>> f.signal

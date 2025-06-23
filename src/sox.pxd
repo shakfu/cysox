@@ -209,10 +209,10 @@ cdef extern from "sox.h":
     # ---------------------------------------------------------------------------
     # forward declarations
 
-    # ctypedef struct sox_format_t sox_format_t
-    # ctypedef struct sox_effect_t sox_effect_t
-    # ctypedef struct sox_effect_handler_t sox_effect_handler_t
-    # ctypedef struct sox_format_handler_t sox_format_handler_t    
+    # ctypedef struct sox_format_t: pass
+    # ctypedef struct sox_effect_t: pass
+    # ctypedef struct sox_effect_handler_t: pass
+    # ctypedef struct sox_format_handler_t: pass
 
     # ---------------------------------------------------------------------------
     # function pointers
@@ -565,7 +565,7 @@ cdef extern from "sox.h":
 
 
     # ctypedef struct sox_effect_handler_t
-    ctypedef struct sox_format_handler_t
+    # ctypedef struct sox_format_handler_t
 
     ctypedef struct sox_effects_chain_t:
         sox_effect_t **effects                  # Table of effects to be applied to a stream
