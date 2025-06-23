@@ -12,7 +12,9 @@ wheel:
 	@python3 setup.py bdist_wheel
 
 clean:
-	@rm -rf build sox.*.so dist src/*.egg-info src/cysox/__pycache__
+	@rm -rf build dist sox.*.so src/*.egg-info
+	@find . -type d -name __pycache__ -exec rm -rf {} \; -prune
+	@find . -type d -path ".*_cache"  -exec rm -rf {} \; -prune
 
 test:
 	@pytest

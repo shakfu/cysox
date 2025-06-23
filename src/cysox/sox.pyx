@@ -1,31 +1,41 @@
-"""sox.pyx - a thin wrapper around libsox
+"""sox.pyx - a thin wrapper around libsox"""
 
-classes:
-
-- [x] SignalInfo
-- [x] EncodingsInfo
-- [x] EncodingInfo
-- [x] LoopInfo
-- [x] InstrInfo
-- [x] FileInfo
-- [x] OutOfBand
-- [x] VersionInfo
-- [x] Globals
-- [x] EffectsGlobals
-- [x] Format
-- [x] FormatHandler
-- [x] FormatTab
-- [x] EffectHandler
-- [x] Effect
-- [x] EffectsChain
-
-"""
-
-# from collections import namedtuple
 from types import SimpleNamespace
 
-cimport sox
+cimport cysox.sox
 
+
+ENCODINGS = [
+    ("UNKNOWN",     "encoding has not yet been determined"),
+    ("SIGN2",       "signed linear 2's comp: Mac"),
+    ("UNSIGNED",    "unsigned linear: Sound Blaster"),
+    ("FLOAT",       "floating point (binary format)"),
+    ("FLOAT_TEXT",  "floating point (text format)"),
+    ("FLAC",        "FLAC compression"),
+    ("HCOM",        "Mac FSSD files with Huffman compression"),
+    ("WAVPACK",     "WavPack with integer samples"),
+    ("WAVPACKF",    "WavPack with float samples"),
+    ("ULAW",        "u-law signed logs: US telephony, SPARC"),
+    ("ALAW",        "A-law signed logs: non-US telephony, Psion"),
+    ("G721",        "G.721 4-bit ADPCM"),
+    ("G723",        "G.723 3 or 5 bit ADPCM"),
+    ("CL_ADPCM  ",  "Creative Labs 8 --> 2,3,4 bit Compressed PCM"),
+    ("CL_ADPCM16",  "Creative Labs 16 --> 4 bit Compressed PCM"),
+    ("MS_ADPCM  ",  "Microsoft Compressed PCM"),
+    ("IMA_ADPCM ",  "IMA Compressed PCM"),
+    ("OKI_ADPCM ",  "Dialogic/OKI Compressed PCM"),
+    ("DPCM",        "Differential PCM: Fasttracker 2 (xi)"),
+    ("DWVW ",       "Delta Width Variable Word"),
+    ("DWVWN",       "Delta Width Variable Word N-bit"),
+    ("GSM",         "GSM 6.10 33byte frame lossy compression"),
+    ("MP3",         "MP3 compression"),
+    ("VORBIS",      "Vorbis compression"),
+    ("AMR_WB",      "AMR-WB compression"),
+    ("AMR_NB",      "AMR-NB compression"),
+    ("CVSD",        "Continuously Variable Slope Delta modulation"),
+    ("LPC10",       "Linear Predictive Coding"),
+    ("OPUS",        "Opus compression"),
+]
 
 constant = SimpleNamespace({
     'INT8_MAX': SOX_INT8_MAX,
@@ -78,6 +88,8 @@ constant = SimpleNamespace({
     'EFF_INTERNAL': SOX_EFF_INTERNAL,
     'SEEK_SET': SOX_SEEK_SET,
 })
+
+
 
 
 cdef class SignalInfo:
@@ -1192,7 +1204,6 @@ def version() -> str:
     """Returns version number string of libSoX, for example, 14.4.0."""
     return (<const char*>sox_version()).decode()
 
-
 def version_info():
     """Returns information about this build of libsox."""
     cdef const sox_version_info_t* info = sox_version_info()
@@ -1210,7 +1221,6 @@ def version_info():
         'compiler': info.compiler.decode() if info.compiler else None,
         'arch': info.arch.decode() if info.arch else None
     }
-
 
 def get_globals():
     """Returns a pointer to the structure with libSoX's global settings."""
@@ -1232,7 +1242,6 @@ def get_globals():
         'use_threads': globals.use_threads,
         'log2_dft_min_size': globals.log2_dft_min_size
     }
-
 
 def get_encodings_info() -> list[dict]:
     """Returns the list of available encodings."""
@@ -1277,12 +1286,10 @@ def strerror(sox_errno: int) -> str:
     """Converts a SoX error code into an error string."""
     return (<const char*>sox_strerror(sox_errno)).decode()
 
-
 def is_playlist(filename: str) -> bool:
     """Returns true if the specified file is a known playlist file type."""
     cdef bytes filename_bytes = filename.encode('utf-8')
     return sox_is_playlist(filename_bytes)
-
 
 def basename(filename: str) -> str:
     """Gets the basename of the specified file."""
@@ -1295,14 +1302,9 @@ def basename(filename: str) -> str:
     
     return base_buffer[:result].decode('utf-8')
 
-
 def precision(encoding: int, bits_per_sample: int) -> int:
     """Given an encoding and bits_per_sample, returns the number of useful bits per sample."""
     return sox_precision(<sox_encoding_t>encoding, <unsigned>bits_per_sample)
-
-
-
-
 
 def find_format(name: str, ignore_devices: bool = False):
     """Finds a format handler by name."""
@@ -1316,7 +1318,6 @@ def find_format(name: str, ignore_devices: bool = False):
         'names': [handler.names[i].decode() for i in range(10) if handler.names[i] != NULL]  # Assuming max 10 names
     }
 
-
 def get_effects_globals():
     """Returns global parameters for effects."""
     cdef sox_effects_globals_t* globals = sox_get_effects_globals()
@@ -1326,7 +1327,6 @@ def get_effects_globals():
     return {
         'plot': globals.plot
     }
-
 
 def find_effect(name: str):
     """Finds the effect handler with the given name."""
@@ -1342,10 +1342,11 @@ def find_effect(name: str):
         'priv_size': handler.priv_size
     }
 
-
 def format_supports_encoding(str path, EncodingInfo encoding) -> bool:
     """Returns true if the format handler for the specified file type supports the specified encoding."""
     return <bint>sox_format_supports_encoding(path.encode(), NULL, encoding.ptr)
+
+
 
 
 
