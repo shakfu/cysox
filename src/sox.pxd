@@ -348,7 +348,6 @@ cdef extern from "sox.h":
         const char * arch           # arch, for example, "1248 48 44 L OMP"
         # new info should be added at the end for version backwards-compatibility.
 
-
     # Global parameters (for effects & formats), returned from the sox_get_globals function.
     ctypedef struct sox_globals_t:
         # public
@@ -377,7 +376,6 @@ cdef extern from "sox.h":
         # Plugins should use similarly-sized DFTs to get best performance.
         size_t       log2_dft_min_size 
 
-
     # Signal parameters members should be set to SOX_UNSPEC (= 0) if unknown.
     ctypedef struct sox_signalinfo_t:
         sox_rate_t       rate         # samples per second, 0 if unknown
@@ -386,13 +384,11 @@ cdef extern from "sox.h":
         sox_uint64_t     length       # samples * chans in file, 0 if unknown, -1 if unspecified
         double           * mult       # Effects headroom multiplier may be null
 
-
     # Basic information about an encoding.
     ctypedef struct sox_encodings_info_t:
         sox_encodings_flags_t flags  # lossy once (lossy1), lossy twice (lossy2), or lossless (none).
         const char * name            # encoding name.
         const char * desc            # encoding description.
-
 
     # Encoding parameters.
     ctypedef struct sox_encodinginfo_t:
@@ -404,14 +400,12 @@ cdef extern from "sox.h":
         sox_option_t reverse_bits      # Should bits be reversed?
         sox_bool opposite_endian       # If set to true, the format should reverse its default endianness.
 
-
     # Looping parameters (out-of-band data).
     ctypedef struct sox_loopinfo_t:
         sox_uint64_t  start  # first sample
         sox_uint64_t  length # length
         unsigned      count  # number of repeats, 0=forever
         unsigned char type   # 0=no, 1=forward, 2=forward/back (see sox_loop_* for valid values).
-
 
     # Instrument information.
     ctypedef struct sox_instrinfo_t:
@@ -421,14 +415,12 @@ cdef extern from "sox.h":
         unsigned char loopmode # 0=no, 1=forward, 2=forward/back (see sox_loop_* values)
         unsigned nloops        # number of active loops (max SOX_MAX_NLOOPS).
 
-
     # File buffer info.  Holds info so that data can be read in blocks.
     ctypedef struct sox_fileinfo_t:
         char   *buf             # Pointer to data buffer
         size_t size             # Size of buffer in bytes
         size_t count            # Count read into buffer
         size_t pos              # Position in buffer
-
 
     # Handler structure defined by each format.
     ctypedef struct sox_format_handler_t:
@@ -466,13 +458,11 @@ cdef extern from "sox.h":
         # The buffer will be provided via format.priv in each call to the handler.
         size_t priv_size
 
-
     # Comments, instrument info, loop info (out-of-band data).
     ctypedef struct sox_oob_t:
         sox_comments_t   comments        # Comment strings in id=value format.
         sox_instrinfo_t  instr           # Instrument specification
         sox_loopinfo_t   loops[8]        # Looping specification
-
 
     # Data passed to/from the format handler
     ctypedef struct sox_format_t:
@@ -511,7 +501,6 @@ cdef extern from "sox.h":
         sox_format_handler_t handler     # Format handler for this file
         void             * priv          # Format handler's private data area
 
-
     # Information about a loaded format handler, including the format name and a
     # function pointer that can be invoked to get additional information about the
     # format.
@@ -519,14 +508,10 @@ cdef extern from "sox.h":
         char *name         # Name of format handler
         sox_format_fn_t fn # Function to call to get format handler's information
 
-
     # Global parameters for effects.
     ctypedef struct sox_effects_globals_t:
         sox_plot_t plot                # To help the user choose effect & options
         sox_globals_t * global_info    # Pointer to associated SoX globals
-
-
-    # ctypedef sox_effect_handler_t * (*sox_effect_fn_t)(void)
 
     # Effect handler information.
     ctypedef struct sox_effect_handler_t:
@@ -540,8 +525,6 @@ cdef extern from "sox.h":
         sox_effect_handler_stop stop;       # Called to shut down effect (called once per flow).
         sox_effect_handler_kill kill;       # Called to shut down effect (called once per effect).
         size_t priv_size;                   # Size of private data SoX should pre-allocate for effect
-
-
 
     ctypedef struct sox_effect_t:
         sox_effects_globals_t    * global_info  # global effect parameters
@@ -560,13 +543,6 @@ cdef extern from "sox.h":
         size_t                oend              # output buffer: one past valid data section (oend-obeg is length of current content)
         size_t                imin              # minimum input buffer content required for calling this effect's flow function set via lsx_effect_set_imin()
 
-
-
-
-
-    # ctypedef struct sox_effect_handler_t
-    # ctypedef struct sox_format_handler_t
-
     ctypedef struct sox_effects_chain_t:
         sox_effect_t **effects                  # Table of effects to be applied to a stream
         size_t length                           # Number of effects to be applied
@@ -576,7 +552,6 @@ cdef extern from "sox.h":
         # The following items are private to the libSoX effects chain functions.
         size_t table_size                       # Size of effects table (including unused entries)
         sox_sample_t *il_buf                    # Channel interleave buffer
-
 
     # ---------------------------------------------------------------------------
     # functions
@@ -614,7 +589,7 @@ cdef extern from "sox.h":
     cdef void sox_append_comment(sox_comments_t * comments, char * item)
 
     # Adds a newline-delimited list of "id=value" items to the metadata block.
-    void sox_append_comments(sox_comments_t * comments, char * items)
+    cdef void sox_append_comments(sox_comments_t * comments, char * items)
 
     # Duplicates the metadata block.
     # @returns the copied metadata block.
@@ -866,18 +841,3 @@ cdef extern from "sox.h":
         size_t base_buffer_len, # Size of base_buffer, in bytes. 
          char * filename # Filename from which to extract basename. 
         )
-
-    # cdef sox_effects_chain_t * sox_create_effects_chain(sox_encodinginfo_t * in_enc, sox_encodinginfo_t * out_enc)
-    # cdef sox_effect_t * sox_create_effect(sox_effect_handler_t * eh)
-    # cdef sox_effect_handler_t * sox_find_effect(char * name)
-    # cdef int sox_effect_options(sox_effect_t *effp, int argc, char * argv[])
-    # cdef int sox_add_effect(sox_effects_chain_t * chain, sox_effect_t * effp, sox_signalinfo_t * in_, sox_signalinfo_t * out)
-    # cdef int sox_flow_effects(sox_effects_chain_t * chain, sox_flow_effects_callback callback, void * client_data)
-
-    # cdef void sox_delete_effects_chain(sox_effects_chain_t *ecp)
-
-
-
-
-
-

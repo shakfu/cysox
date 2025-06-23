@@ -215,6 +215,12 @@ cdef class EncodingInfo:
         self.opposite_endian = opposite_endian
         self.owner = True
 
+    # def __init__(self):
+    #     """Fills in an encodinginfo with default values."""
+    #     self.ptr = <sox_encodinginfo_t*>malloc(sizeof(sox_encodinginfo_t))
+    #     self.owner = True
+    #     sox_init_encodinginfo(self.ptr)
+
     @staticmethod
     cdef EncodingInfo from_ptr(const sox_encodinginfo_t* ptr, bint owner=False):
         cdef EncodingInfo wrapper = EncodingInfo.__new__(EncodingInfo)
@@ -508,6 +514,8 @@ cdef class OutOfBand:
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
             free(self.ptr)
+            if self.ptr.comments:
+                sox_delete_comments(&self.ptr.comments)
             self.ptr = NULL
 
     def __init__(self):
@@ -521,8 +529,30 @@ cdef class OutOfBand:
         wrapper.owner = owner
         return wrapper
 
+    def num_comments(self) -> int:
+        """Returns the number of items in the metadata block."""
+        return <int>sox_num_comments(self.ptr.comments)
+
+    def append_comment(self, item: str):
+        """Adds an 'id=value' item to the metadata block."""
+        sox_append_comment(&self.ptr.comments, item.encode())
+
+    def append_comments(self, items: str):
+        """Adds a newline-delimited list of "id=value" items to the metadata block."""
+        sox_append_comments(&self.ptr.comments, items.encode())
+
+    cdef sox_comments_t copy_comments(self):
+        """Duplicates the metadata block."""
+        return sox_copy_comments(self.ptr.comments)
+
+    def find_comment(self, id: str) -> str:
+        """If "id=value" is found, return value, else return null."""
+        cdef char * value = <char*>sox_find_comment(self.ptr.comments, id.encode())
+        if value is not NULL:
+            return value.decode()
+
     @property
-    def comments(self) -> sox_comments_t:
+    def comments(self) -> list[str]:
         """Comment strings in id=value format."""
         cdef size_t n = sox_num_comments(self.ptr.comments)
         _comments = []
@@ -530,6 +560,7 @@ cdef class OutOfBand:
             _comments.append(self.ptr.comments[i].decode())
         return _comments
 
+    # FIXME: use list[str]
     # @comments.setter
     # def comments(self, sox_comments_t value):
     #     self.ptr.comments = value
@@ -782,7 +813,7 @@ cdef class Format:
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
-            sox_close(self.ptr)
+            assert SOX_SUCCESS == sox_close(self.ptr)
             self.ptr = NULL
 
     def __init__(self, str filename, SignalInfo signal = None, EncodingInfo encoding = None):
@@ -837,6 +868,12 @@ cdef class FormatHandler:
         if self.ptr is not NULL and self.owner is True:
             free(self.ptr)
             self.ptr = NULL
+
+    def __init__(self, str path):
+        self.ptr = <sox_format_handler_t*>sox_write_handler(path.encode(), NULL, NULL)
+        self.owner = True
+        if self.ptr is NULL:
+            raise MemoryError
 
     @staticmethod
     cdef FormatHandler from_ptr(sox_format_handler_t* ptr, bint owner=False):
@@ -1203,25 +1240,21 @@ def get_encodings() -> list[EncodingsInfo]:
     _encodings = get_encodings_info()
     return [EncodingsInfo(**e) for e in _encodings if e['flags'] < 3]
 
-def format_init() -> int:
+def format_init():
     """Find and load format handler plugins."""
-    return sox_format_init()
-
+    assert SOX_SUCCESS == sox_format_init()
 
 def format_quit():
     """Unload format handler plugins."""
     sox_format_quit()
 
-
-def init() -> int:
+def init():
     """Initialize effects library."""
-    return sox_init()
+    assert SOX_SUCCESS == sox_init()
 
-
-def quit() -> int:
+def quit():
     """Close effects library and unload format handler plugins."""
-    return sox_quit()
-
+    assert SOX_SUCCESS == sox_quit()
 
 def strerror(sox_errno: int) -> str:
     """Converts a SoX error code into an error string."""
@@ -1251,20 +1284,7 @@ def precision(encoding: int, bits_per_sample: int) -> int:
     return sox_precision(<sox_encoding_t>encoding, <unsigned>bits_per_sample)
 
 
-def append_comment(comments, item: str):
-    """Adds an 'id=value' item to the metadata block."""
-    cdef bytes item_bytes = item.encode('utf-8')
-    # This would need proper handling of sox_comments_t
-    # sox_append_comment(comments, item_bytes)
 
-
-# def find_comment(comments, id_str: str) -> str:
-#     """If 'id=value' is found, return value, else return null."""
-#     cdef bytes id_bytes = id_str.encode('utf-8')
-#     cdef char* result = sox_find_comment(comments, id_bytes)
-#     if result == NULL:
-#         return None
-#     return result.decode('utf-8')
 
 
 def find_format(name: str, ignore_devices: bool = False):
@@ -1304,5 +1324,15 @@ def find_effect(name: str):
         'flags': handler.flags,
         'priv_size': handler.priv_size
     }
+
+
+def format_supports_encoding(str path, EncodingInfo encoding) -> bool:
+    """Returns true if the format handler for the specified file type supports the specified encoding."""
+    return <bint>sox_format_supports_encoding(path.encode(), NULL, encoding.ptr)
+
+
+
+
+
 
 
