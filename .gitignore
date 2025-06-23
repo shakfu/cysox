@@ -21,4 +21,4 @@ lib/
 
 # cache
 .*_cache/
-
+*.egg-info

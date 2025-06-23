@@ -565,6 +565,23 @@ cdef class OutOfBand:
     # def comments(self, sox_comments_t value):
     #     self.ptr.comments = value
 
+    # cdef char** create_char_array(list python_strings):
+    #     cdef int num_strings = len(python_strings)
+    #     cdef char** c_array = <char**> malloc(num_strings * sizeof(char*))
+    #     if not c_array:
+    #         # Handle allocation error
+    #         pass
+
+    #     for i in range(num_strings):
+    #         # Convert Python string to C string and store pointer
+    #         c_array[i] = python_strings[i].encode('utf-8')  # Or other encoding
+    #     return c_array
+
+    # cdef void free_char_array(char** c_array, int num_strings):
+    #     for i in range(num_strings):
+    #         free(c_array[i]) # Free individual strings if they were allocated
+    #     free(c_array)
+
     @property
     def instr(self) -> InstrInfo:
         """Instrument specification"""

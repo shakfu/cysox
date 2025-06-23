@@ -11,7 +11,7 @@ INCLUDE_DIR = root / "include"
 EXTRA_OBJECTS = [str(p) for p in LIB_DIR.glob('*.a')]
 
 extensions = [
-    Extension("sox", ["src/sox.pyx"],
+    Extension("cysox.sox", ["src/cysox/sox.pyx"],
         #libraries=LIBNAME,
         include_dirs=[str(INCLUDE_DIR)],
         library_dirs=[str(LIB_DIR)],
@@ -21,7 +21,7 @@ extensions = [
 ]
 
 setup(
-    name="sox in cython",
+    name="cysox",
     ext_modules=cythonize(extensions, 
         compiler_directives={
             'language_level' : '3',
@@ -31,4 +31,5 @@ setup(
             # 'cdivision': True,
 
         }),
+    package_dir={"": "src"},
 )
