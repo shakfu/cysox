@@ -30,3 +30,6 @@ Towards a cython wrapper for [libsox](https://github.com/chirlu/sox)
 >>> f.encoding.bits_per_sample
 16
 ```
+
+## Todo
+

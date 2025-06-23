@@ -21,59 +21,63 @@ classes:
 
 """
 
+# from collections import namedtuple
+from types import SimpleNamespace
+
 cimport sox
 
-CONSTANTS = {
-    'int8_max': SOX_INT8_MAX,
-    'int16_max': SOX_INT16_MAX,
-    'int24_max': SOX_INT24_MAX,
-    'sample_precision': SOX_SAMPLE_PRECISION,
-    'sample_max': SOX_SAMPLE_MAX,
-    'sample_min': SOX_SAMPLE_MIN,
-    'sample_neg': SOX_SAMPLE_NEG,
 
-    'size_max': SOX_SIZE_MAX,
-    'unspec': SOX_UNSPEC,
-    'unknown_len': SOX_UNKNOWN_LEN,
-    'ignore_length': SOX_IGNORE_LENGTH,
-    'default_rate': SOX_DEFAULT_RATE,
-    'default_precision': SOX_DEFAULT_PRECISION,
-    'default_encoding': SOX_DEFAULT_ENCODING,
-    'loop_none': SOX_LOOP_NONE,
-    'loop_8': SOX_LOOP_8,
-    'loop_sustain_decay': SOX_LOOP_SUSTAIN_DECAY,
-    'max_nloops': SOX_MAX_NLOOPS,
+constant = SimpleNamespace({
+    'INT8_MAX': SOX_INT8_MAX,
+    'INT16_MAX': SOX_INT16_MAX,
+    'INT24_MAX': SOX_INT24_MAX,
+    'SAMPLE_PRECISION': SOX_SAMPLE_PRECISION,
+    'SAMPLE_MAX': SOX_SAMPLE_MAX,
+    'SAMPLE_MIN': SOX_SAMPLE_MIN,
+    'SAMPLE_NEG': SOX_SAMPLE_NEG,
 
-    'file_nostdio': SOX_FILE_NOSTDIO,
-    'file_stdin': SOX_FILE_DEVICE,
+    'SIZE_MAX': SOX_SIZE_MAX,
+    'UNSPEC': SOX_UNSPEC,
+    'UNKNOWN_LEN': SOX_UNKNOWN_LEN,
+    'IGNORE_LENGTH': SOX_IGNORE_LENGTH,
+    'DEFAULT_RATE': SOX_DEFAULT_RATE,
+    'DEFAULT_PRECISION': SOX_DEFAULT_PRECISION,
+    'DEFAULT_ENCODING': SOX_DEFAULT_ENCODING,
+    'LOOP_NONE': SOX_LOOP_NONE,
+    'LOOP_8': SOX_LOOP_8,
+    'LOOP_SUSTAIN_DECAY': SOX_LOOP_SUSTAIN_DECAY,
+    'MAX_NLOOPS': SOX_MAX_NLOOPS,
 
-    'file_phony': SOX_FILE_PHONY,
-    'file_rewind': SOX_FILE_REWIND,
-    'file_bit_rev': SOX_FILE_BIT_REV,
-    'file_nib_rev': SOX_FILE_NIB_REV,
-    'file_endian': SOX_FILE_ENDIAN,
-    'file_endbig': SOX_FILE_ENDBIG,
-    'file_mono': SOX_FILE_MONO,
-    'file_stereo': SOX_FILE_STEREO,
-    'file_quad': SOX_FILE_QUAD,
+    'FILE_NOSTDIO': SOX_FILE_NOSTDIO,
+    'FILE_DEVICE': SOX_FILE_DEVICE,
 
-    'file_chans': SOX_FILE_CHANS,
-    'file_lit_end': SOX_FILE_LIT_END,
-    'file_big_end': SOX_FILE_BIG_END,
+    'FILE_PHONY': SOX_FILE_PHONY,
+    'FILE_REWIND': SOX_FILE_REWIND,
+    'FILE_BIT_REV': SOX_FILE_BIT_REV,
+    'FILE_NIB_REV': SOX_FILE_NIB_REV,
+    'FILE_ENDIAN': SOX_FILE_ENDIAN,
+    'FILE_ENDBIG': SOX_FILE_ENDBIG,
+    'FILE_MONO': SOX_FILE_MONO,
+    'FILE_STEREO': SOX_FILE_STEREO,
+    'FILE_QUAD': SOX_FILE_QUAD,
 
-    'eff_chan': SOX_EFF_CHAN,
-    'eff_rate': SOX_EFF_RATE,
-    'eff_prec': SOX_EFF_PREC,
-    'eff_length': SOX_EFF_LENGTH,
-    'eff_mchan': SOX_EFF_MCHAN,
-    'eff_null': SOX_EFF_NULL,
-    'eff_deprecated': SOX_EFF_DEPRECATED,
-    'eff_gain': SOX_EFF_GAIN,
-    'eff_modify': SOX_EFF_MODIFY,
-    'eff_alpha': SOX_EFF_ALPHA,
-    'eff_internal': SOX_EFF_INTERNAL,
-    'seek_set': SOX_SEEK_SET,
-}
+    'FILE_CHANS': SOX_FILE_CHANS,
+    'FILE_LIT_END': SOX_FILE_LIT_END,
+    'FILE_BIG_END': SOX_FILE_BIG_END,
+
+    'EFF_CHAN': SOX_EFF_CHAN,
+    'EFF_RATE': SOX_EFF_RATE,
+    'EFF_PREC': SOX_EFF_PREC,
+    'EFF_LENGTH': SOX_EFF_LENGTH,
+    'EFF_MCHAN': SOX_EFF_MCHAN,
+    'EFF_NULL': SOX_EFF_NULL,
+    'EFF_DEPRECATED': SOX_EFF_DEPRECATED,
+    'EFF_GAIN': SOX_EFF_GAIN,
+    'EFF_MODIFY': SOX_EFF_MODIFY,
+    'EFF_ALPHA': SOX_EFF_ALPHA,
+    'EFF_INTERNAL': SOX_EFF_INTERNAL,
+    'SEEK_SET': SOX_SEEK_SET,
+})
 
 
 cdef class SignalInfo:
@@ -163,6 +167,26 @@ cdef class SignalInfo:
             self.ptr.mult[0] = value
         else:
             self.ptr.mult[0] = value
+
+
+class EncodingsInfo:
+    """Basic information about an encoding."""
+
+    def __init__(self, int flags, str name, str desc):
+        self.flags = flags
+        self.name = name
+        self.desc = desc
+
+    def __repr__(self):
+        return f"<EncodingsInfo '{self.name}' '{self.desc}' '{self.type}'>"
+
+    @property
+    def type(self):
+        return {
+            0: 'lossless',
+            1: 'lossy1',
+            2: 'lossy2',
+        }[self.flags]
 
 
 cdef class EncodingInfo:
@@ -340,12 +364,12 @@ cdef class InstrInfo:
             free(self.ptr)
             self.ptr = NULL
 
-    def __init__(self, MIDInote: int = 0, MIDIlow: int = 0, MIDIhi: int = 0, 
+    def __init__(self, note: int = 0, low: int = 0, high: int = 0, 
                  loopmode: int = 0, nloops: int = 0):
         self.ptr = <sox_instrinfo_t*>malloc(sizeof(sox_instrinfo_t))
-        self.MIDInote = MIDInote
-        self.MIDIlow = MIDIlow
-        self.MIDIhi = MIDIhi
+        self.note = note
+        self.low = low
+        self.high = high
         self.loopmode = loopmode
         self.nloops = nloops
         self.owner = True
@@ -358,30 +382,30 @@ cdef class InstrInfo:
         return wrapper
 
     @property
-    def MIDInote(self) -> int:
+    def note(self) -> int:
         """for unity pitch playback"""
         return self.ptr.MIDInote
 
-    @MIDInote.setter
-    def MIDInote(self, signed char value):
+    @note.setter
+    def note(self, signed char value):
         self.ptr.MIDInote = value
 
     @property
-    def MIDIlow(self) -> int:
+    def low(self) -> int:
         """MIDI pitch-bend low range"""
         return self.ptr.MIDIlow
 
-    @MIDIlow.setter
-    def MIDIlow(self, signed char value):
+    @low.setter
+    def low(self, signed char value):
         self.ptr.MIDIlow = value
 
     @property
-    def MIDIhi(self) -> int:
+    def high(self) -> int:
         """MIDI pitch-bend high range"""
         return self.ptr.MIDIhi
 
-    @MIDIhi.setter
-    def MIDIhi(self, signed char value):
+    @high.setter
+    def high(self, signed char value):
         self.ptr.MIDIhi = value
 
     @property
@@ -497,10 +521,14 @@ cdef class OutOfBand:
         wrapper.owner = owner
         return wrapper
 
-    # @property
-    # def comments(self) -> sox_comments_t:
-    #     """Comment strings in id=value format."""
-    #     return self.ptr.comments
+    @property
+    def comments(self) -> sox_comments_t:
+        """Comment strings in id=value format."""
+        cdef size_t n = sox_num_comments(self.ptr.comments)
+        _comments = []
+        for i in range(n):
+            _comments.append(self.ptr.comments[i].decode())
+        return _comments
 
     # @comments.setter
     # def comments(self, sox_comments_t value):
@@ -794,76 +822,6 @@ cdef class Format:
     @property
     def filetype(self) -> str:
         return self.ptr.filetype.decode()
-
-
-cdef class EncodingsInfo:
-    """Basic information about an encoding."""
-    cdef sox_encodings_info_t* ptr
-    cdef bint owner
-
-    def __cinit__(self):
-        self.ptr = NULL
-        self.owner = False
-
-    def __dealloc__(self):
-        if self.ptr is not NULL and self.owner is True:
-            free(self.ptr)
-            self.ptr = NULL
-
-    def __init__(self, flags: int = 0, name: str = None, desc: str = None):
-        self.ptr = <sox_encodings_info_t*>malloc(sizeof(sox_encodings_info_t))
-        self.flags = flags
-        self.name = name
-        self.desc = desc
-        self.owner = True
-
-    @staticmethod
-    cdef EncodingsInfo from_ptr(sox_encodings_info_t* ptr, bint owner=False):
-        cdef EncodingsInfo wrapper = EncodingsInfo.__new__(EncodingsInfo)
-        wrapper.ptr = ptr
-        wrapper.owner = owner
-        return wrapper
-
-    @property
-    def flags(self) -> sox_encodings_flags_t:
-        """lossy once (lossy1), lossy twice (lossy2), or lossless (none)."""
-        return self.ptr.flags
-
-    @flags.setter
-    def flags(self, sox_encodings_flags_t value):
-        self.ptr.flags = value
-
-    @property
-    def name(self) -> str:
-        """encoding name."""
-        if self.ptr.name == NULL:
-            return None
-        return self.ptr.name.decode()
-
-    @name.setter
-    def name(self, str value):
-        if value is None:
-            self.ptr.name = NULL
-        else:
-            # Note: This is a const char* in the struct, so we can't modify it
-            # This setter is provided for completeness but won't actually work
-            pass
-
-    @property
-    def desc(self) -> str:
-        """encoding description."""
-        if self.ptr.desc == NULL:
-            return None
-        return self.ptr.desc.decode()
-
-    @desc.setter
-    def desc(self, str value):
-        if value is None:
-            self.ptr.desc = NULL
-        else:
-            # Note: This is a const char* in the struct, so we can't modify it
-            # This setter is provided for completeness but won't actually work
-            pass
 
 
 cdef class FormatHandler:
@@ -1223,7 +1181,7 @@ def get_globals():
 
 
 def get_encodings_info() -> list[dict]:
-    """Returns a pointer to the list of available encodings."""
+    """Returns the list of available encodings."""
     cdef const sox_encodings_info_t* encodings = sox_get_encodings_info()
     if encodings == NULL:
         return []
@@ -1231,15 +1189,19 @@ def get_encodings_info() -> list[dict]:
     result = []
     cdef int i = 0
     while encodings[i].name != NULL:
-        result.append({
-            'flags': encodings[i].flags,
-            'name': encodings[i].name.decode(),
-            'desc': encodings[i].desc.decode() if encodings[i].desc else None
-        })
+        result.append(
+            dict(
+                flags=encodings[i].flags,
+                name=encodings[i].name.decode(),
+                desc=encodings[i].desc.decode() if encodings[i].desc else None
+            )
+        )
         i += 1
-    
     return result
 
+def get_encodings() -> list[EncodingsInfo]:
+    _encodings = get_encodings_info()
+    return [EncodingsInfo(**e) for e in _encodings if e['flags'] < 3]
 
 def format_init() -> int:
     """Find and load format handler plugins."""
@@ -1287,13 +1249,6 @@ def basename(filename: str) -> str:
 def precision(encoding: int, bits_per_sample: int) -> int:
     """Given an encoding and bits_per_sample, returns the number of useful bits per sample."""
     return sox_precision(<sox_encoding_t>encoding, <unsigned>bits_per_sample)
-
-
-def num_comments(comments) -> int:
-    """Returns the number of items in the metadata block."""
-    # This would need proper handling of sox_comments_t
-    # For now, returning a placeholder
-    return 0
 
 
 def append_comment(comments, item: str):
