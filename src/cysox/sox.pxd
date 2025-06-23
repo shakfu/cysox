@@ -143,8 +143,8 @@ cdef extern from "sox.h":
     cdef int SOX_SIGNED_24BIT_TO_SAMPLE(int d, int clips)
     cdef int SOX_UNSIGNED_32BIT_TO_SAMPLE(int d, int clips)
     cdef int SOX_SIGNED_32BIT_TO_SAMPLE(int d, int clips)
-    cdef int SOX_FLOAT_32BIT_TO_SAMPLE(int d, int clips)
-    cdef int SOX_FLOAT_64BIT_TO_SAMPLE(int d, int clips)
+    cdef int SOX_FLOAT_32BIT_TO_SAMPLE(float d, int clips)
+    cdef int SOX_FLOAT_64BIT_TO_SAMPLE(double d, int clips)
 
     cdef int SOX_SAMPLE_TO_UNSIGNED_8BIT(int d, int clips)
     cdef int SOX_SAMPLE_TO_SIGNED_8BIT(int d, int clips)

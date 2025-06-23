@@ -842,23 +842,43 @@ cdef class Format:
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
-            assert SOX_SUCCESS == sox_close(self.ptr)
+            sox_close(self.ptr)
             self.ptr = NULL
 
-    def __init__(self, str filename, SignalInfo signal = None, EncodingInfo encoding = None):
-        """Opens a decoding session for a file. Returned handle must be closed with sox_close().
+    def __init__(self, str filename, SignalInfo signal = None, EncodingInfo encoding = None, mode: str = 'r'):
+        """Opens a file for reading or writing.
         
-        returns The handle for the new session, or null on failure.
+        Args:
+            filename: Path to the file
+            signal: Signal information (required for writing)
+            encoding: Encoding information (optional)
+            mode: 'r' for reading, 'w' for writing
         """
-        self.ptr = sox_open_read(
-            filename.encode(), 
-            signal.ptr if signal else NULL,
-            encoding.ptr if encoding else NULL,
-            NULL
-        )
+        if mode == 'r':
+            self.ptr = sox_open_read(
+                filename.encode(), 
+                signal.ptr if signal else NULL,
+                encoding.ptr if encoding else NULL,
+                NULL
+            )
+        elif mode == 'w':
+            if signal is None:
+                raise ValueError("Signal information is required for writing")
+            self.ptr = sox_open_write(
+                filename.encode(),
+                signal.ptr,
+                encoding.ptr if encoding else NULL,
+                NULL,
+                NULL,
+                NULL  # No overwrite callback for now
+            )
+        else:
+            raise ValueError("Mode must be 'r' or 'w'")
+            
         if self.ptr is NULL:
-            raise MemoryError
+            raise MemoryError(f"Failed to open file {filename} in mode {mode}")
 
+        self.owner = True
 
     @staticmethod
     cdef Format from_ptr(sox_format_t* ptr, bint owner=False):
@@ -866,6 +886,51 @@ cdef class Format:
         wrapper.ptr = ptr
         wrapper.owner = owner
         return wrapper
+
+    def read(self, length: int) -> list:
+        """Read samples from the file."""
+        cdef size_t samples_read = 0
+        cdef sox_sample_t* buffer = <sox_sample_t*>malloc(length * sizeof(sox_sample_t))
+        if buffer == NULL:
+            raise MemoryError("Failed to allocate read buffer")
+        
+        try:
+            samples_read = sox_read(self.ptr, buffer, length)
+            result = []
+            for i in range(samples_read):
+                result.append(buffer[i])
+            return result
+        finally:
+            free(buffer)
+
+    def write(self, samples: list) -> int:
+        """Write samples to the file."""
+        cdef size_t length = len(samples)
+        cdef sox_sample_t* buffer = <sox_sample_t*>malloc(length * sizeof(sox_sample_t))
+        if buffer == NULL:
+            raise MemoryError("Failed to allocate write buffer")
+        
+        try:
+            for i in range(length):
+                buffer[i] = samples[i]
+            return <int>sox_write(self.ptr, buffer, length)
+        finally:
+            free(buffer)
+
+    def seek(self, offset: int, whence: int = SOX_SEEK_SET) -> int:
+        """Seek to a specific sample position."""
+        cdef int result = sox_seek(self.ptr, offset, whence)
+        if result != SOX_SUCCESS:
+            raise RuntimeError(f"Failed to seek: {strerror(result)}")
+        return result
+
+    def close(self) -> int:
+        """Close the file."""
+        cdef int result = sox_close(self.ptr)
+        if result != SOX_SUCCESS:
+            raise RuntimeError(f"Failed to close: {strerror(result)}")
+        self.ptr = NULL
+        return result
 
     @property
     def filename(self) -> str:
@@ -881,7 +946,54 @@ cdef class Format:
 
     @property
     def filetype(self) -> str:
+        if self.ptr.filetype == NULL:
+            return None
         return self.ptr.filetype.decode()
+
+    @property
+    def seekable(self) -> bool:
+        """Can seek on this file"""
+        return self.ptr.seekable
+
+    @property
+    def mode(self) -> str:
+        """Read or write mode ('r' or 'w')"""
+        return chr(self.ptr.mode)
+
+    @property
+    def olength(self) -> int:
+        """Samples * chans written to file"""
+        return self.ptr.olength
+
+    @property
+    def clips(self) -> int:
+        """Incremented if clipping occurs"""
+        return self.ptr.clips
+
+    @property
+    def sox_errno(self) -> int:
+        """Failure error code"""
+        return self.ptr.sox_errno
+
+    @property
+    def sox_errstr(self) -> str:
+        """Failure error text"""
+        return self.ptr.sox_errstr.decode()
+
+    @property
+    def io_type(self) -> int:
+        """Stores whether this is a file, pipe or URL"""
+        return self.ptr.io_type
+
+    @property
+    def tell_off(self) -> int:
+        """Current offset within file"""
+        return self.ptr.tell_off
+
+    @property
+    def data_start(self) -> int:
+        """Offset at which headers end and sound data begins"""
+        return self.ptr.data_start
 
 
 cdef class FormatHandler:
@@ -1055,11 +1167,19 @@ cdef class Effect:
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
-            free(self.ptr)
+            sox_delete_effect(self.ptr)
             self.ptr = NULL
 
-    def __init__(self):
-        self.ptr = <sox_effect_t*>malloc(sizeof(sox_effect_t))
+    def __init__(self, handler: EffectHandler = None):
+        """Initialize an effect with an optional handler."""
+        if handler is not None:
+            self.ptr = sox_create_effect(handler.ptr)
+            if self.ptr == NULL:
+                raise MemoryError("Failed to create effect")
+        else:
+            self.ptr = <sox_effect_t*>malloc(sizeof(sox_effect_t))
+            if self.ptr == NULL:
+                raise MemoryError("Failed to allocate effect")
         self.owner = True
 
     @staticmethod
@@ -1068,6 +1188,37 @@ cdef class Effect:
         wrapper.ptr = ptr
         wrapper.owner = owner
         return wrapper
+
+    def set_options(self, options: list):
+        """Applies the command-line options to the effect. Returns the number of arguments consumed."""
+        cdef int argc = len(options)
+        cdef char** argv = <char**>malloc(argc * sizeof(char*))
+        if argv == NULL:
+            raise MemoryError("Failed to allocate argument array")
+        
+        try:
+            for i in range(argc):
+                argv[i] = <bytes>options[i]
+            return sox_effect_options(self.ptr, argc, argv)
+        finally:
+            free(argv)
+
+    def stop(self) -> int:
+        """Shuts down an effect (calls stop on each of its flows). Returns the number of clips from all flows."""
+        if self.ptr == NULL:
+            return 0
+        return <int>sox_stop_effect(self.ptr)
+
+    def trim_get_start(self) -> int:
+        """Gets the sample offset of the start of the trim."""
+        if self.ptr == NULL:
+            return 0
+        return <int>sox_trim_get_start(self.ptr)
+
+    def trim_clear_start(self):
+        """Clears the start of the trim to 0."""
+        if self.ptr != NULL:
+            sox_trim_clear_start(self.ptr)
 
     @property
     def global_info(self):
@@ -1138,11 +1289,15 @@ cdef class EffectsChain:
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
-            free(self.ptr)
+            sox_delete_effects_chain(self.ptr)
             self.ptr = NULL
 
-    def __init__(self):
-        self.ptr = <sox_effects_chain_t*>malloc(sizeof(sox_effects_chain_t))
+    def __init__(self, in_encoding: EncodingInfo = None, out_encoding: EncodingInfo = None):
+        """Initialize an effects chain with optional input and output encodings."""
+        self.ptr = sox_create_effects_chain(in_encoding.ptr if in_encoding else NULL,
+                                           out_encoding.ptr if out_encoding else NULL)
+        if self.ptr == NULL:
+            raise MemoryError("Failed to create effects chain")
         self.owner = True
 
     @staticmethod
@@ -1151,6 +1306,54 @@ cdef class EffectsChain:
         wrapper.ptr = ptr
         wrapper.owner = owner
         return wrapper
+
+    def add_effect(self, effect: Effect, in_signal: SignalInfo, out_signal: SignalInfo):
+        """Adds an effect to the effects chain."""
+        cdef int result = sox_add_effect(self.ptr, effect.ptr, in_signal.ptr, out_signal.ptr)
+        if result != SOX_SUCCESS:
+            raise RuntimeError(f"Failed to add effect to chain: {strerror(result)}")
+        return result
+
+    def flow_effects(self, callback=None, client_data=None):
+        """Runs the effects chain."""
+        cdef int result
+        if callback is not None:
+            # TODO: Implement callback support
+            result = sox_flow_effects(self.ptr, NULL, NULL)
+        else:
+            result = sox_flow_effects(self.ptr, NULL, NULL)
+        if result != SOX_SUCCESS:
+            raise RuntimeError(f"Failed to flow effects: {strerror(result)}")
+        return result
+
+    def get_clips(self) -> int:
+        """Gets the number of clips that occurred while running the effects chain."""
+        return <int>sox_effects_clips(self.ptr)
+
+    def push_effect_last(self, effect: Effect):
+        """Adds an already-initialized effect to the end of the chain."""
+        if self.ptr != NULL and effect.ptr != NULL:
+            sox_push_effect_last(self.ptr, effect.ptr)
+
+    def pop_effect_last(self):
+        """Removes and returns an effect from the end of the chain. Returns None if no effects."""
+        cdef sox_effect_t* effect
+        if self.ptr == NULL:
+            return None
+        effect = sox_pop_effect_last(self.ptr)
+        if effect == NULL:
+            return None
+        return Effect.from_ptr(effect, True)
+
+    def delete_effect_last(self):
+        """Shut down and delete the last effect in the chain."""
+        if self.ptr != NULL:
+            sox_delete_effect_last(self.ptr)
+
+    def delete_effects(self):
+        """Shut down and delete all effects in the chain."""
+        if self.ptr != NULL:
+            sox_delete_effects(self.ptr)
 
     @property
     def effects(self) -> list:
@@ -1346,11 +1549,447 @@ def format_supports_encoding(str path, EncodingInfo encoding) -> bool:
     """Returns true if the format handler for the specified file type supports the specified encoding."""
     return <bint>sox_format_supports_encoding(path.encode(), NULL, encoding.ptr)
 
+def open_mem_read(buffer: bytes, signal: SignalInfo = None, encoding: EncodingInfo = None, filetype: str = None):
+    """Opens a decoding session for a memory buffer. Returns a Format object or raises MemoryError."""
+    cdef sox_format_t* fmt
+    cdef char* filetype_c = NULL
+    if filetype is not None:
+        filetype_c = <bytes>filetype
+    fmt = sox_open_mem_read(<void*>buffer, len(buffer),
+                            signal.ptr if signal else NULL,
+                            encoding.ptr if encoding else NULL,
+                            filetype_c)
+    if fmt == NULL:
+        raise MemoryError("Failed to open memory buffer for reading")
+    return Format.from_ptr(fmt, True)
 
 
+def open_mem_write(buffer: bytearray, signal: SignalInfo, encoding: EncodingInfo, filetype: str = None, oob: OutOfBand = None):
+    """Opens an encoding session for a memory buffer. Returns a Format object or raises MemoryError."""
+    cdef sox_format_t* fmt
+    cdef char* filetype_c = NULL
+    if filetype is not None:
+        filetype_c = <bytes>filetype
+    fmt = sox_open_mem_write(<void*>buffer, len(buffer),
+                             signal.ptr,
+                             encoding.ptr,
+                             filetype_c,
+                             oob.ptr if oob else NULL)
+    if fmt == NULL:
+        raise MemoryError("Failed to open memory buffer for writing")
+    return Format.from_ptr(fmt, True)
 
 
+def open_memstream_write(signal: SignalInfo, encoding: EncodingInfo, filetype: str = None, oob: OutOfBand = None):
+    """Opens an encoding session for a memstream buffer. Returns (Format, buffer_ptr, buffer_size_ptr) or raises MemoryError."""
+    cdef sox_format_t* fmt
+    cdef char* filetype_c = NULL
+    cdef char* buffer_ptr = NULL
+    cdef size_t buffer_size = 0
+    if filetype is not None:
+        filetype_c = <bytes>filetype
+    fmt = sox_open_memstream_write(&buffer_ptr, &buffer_size,
+                                   signal.ptr,
+                                   encoding.ptr,
+                                   filetype_c,
+                                   oob.ptr if oob else NULL)
+    if fmt == NULL:
+        raise MemoryError("Failed to open memstream for writing")
+    return Format.from_ptr(fmt, True), buffer_ptr, buffer_size
 
+
+def create_effects_chain(in_encoding: EncodingInfo = None, out_encoding: EncodingInfo = None):
+    """Initializes an effects chain. Returns an EffectsChain object or raises MemoryError."""
+    cdef sox_effects_chain_t* chain
+    chain = sox_create_effects_chain(in_encoding.ptr if in_encoding else NULL,
+                                    out_encoding.ptr if out_encoding else NULL)
+    if chain == NULL:
+        raise MemoryError("Failed to create effects chain")
+    return EffectsChain.from_ptr(chain, True)
+
+
+def delete_effects_chain(chain: EffectsChain):
+    """Closes an effects chain."""
+    if chain.ptr != NULL:
+        sox_delete_effects_chain(chain.ptr)
+        chain.ptr = NULL
+
+
+def add_effect(chain: EffectsChain, effect: Effect, in_signal: SignalInfo, out_signal: SignalInfo):
+    """Adds an effect to the effects chain. Returns SOX_SUCCESS if successful."""
+    cdef int result = sox_add_effect(chain.ptr, effect.ptr, in_signal.ptr, out_signal.ptr)
+    if result != SOX_SUCCESS:
+        raise RuntimeError(f"Failed to add effect to chain: {strerror(result)}")
+    return result
+
+
+def flow_effects(chain: EffectsChain, callback=None, client_data=None):
+    """Runs the effects chain. Returns SOX_SUCCESS if successful."""
+    cdef int result
+    if callback is not None:
+        # TODO: Implement callback support
+        result = sox_flow_effects(chain.ptr, NULL, NULL)
+    else:
+        result = sox_flow_effects(chain.ptr, NULL, NULL)
+    if result != SOX_SUCCESS:
+        raise RuntimeError(f"Failed to flow effects: {strerror(result)}")
+    return result
+
+
+def effects_clips(chain: EffectsChain) -> int:
+    """Gets the number of clips that occurred while running an effects chain."""
+    return <int>sox_effects_clips(chain.ptr)
+
+
+def create_effect(handler: EffectHandler):
+    """Creates an effect using the given handler. Returns an Effect object or raises MemoryError."""
+    cdef sox_effect_t* effect
+    effect = sox_create_effect(handler.ptr)
+    if effect == NULL:
+        raise MemoryError("Failed to create effect")
+    return Effect.from_ptr(effect, True)
+
+
+def effect_options(effect: Effect, options: list):
+    """Applies the command-line options to the effect. Returns the number of arguments consumed."""
+    cdef int argc = len(options)
+    cdef char** argv = <char**>malloc(argc * sizeof(char*))
+    if argv == NULL:
+        raise MemoryError("Failed to allocate argument array")
+    
+    try:
+        for i in range(argc):
+            argv[i] = <bytes>options[i]
+        return sox_effect_options(effect.ptr, argc, argv)
+    finally:
+        free(argv)
+
+
+def delete_effect(effect: Effect):
+    """Shut down and delete an effect."""
+    if effect.ptr != NULL:
+        sox_delete_effect(effect.ptr)
+        effect.ptr = NULL
+
+
+def delete_effect_last(chain: EffectsChain):
+    """Shut down and delete the last effect in the chain."""
+    if chain.ptr != NULL:
+        sox_delete_effect_last(chain.ptr)
+
+
+def delete_effects(chain: EffectsChain):
+    """Shut down and delete all effects in the chain."""
+    if chain.ptr != NULL:
+        sox_delete_effects(chain.ptr)
+
+
+def push_effect_last(chain: EffectsChain, effect: Effect):
+    """Adds an already-initialized effect to the end of the chain."""
+    if chain.ptr != NULL and effect.ptr != NULL:
+        sox_push_effect_last(chain.ptr, effect.ptr)
+
+
+def pop_effect_last(chain: EffectsChain):
+    """Removes and returns an effect from the end of the chain. Returns None if no effects."""
+    cdef sox_effect_t* effect
+    if chain.ptr == NULL:
+        return None
+    effect = sox_pop_effect_last(chain.ptr)
+    if effect == NULL:
+        return None
+    return Effect.from_ptr(effect, True)
+
+
+def stop_effect(effect: Effect) -> int:
+    """Shuts down an effect (calls stop on each of its flows). Returns the number of clips from all flows."""
+    if effect.ptr == NULL:
+        return 0
+    return <int>sox_stop_effect(effect.ptr)
+
+
+def trim_get_start(effect: Effect) -> int:
+    """Gets the sample offset of the start of the trim."""
+    if effect.ptr == NULL:
+        return 0
+    return <int>sox_trim_get_start(effect.ptr)
+
+
+def trim_clear_start(effect: Effect):
+    """Clears the start of the trim to 0."""
+    if effect.ptr != NULL:
+        sox_trim_clear_start(effect.ptr)
+
+
+def get_format_fns():
+    """Returns the table of format handler names and functions."""
+    cdef const sox_format_tab_t* format_fns = sox_get_format_fns()
+    if format_fns == NULL:
+        return []
+    
+    result = []
+    cdef int i = 0
+    while format_fns[i].name != NULL:
+        result.append({
+            'name': format_fns[i].name.decode(),
+            'fn': None  # Function pointers can't be easily exposed to Python
+        })
+        i += 1
+    return result
+
+
+def get_effect_fns():
+    """Returns an array containing the known effect handlers."""
+    cdef const sox_effect_fn_t* effect_fns = sox_get_effect_fns()
+    if effect_fns == NULL:
+        return []
+    
+    result = []
+    cdef int i = 0
+    while effect_fns[i] != NULL:
+        # Note: We can't easily call the function pointer from Python
+        # This is mainly for enumeration purposes
+        result.append(i)
+        i += 1
+    return result
+
+
+# cdef int playlist_callback(void * callback, char * filename) noexcept:
+#     return SOX_SUCCESS
+
+
+# def parse_playlist(callback, listname: str):
+#     """Parses the specified playlist file."""
+#     cdef int result
+#     cdef bytes listname_bytes = listname.encode()
+    
+#     result = sox_parse_playlist(playlist_callback, NULL, listname_bytes)
+#     if result != SOX_SUCCESS:
+#         raise RuntimeError(f"Failed to parse playlist: {strerror(result)}")
+#     return result
+
+
+# Add error code constants
+# ERROR_CODES = {
+#     'SOX_SUCCESS': SOX_SUCCESS,
+#     'SOX_EOF': SOX_EOF,
+#     'SOX_EHDR': SOX_EHDR,
+#     'SOX_EFMT': SOX_EFMT,
+#     'SOX_ENOMEM': SOX_ENOMEM,
+#     'SOX_EPERM': SOX_EPERM,
+#     'SOX_ENOTSUP': SOX_ENOTSUP,
+#     'SOX_EINVAL': SOX_EINVAL,
+# }
+
+# Sample conversion utility functions
+# def sample_to_unsigned(bits: int, sample: int, clips: int) -> int:
+#     """Converts sox_sample_t to an unsigned integer of width (bits).
+
+#     bits    Width of resulting sample (1 through 32).
+#     sample  Input sample to be converted.
+#     clips   Variable that is incremented if the result is too big.
+#     returns Unsigned integer of width (bits).
+#     """
+#     return SOX_SAMPLE_TO_UNSIGNED(bits, sample, clips)
+
+# def sample_to_signed(bits: int, sample: int, clips: int) -> int:
+#     """Converts sox_sample_t to a signed integer of width (bits).
+
+#     bits    Width of resulting sample (1 through 32).
+#     sample  Input sample to be converted.
+#     clips   Variable that is incremented if the result is too big.
+#     returns Signed integer of width (bits).        
+#     """
+#     return SOX_SAMPLE_TO_SIGNED(bits, sample, clips)
+
+# def signed_to_sample(bits: int, value: int) -> int:
+#     """Converts signed integer of width (bits) to sox_sample_t.
+    
+#     bits    Width of input sample (1 through 32).
+#     sample  Input sample to be converted.
+#     returns SoX native sample value.    
+#     """
+#     return SOX_SIGNED_TO_SAMPLE(bits, value)
+
+# def unsigned_to_sample(bits: int, value: int) -> int:
+#     """Converts unsigned integer of width (bits) to sox_sample_t.
+    
+#     bits    Width of input sample (1 through 32).
+#     sample  Input sample to be converted.
+#     returns SoX native sample value.
+#     """
+#     return SOX_UNSIGNED_TO_SAMPLE(bits, value)
+
+# def unsigned_8bit_to_sample(value: int, clips: int) -> int:
+#     """Convert 8-bit unsigned value to sample."""
+#     return SOX_UNSIGNED_8BIT_TO_SAMPLE(value, clips)
+
+# def signed_8bit_to_sample(value: int, clips: int) -> int:
+#     """Convert 8-bit signed value to sample."""
+#     return SOX_SIGNED_8BIT_TO_SAMPLE(value, clips)
+
+# def unsigned_16bit_to_sample(value: int, clips: int) -> int:
+#     """Convert 16-bit unsigned value to sample."""
+#     return SOX_UNSIGNED_16BIT_TO_SAMPLE(value, clips)
+
+# def signed_16bit_to_sample(value: int, clips: int) -> int:
+#     """Convert 16-bit signed value to sample."""
+#     return SOX_SIGNED_16BIT_TO_SAMPLE(value, clips)
+
+# def unsigned_24bit_to_sample(value: int, clips: int) -> int:
+#     """Convert 24-bit unsigned value to sample."""
+#     return SOX_UNSIGNED_24BIT_TO_SAMPLE(value, clips)
+
+# def signed_24bit_to_sample(value: int, clips: int) -> int:
+#     """Convert 24-bit signed value to sample."""
+#     return SOX_SIGNED_24BIT_TO_SAMPLE(value, clips)
+
+# def unsigned_32bit_to_sample(value: int, clips: int) -> int:
+#     """Convert 32-bit unsigned value to sample."""
+#     return SOX_UNSIGNED_32BIT_TO_SAMPLE(value, clips)
+
+# def signed_32bit_to_sample(value: int, clips: int) -> int:
+#     """Convert 32-bit signed value to sample."""
+#     return SOX_SIGNED_32BIT_TO_SAMPLE(value, clips)
+
+# def float_32bit_to_sample(value: float, clips: int) -> int:
+#     """Convert 32-bit float value to sample."""
+#     return SOX_FLOAT_32BIT_TO_SAMPLE(value, clips)
+
+# def float_64bit_to_sample(value: float, clips: int) -> int:
+#     """Convert 64-bit float value to sample."""
+#     return SOX_FLOAT_64BIT_TO_SAMPLE(value, clips)
+
+# def sample_to_unsigned_8bit(sample: int, clips: int) -> int:
+#     """Convert sample to 8-bit unsigned value."""
+#     return SOX_SAMPLE_TO_UNSIGNED_8BIT(sample, clips)
+
+# def sample_to_signed_8bit(sample: int, clips: int) -> int:
+#     """Convert sample to 8-bit signed value."""
+#     return SOX_SAMPLE_TO_SIGNED_8BIT(sample, clips)
+
+# def sample_to_unsigned_16bit(sample: int, clips: int) -> int:
+#     """Convert sample to 16-bit unsigned value."""
+#     return SOX_SAMPLE_TO_UNSIGNED_16BIT(sample, clips)
+
+# def sample_to_signed_16bit(sample: int, clips: int) -> int:
+#     """Convert sample to 16-bit signed value."""
+#     return SOX_SAMPLE_TO_SIGNED_16BIT(sample, clips)
+
+# def sample_to_unsigned_24bit(sample: int, clips: int) -> int:
+#     """Convert sample to 24-bit unsigned value."""
+#     return SOX_SAMPLE_TO_UNSIGNED_24BIT(sample, clips)
+
+# def sample_to_signed_24bit(sample: int, clips: int) -> int:
+#     """Convert sample to 24-bit signed value."""
+#     return SOX_SAMPLE_TO_SIGNED_24BIT(sample, clips)
+
+# def sample_to_unsigned_32bit(sample: int, clips: int) -> int:
+#     """Convert sample to 32-bit unsigned value."""
+#     return SOX_SAMPLE_TO_UNSIGNED_32BIT(sample, clips)
+
+# def sample_to_signed_32bit(sample: int, clips: int) -> int:
+#     """Convert sample to 32-bit signed value."""
+#     return SOX_SAMPLE_TO_SIGNED_32BIT(sample, clips)
+
+# def sample_to_float_32bit(sample: int, clips: int) -> float:
+#     """Convert sample to 32-bit float value."""
+#     return SOX_SAMPLE_TO_FLOAT_32BIT(sample, clips)
+
+# def sample_to_float_64bit(sample: int, clips: int) -> float:
+#     """Convert sample to 64-bit float value."""
+#     return SOX_SAMPLE_TO_FLOAT_64BIT(sample, clips)
+
+# # Clip counting utility functions
+# def sample_clip_count(sample: int, clips: int) -> int:
+#     """Get clip count for sample."""
+#     return SOX_SAMPLE_CLIP_COUNT(sample, clips)
+
+# # def round_clip_count(value: float, clips: int) -> int:
+# #     """Get clip count for rounded value."""
+# #     return SOX_ROUND_CLIP_COUNT(value, clips)
+
+# def integer_clip_count(value: int, clips: int) -> int:
+#     """Get clip count for integer value."""
+#     return SOX_INTEGER_CLIP_COUNT(value, clips)
+
+# def clip_count_16bit(value: int, clips: int) -> int:
+#     """Get clip count for 16-bit value."""
+#     return SOX_16BIT_CLIP_COUNT(value, clips)
+
+# def clip_count_24bit(value: int, clips: int) -> int:
+#     """Get clip count for 24-bit value."""
+#     return SOX_24BIT_CLIP_COUNT(value, clips)
+
+# # Utility functions for integer limits
+# def int_min(bits: int) -> int:
+#     """Get minimum value for given bit depth."""
+#     return SOX_INT_MIN(bits)
+
+# def int_max(bits: int) -> int:
+#     """Get maximum value for given bit depth."""
+#     return SOX_INT_MAX(bits)
+
+# def uint_max(bits: int) -> int:
+#     """Get maximum unsigned value for given bit depth."""
+#     return SOX_UINT_MAX(bits)
+
+# # Version utility functions
+# def lib_version(a: int, b: int, c: int) -> int:
+#     """Compute a 32-bit integer API version from three 8-bit parts."""
+#     return SOX_LIB_VERSION(a, b, c)
+
+# def lib_version_code() -> int:
+#     """Get the current libSoX version code."""
+#     return SOX_LIB_VERSION_CODE()
+
+def read_samples(format: Format, buffer: list, length: int) -> int:
+    """Reads samples from a decoding session into a sample buffer."""
+    cdef size_t samples_read = 0
+    cdef sox_sample_t* sample_buffer = <sox_sample_t*>malloc(length * sizeof(sox_sample_t))
+    if sample_buffer == NULL:
+        raise MemoryError("Failed to allocate sample buffer")
+    
+    try:
+        samples_read = sox_read(format.ptr, sample_buffer, length)
+        # Convert C samples to Python list
+        for i in range(samples_read):
+            buffer.append(sample_buffer[i])
+        return <int>samples_read
+    finally:
+        free(sample_buffer)
+
+
+def write_samples(format: Format, samples: list) -> int:
+    """Writes samples to an encoding session from a sample buffer."""
+    cdef size_t length = len(samples)
+    cdef sox_sample_t* sample_buffer = <sox_sample_t*>malloc(length * sizeof(sox_sample_t))
+    if sample_buffer == NULL:
+        raise MemoryError("Failed to allocate sample buffer")
+    
+    try:
+        # Convert Python list to C samples
+        for i in range(length):
+            sample_buffer[i] = samples[i]
+        return <int>sox_write(format.ptr, sample_buffer, length)
+    finally:
+        free(sample_buffer)
+
+
+def seek_samples(format: Format, offset: int, whence: int = SOX_SEEK_SET) -> int:
+    """Sets the location at which next samples will be decoded."""
+    cdef int result = sox_seek(format.ptr, offset, whence)
+    if result != SOX_SUCCESS:
+        raise RuntimeError(f"Failed to seek: {strerror(result)}")
+    return result
+
+
+def close_format(format: Format) -> int:
+    """Closes an encoding or decoding session."""
+    cdef int result = sox_close(format.ptr)
+    if result != SOX_SUCCESS:
+        raise RuntimeError(f"Failed to close format: {strerror(result)}")
+    return result
 
 
 
