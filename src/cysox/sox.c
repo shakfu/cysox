@@ -3055,16 +3055,16 @@ static CYTHON_INLINE int __Pyx_PyLong_As_int(PyObject *);
 static CYTHON_INLINE sox_uint64_t __Pyx_PyLong_As_sox_uint64_t(PyObject *);
 
 /* CIntFromPy.proto */
-static CYTHON_INLINE sox_encoding_t __Pyx_PyLong_As_sox_encoding_t(PyObject *);
+static CYTHON_INLINE enum sox_encoding_t __Pyx_PyLong_As_enum__sox_encoding_t(PyObject *);
 
 /* CIntFromPy.proto */
 static CYTHON_INLINE unsigned int __Pyx_PyLong_As_unsigned_int(PyObject *);
 
 /* CIntFromPy.proto */
-static CYTHON_INLINE sox_option_t __Pyx_PyLong_As_sox_option_t(PyObject *);
+static CYTHON_INLINE enum sox_option_t __Pyx_PyLong_As_enum__sox_option_t(PyObject *);
 
 /* CIntFromPy.proto */
-static CYTHON_INLINE sox_bool __Pyx_PyLong_As_sox_bool(PyObject *);
+static CYTHON_INLINE enum sox_bool __Pyx_PyLong_As_enum__sox_bool(PyObject *);
 
 /* CIntFromPy.proto */
 static CYTHON_INLINE unsigned char __Pyx_PyLong_As_unsigned_char(PyObject *);
@@ -3079,19 +3079,19 @@ static CYTHON_INLINE size_t __Pyx_PyLong_As_size_t(PyObject *);
 static CYTHON_INLINE sox_int32_t __Pyx_PyLong_As_sox_int32_t(PyObject *);
 
 /* CIntFromPy.proto */
-static CYTHON_INLINE sox_plot_t __Pyx_PyLong_As_sox_plot_t(PyObject *);
+static CYTHON_INLINE enum sox_plot_t __Pyx_PyLong_As_enum__sox_plot_t(PyObject *);
 
 /* CIntToPy.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyLong_From_unsigned_int(unsigned int value);
 
 /* CIntToPy.proto */
-static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_encoding_t(sox_encoding_t value);
+static CYTHON_INLINE PyObject* __Pyx_PyLong_From_enum__sox_encoding_t(enum sox_encoding_t value);
 
 /* CIntToPy.proto */
-static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_option_t(sox_option_t value);
+static CYTHON_INLINE PyObject* __Pyx_PyLong_From_enum__sox_option_t(enum sox_option_t value);
 
 /* CIntToPy.proto */
-static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_bool(sox_bool value);
+static CYTHON_INLINE PyObject* __Pyx_PyLong_From_enum__sox_bool(enum sox_bool value);
 
 /* CIntToPy.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyLong_From_unsigned_char(unsigned char value);
@@ -3103,7 +3103,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_signed_char(signed char value);
 static CYTHON_INLINE long __Pyx_PyLong_As_long(PyObject *);
 
 /* CIntToPy.proto */
-static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_version_flags_t(sox_version_flags_t value);
+static CYTHON_INLINE PyObject* __Pyx_PyLong_From_enum__sox_version_flags_t(enum sox_version_flags_t value);
 
 /* CIntToPy.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_uint32_t(sox_uint32_t value);
@@ -3112,13 +3112,13 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_uint32_t(sox_uint32_t value
 static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_int32_t(sox_int32_t value);
 
 /* CIntToPy.proto */
-static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_plot_t(sox_plot_t value);
+static CYTHON_INLINE PyObject* __Pyx_PyLong_From_enum__sox_plot_t(enum sox_plot_t value);
 
 /* CIntToPy.proto */
-static CYTHON_INLINE PyObject* __Pyx_PyLong_From_lsx_io_type(lsx_io_type value);
+static CYTHON_INLINE PyObject* __Pyx_PyLong_From_enum__lsx_io_type(enum lsx_io_type value);
 
 /* CIntToPy.proto */
-static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_encodings_flags_t(sox_encodings_flags_t value);
+static CYTHON_INLINE PyObject* __Pyx_PyLong_From_enum__sox_encodings_flags_t(enum sox_encodings_flags_t value);
 
 /* FormatTypeName.proto */
 #if CYTHON_COMPILING_IN_LIMITED_API
@@ -3737,19 +3737,19 @@ static int __pyx_pf_5cysox_3sox_12EncodingInfo___cinit__(struct __pyx_obj_5cysox
 static void __pyx_pf_5cysox_3sox_12EncodingInfo_2__dealloc__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self); /* proto */
 static int __pyx_pf_5cysox_3sox_12EncodingInfo_4__init__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, PyObject *__pyx_v_encoding, PyObject *__pyx_v_bits_per_sample, double __pyx_v_compression, PyObject *__pyx_v_reverse_bytes, PyObject *__pyx_v_reverse_nibbles, PyObject *__pyx_v_reverse_bits, PyObject *__pyx_v_opposite_endian); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_8encoding___get__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self); /* proto */
-static int __pyx_pf_5cysox_3sox_12EncodingInfo_8encoding_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, sox_encoding_t __pyx_v_value); /* proto */
+static int __pyx_pf_5cysox_3sox_12EncodingInfo_8encoding_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, enum sox_encoding_t __pyx_v_value); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_15bits_per_sample___get__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self); /* proto */
 static int __pyx_pf_5cysox_3sox_12EncodingInfo_15bits_per_sample_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, unsigned int __pyx_v_value); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_11compression___get__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self); /* proto */
 static int __pyx_pf_5cysox_3sox_12EncodingInfo_11compression_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, double __pyx_v_value); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_13reverse_bytes___get__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self); /* proto */
-static int __pyx_pf_5cysox_3sox_12EncodingInfo_13reverse_bytes_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, sox_option_t __pyx_v_value); /* proto */
+static int __pyx_pf_5cysox_3sox_12EncodingInfo_13reverse_bytes_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, enum sox_option_t __pyx_v_value); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_15reverse_nibbles___get__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self); /* proto */
-static int __pyx_pf_5cysox_3sox_12EncodingInfo_15reverse_nibbles_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, sox_option_t __pyx_v_value); /* proto */
+static int __pyx_pf_5cysox_3sox_12EncodingInfo_15reverse_nibbles_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, enum sox_option_t __pyx_v_value); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_12reverse_bits___get__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self); /* proto */
-static int __pyx_pf_5cysox_3sox_12EncodingInfo_12reverse_bits_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, sox_option_t __pyx_v_value); /* proto */
+static int __pyx_pf_5cysox_3sox_12EncodingInfo_12reverse_bits_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, enum sox_option_t __pyx_v_value); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_15opposite_endian___get__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self); /* proto */
-static int __pyx_pf_5cysox_3sox_12EncodingInfo_15opposite_endian_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, sox_bool __pyx_v_value); /* proto */
+static int __pyx_pf_5cysox_3sox_12EncodingInfo_15opposite_endian_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, enum sox_bool __pyx_v_value); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_6__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_8__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
 static int __pyx_pf_5cysox_3sox_8LoopInfo___cinit__(struct __pyx_obj_5cysox_3sox_LoopInfo *__pyx_v_self); /* proto */
@@ -3823,7 +3823,7 @@ static void __pyx_pf_5cysox_3sox_7Globals_2__dealloc__(struct __pyx_obj_5cysox_3
 static PyObject *__pyx_pf_5cysox_3sox_7Globals_9verbosity___get__(struct __pyx_obj_5cysox_3sox_Globals *__pyx_v_self); /* proto */
 static int __pyx_pf_5cysox_3sox_7Globals_9verbosity_2__set__(struct __pyx_obj_5cysox_3sox_Globals *__pyx_v_self, unsigned int __pyx_v_value); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_7Globals_10repeatable___get__(struct __pyx_obj_5cysox_3sox_Globals *__pyx_v_self); /* proto */
-static int __pyx_pf_5cysox_3sox_7Globals_10repeatable_2__set__(struct __pyx_obj_5cysox_3sox_Globals *__pyx_v_self, sox_bool __pyx_v_value); /* proto */
+static int __pyx_pf_5cysox_3sox_7Globals_10repeatable_2__set__(struct __pyx_obj_5cysox_3sox_Globals *__pyx_v_self, enum sox_bool __pyx_v_value); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_7Globals_6bufsiz___get__(struct __pyx_obj_5cysox_3sox_Globals *__pyx_v_self); /* proto */
 static int __pyx_pf_5cysox_3sox_7Globals_6bufsiz_2__set__(struct __pyx_obj_5cysox_3sox_Globals *__pyx_v_self, size_t __pyx_v_value); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_7Globals_12input_bufsiz___get__(struct __pyx_obj_5cysox_3sox_Globals *__pyx_v_self); /* proto */
@@ -3842,7 +3842,7 @@ static PyObject *__pyx_pf_5cysox_3sox_7Globals_6__setstate_cython__(CYTHON_UNUSE
 static int __pyx_pf_5cysox_3sox_14EffectsGlobals___cinit__(struct __pyx_obj_5cysox_3sox_EffectsGlobals *__pyx_v_self); /* proto */
 static void __pyx_pf_5cysox_3sox_14EffectsGlobals_2__dealloc__(struct __pyx_obj_5cysox_3sox_EffectsGlobals *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_14EffectsGlobals_4plot___get__(struct __pyx_obj_5cysox_3sox_EffectsGlobals *__pyx_v_self); /* proto */
-static int __pyx_pf_5cysox_3sox_14EffectsGlobals_4plot_2__set__(struct __pyx_obj_5cysox_3sox_EffectsGlobals *__pyx_v_self, sox_plot_t __pyx_v_value); /* proto */
+static int __pyx_pf_5cysox_3sox_14EffectsGlobals_4plot_2__set__(struct __pyx_obj_5cysox_3sox_EffectsGlobals *__pyx_v_self, enum sox_plot_t __pyx_v_value); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_14EffectsGlobals_11global_info___get__(struct __pyx_obj_5cysox_3sox_EffectsGlobals *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_14EffectsGlobals_4__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5cysox_3sox_EffectsGlobals *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_5cysox_3sox_14EffectsGlobals_6__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5cysox_3sox_EffectsGlobals *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
@@ -7172,7 +7172,7 @@ static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_8encoding___get__(struct __
  *     @encoding.setter
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_sox_encoding_t(__pyx_v_self->ptr->encoding); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 256, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_enum__sox_encoding_t(__pyx_v_self->ptr->encoding); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 256, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -7208,7 +7208,7 @@ static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_8encoding___get__(struct __
 /* Python wrapper */
 static int __pyx_pw_5cysox_3sox_12EncodingInfo_8encoding_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_arg_value); /*proto*/
 static int __pyx_pw_5cysox_3sox_12EncodingInfo_8encoding_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_arg_value) {
-  sox_encoding_t __pyx_v_value;
+  enum sox_encoding_t __pyx_v_value;
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -7218,7 +7218,7 @@ static int __pyx_pw_5cysox_3sox_12EncodingInfo_8encoding_3__set__(PyObject *__py
   __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
   __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
   assert(__pyx_arg_value); {
-    __pyx_v_value = ((sox_encoding_t)__Pyx_PyLong_As_sox_encoding_t(__pyx_arg_value)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 259, __pyx_L3_error)
+    __pyx_v_value = ((enum sox_encoding_t)__Pyx_PyLong_As_enum__sox_encoding_t(__pyx_arg_value)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 259, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -7226,14 +7226,14 @@ static int __pyx_pw_5cysox_3sox_12EncodingInfo_8encoding_3__set__(PyObject *__py
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_5cysox_3sox_12EncodingInfo_8encoding_2__set__(((struct __pyx_obj_5cysox_3sox_EncodingInfo *)__pyx_v_self), ((sox_encoding_t)__pyx_v_value));
+  __pyx_r = __pyx_pf_5cysox_3sox_12EncodingInfo_8encoding_2__set__(((struct __pyx_obj_5cysox_3sox_EncodingInfo *)__pyx_v_self), ((enum sox_encoding_t)__pyx_v_value));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static int __pyx_pf_5cysox_3sox_12EncodingInfo_8encoding_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, sox_encoding_t __pyx_v_value) {
+static int __pyx_pf_5cysox_3sox_12EncodingInfo_8encoding_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, enum sox_encoding_t __pyx_v_value) {
   int __pyx_r;
 
   /* "cysox/sox.pyx":260
@@ -7550,7 +7550,7 @@ static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_13reverse_bytes___get__(str
  *     @reverse_bytes.setter
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_sox_option_t(__pyx_v_self->ptr->reverse_bytes); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 283, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_enum__sox_option_t(__pyx_v_self->ptr->reverse_bytes); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 283, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -7586,7 +7586,7 @@ static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_13reverse_bytes___get__(str
 /* Python wrapper */
 static int __pyx_pw_5cysox_3sox_12EncodingInfo_13reverse_bytes_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_arg_value); /*proto*/
 static int __pyx_pw_5cysox_3sox_12EncodingInfo_13reverse_bytes_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_arg_value) {
-  sox_option_t __pyx_v_value;
+  enum sox_option_t __pyx_v_value;
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -7596,7 +7596,7 @@ static int __pyx_pw_5cysox_3sox_12EncodingInfo_13reverse_bytes_3__set__(PyObject
   __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
   __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
   assert(__pyx_arg_value); {
-    __pyx_v_value = ((sox_option_t)__Pyx_PyLong_As_sox_option_t(__pyx_arg_value)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 286, __pyx_L3_error)
+    __pyx_v_value = ((enum sox_option_t)__Pyx_PyLong_As_enum__sox_option_t(__pyx_arg_value)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 286, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -7604,14 +7604,14 @@ static int __pyx_pw_5cysox_3sox_12EncodingInfo_13reverse_bytes_3__set__(PyObject
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_5cysox_3sox_12EncodingInfo_13reverse_bytes_2__set__(((struct __pyx_obj_5cysox_3sox_EncodingInfo *)__pyx_v_self), ((sox_option_t)__pyx_v_value));
+  __pyx_r = __pyx_pf_5cysox_3sox_12EncodingInfo_13reverse_bytes_2__set__(((struct __pyx_obj_5cysox_3sox_EncodingInfo *)__pyx_v_self), ((enum sox_option_t)__pyx_v_value));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static int __pyx_pf_5cysox_3sox_12EncodingInfo_13reverse_bytes_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, sox_option_t __pyx_v_value) {
+static int __pyx_pf_5cysox_3sox_12EncodingInfo_13reverse_bytes_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, enum sox_option_t __pyx_v_value) {
   int __pyx_r;
 
   /* "cysox/sox.pyx":287
@@ -7676,7 +7676,7 @@ static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_15reverse_nibbles___get__(s
  *     @reverse_nibbles.setter
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_sox_option_t(__pyx_v_self->ptr->reverse_nibbles); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 292, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_enum__sox_option_t(__pyx_v_self->ptr->reverse_nibbles); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 292, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -7712,7 +7712,7 @@ static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_15reverse_nibbles___get__(s
 /* Python wrapper */
 static int __pyx_pw_5cysox_3sox_12EncodingInfo_15reverse_nibbles_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_arg_value); /*proto*/
 static int __pyx_pw_5cysox_3sox_12EncodingInfo_15reverse_nibbles_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_arg_value) {
-  sox_option_t __pyx_v_value;
+  enum sox_option_t __pyx_v_value;
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -7722,7 +7722,7 @@ static int __pyx_pw_5cysox_3sox_12EncodingInfo_15reverse_nibbles_3__set__(PyObje
   __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
   __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
   assert(__pyx_arg_value); {
-    __pyx_v_value = ((sox_option_t)__Pyx_PyLong_As_sox_option_t(__pyx_arg_value)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 295, __pyx_L3_error)
+    __pyx_v_value = ((enum sox_option_t)__Pyx_PyLong_As_enum__sox_option_t(__pyx_arg_value)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 295, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -7730,14 +7730,14 @@ static int __pyx_pw_5cysox_3sox_12EncodingInfo_15reverse_nibbles_3__set__(PyObje
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_5cysox_3sox_12EncodingInfo_15reverse_nibbles_2__set__(((struct __pyx_obj_5cysox_3sox_EncodingInfo *)__pyx_v_self), ((sox_option_t)__pyx_v_value));
+  __pyx_r = __pyx_pf_5cysox_3sox_12EncodingInfo_15reverse_nibbles_2__set__(((struct __pyx_obj_5cysox_3sox_EncodingInfo *)__pyx_v_self), ((enum sox_option_t)__pyx_v_value));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static int __pyx_pf_5cysox_3sox_12EncodingInfo_15reverse_nibbles_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, sox_option_t __pyx_v_value) {
+static int __pyx_pf_5cysox_3sox_12EncodingInfo_15reverse_nibbles_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, enum sox_option_t __pyx_v_value) {
   int __pyx_r;
 
   /* "cysox/sox.pyx":296
@@ -7802,7 +7802,7 @@ static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_12reverse_bits___get__(stru
  *     @reverse_bits.setter
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_sox_option_t(__pyx_v_self->ptr->reverse_bits); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 301, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_enum__sox_option_t(__pyx_v_self->ptr->reverse_bits); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 301, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -7838,7 +7838,7 @@ static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_12reverse_bits___get__(stru
 /* Python wrapper */
 static int __pyx_pw_5cysox_3sox_12EncodingInfo_12reverse_bits_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_arg_value); /*proto*/
 static int __pyx_pw_5cysox_3sox_12EncodingInfo_12reverse_bits_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_arg_value) {
-  sox_option_t __pyx_v_value;
+  enum sox_option_t __pyx_v_value;
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -7848,7 +7848,7 @@ static int __pyx_pw_5cysox_3sox_12EncodingInfo_12reverse_bits_3__set__(PyObject 
   __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
   __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
   assert(__pyx_arg_value); {
-    __pyx_v_value = ((sox_option_t)__Pyx_PyLong_As_sox_option_t(__pyx_arg_value)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 304, __pyx_L3_error)
+    __pyx_v_value = ((enum sox_option_t)__Pyx_PyLong_As_enum__sox_option_t(__pyx_arg_value)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 304, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -7856,14 +7856,14 @@ static int __pyx_pw_5cysox_3sox_12EncodingInfo_12reverse_bits_3__set__(PyObject 
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_5cysox_3sox_12EncodingInfo_12reverse_bits_2__set__(((struct __pyx_obj_5cysox_3sox_EncodingInfo *)__pyx_v_self), ((sox_option_t)__pyx_v_value));
+  __pyx_r = __pyx_pf_5cysox_3sox_12EncodingInfo_12reverse_bits_2__set__(((struct __pyx_obj_5cysox_3sox_EncodingInfo *)__pyx_v_self), ((enum sox_option_t)__pyx_v_value));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static int __pyx_pf_5cysox_3sox_12EncodingInfo_12reverse_bits_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, sox_option_t __pyx_v_value) {
+static int __pyx_pf_5cysox_3sox_12EncodingInfo_12reverse_bits_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, enum sox_option_t __pyx_v_value) {
   int __pyx_r;
 
   /* "cysox/sox.pyx":305
@@ -7928,7 +7928,7 @@ static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_15opposite_endian___get__(s
  *     @opposite_endian.setter
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_sox_bool(__pyx_v_self->ptr->opposite_endian); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 310, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_enum__sox_bool(__pyx_v_self->ptr->opposite_endian); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 310, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -7964,7 +7964,7 @@ static PyObject *__pyx_pf_5cysox_3sox_12EncodingInfo_15opposite_endian___get__(s
 /* Python wrapper */
 static int __pyx_pw_5cysox_3sox_12EncodingInfo_15opposite_endian_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_arg_value); /*proto*/
 static int __pyx_pw_5cysox_3sox_12EncodingInfo_15opposite_endian_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_arg_value) {
-  sox_bool __pyx_v_value;
+  enum sox_bool __pyx_v_value;
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -7974,7 +7974,7 @@ static int __pyx_pw_5cysox_3sox_12EncodingInfo_15opposite_endian_3__set__(PyObje
   __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
   __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
   assert(__pyx_arg_value); {
-    __pyx_v_value = ((sox_bool)__Pyx_PyLong_As_sox_bool(__pyx_arg_value)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 313, __pyx_L3_error)
+    __pyx_v_value = ((enum sox_bool)__Pyx_PyLong_As_enum__sox_bool(__pyx_arg_value)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 313, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -7982,14 +7982,14 @@ static int __pyx_pw_5cysox_3sox_12EncodingInfo_15opposite_endian_3__set__(PyObje
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_5cysox_3sox_12EncodingInfo_15opposite_endian_2__set__(((struct __pyx_obj_5cysox_3sox_EncodingInfo *)__pyx_v_self), ((sox_bool)__pyx_v_value));
+  __pyx_r = __pyx_pf_5cysox_3sox_12EncodingInfo_15opposite_endian_2__set__(((struct __pyx_obj_5cysox_3sox_EncodingInfo *)__pyx_v_self), ((enum sox_bool)__pyx_v_value));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static int __pyx_pf_5cysox_3sox_12EncodingInfo_15opposite_endian_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, sox_bool __pyx_v_value) {
+static int __pyx_pf_5cysox_3sox_12EncodingInfo_15opposite_endian_2__set__(struct __pyx_obj_5cysox_3sox_EncodingInfo *__pyx_v_self, enum sox_bool __pyx_v_value) {
   int __pyx_r;
 
   /* "cysox/sox.pyx":314
@@ -13701,7 +13701,7 @@ static PyObject *__pyx_pf_5cysox_3sox_11VersionInfo_5flags___get__(struct __pyx_
  *     @property
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_sox_version_flags_t(__pyx_v_self->ptr->flags); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 649, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_enum__sox_version_flags_t(__pyx_v_self->ptr->flags); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 649, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -15009,7 +15009,7 @@ static PyObject *__pyx_pf_5cysox_3sox_7Globals_10repeatable___get__(struct __pyx
  *     @repeatable.setter
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_sox_bool(__pyx_v_self->ptr->repeatable); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 731, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_enum__sox_bool(__pyx_v_self->ptr->repeatable); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 731, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -15045,7 +15045,7 @@ static PyObject *__pyx_pf_5cysox_3sox_7Globals_10repeatable___get__(struct __pyx
 /* Python wrapper */
 static int __pyx_pw_5cysox_3sox_7Globals_10repeatable_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_arg_value); /*proto*/
 static int __pyx_pw_5cysox_3sox_7Globals_10repeatable_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_arg_value) {
-  sox_bool __pyx_v_value;
+  enum sox_bool __pyx_v_value;
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -15055,7 +15055,7 @@ static int __pyx_pw_5cysox_3sox_7Globals_10repeatable_3__set__(PyObject *__pyx_v
   __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
   __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
   assert(__pyx_arg_value); {
-    __pyx_v_value = ((sox_bool)__Pyx_PyLong_As_sox_bool(__pyx_arg_value)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 734, __pyx_L3_error)
+    __pyx_v_value = ((enum sox_bool)__Pyx_PyLong_As_enum__sox_bool(__pyx_arg_value)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 734, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -15063,14 +15063,14 @@ static int __pyx_pw_5cysox_3sox_7Globals_10repeatable_3__set__(PyObject *__pyx_v
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_5cysox_3sox_7Globals_10repeatable_2__set__(((struct __pyx_obj_5cysox_3sox_Globals *)__pyx_v_self), ((sox_bool)__pyx_v_value));
+  __pyx_r = __pyx_pf_5cysox_3sox_7Globals_10repeatable_2__set__(((struct __pyx_obj_5cysox_3sox_Globals *)__pyx_v_self), ((enum sox_bool)__pyx_v_value));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static int __pyx_pf_5cysox_3sox_7Globals_10repeatable_2__set__(struct __pyx_obj_5cysox_3sox_Globals *__pyx_v_self, sox_bool __pyx_v_value) {
+static int __pyx_pf_5cysox_3sox_7Globals_10repeatable_2__set__(struct __pyx_obj_5cysox_3sox_Globals *__pyx_v_self, enum sox_bool __pyx_v_value) {
   int __pyx_r;
 
   /* "cysox/sox.pyx":735
@@ -15917,7 +15917,7 @@ static PyObject *__pyx_pf_5cysox_3sox_7Globals_9use_magic___get__(struct __pyx_o
  *     @property
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_sox_bool(__pyx_v_self->ptr->use_magic); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 795, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_enum__sox_bool(__pyx_v_self->ptr->use_magic); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 795, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -15982,7 +15982,7 @@ static PyObject *__pyx_pf_5cysox_3sox_7Globals_11use_threads___get__(struct __py
  *     @property
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_sox_bool(__pyx_v_self->ptr->use_threads); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 800, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_enum__sox_bool(__pyx_v_self->ptr->use_threads); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 800, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -16558,7 +16558,7 @@ static PyObject *__pyx_pf_5cysox_3sox_14EffectsGlobals_4plot___get__(struct __py
  *     @plot.setter
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_sox_plot_t(__pyx_v_self->ptr->plot); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 831, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_enum__sox_plot_t(__pyx_v_self->ptr->plot); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 831, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -16594,7 +16594,7 @@ static PyObject *__pyx_pf_5cysox_3sox_14EffectsGlobals_4plot___get__(struct __py
 /* Python wrapper */
 static int __pyx_pw_5cysox_3sox_14EffectsGlobals_4plot_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_arg_value); /*proto*/
 static int __pyx_pw_5cysox_3sox_14EffectsGlobals_4plot_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_arg_value) {
-  sox_plot_t __pyx_v_value;
+  enum sox_plot_t __pyx_v_value;
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -16604,7 +16604,7 @@ static int __pyx_pw_5cysox_3sox_14EffectsGlobals_4plot_3__set__(PyObject *__pyx_
   __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
   __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
   assert(__pyx_arg_value); {
-    __pyx_v_value = ((sox_plot_t)__Pyx_PyLong_As_sox_plot_t(__pyx_arg_value)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 834, __pyx_L3_error)
+    __pyx_v_value = ((enum sox_plot_t)__Pyx_PyLong_As_enum__sox_plot_t(__pyx_arg_value)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 834, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -16612,14 +16612,14 @@ static int __pyx_pw_5cysox_3sox_14EffectsGlobals_4plot_3__set__(PyObject *__pyx_
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_5cysox_3sox_14EffectsGlobals_4plot_2__set__(((struct __pyx_obj_5cysox_3sox_EffectsGlobals *)__pyx_v_self), ((sox_plot_t)__pyx_v_value));
+  __pyx_r = __pyx_pf_5cysox_3sox_14EffectsGlobals_4plot_2__set__(((struct __pyx_obj_5cysox_3sox_EffectsGlobals *)__pyx_v_self), ((enum sox_plot_t)__pyx_v_value));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static int __pyx_pf_5cysox_3sox_14EffectsGlobals_4plot_2__set__(struct __pyx_obj_5cysox_3sox_EffectsGlobals *__pyx_v_self, sox_plot_t __pyx_v_value) {
+static int __pyx_pf_5cysox_3sox_14EffectsGlobals_4plot_2__set__(struct __pyx_obj_5cysox_3sox_EffectsGlobals *__pyx_v_self, enum sox_plot_t __pyx_v_value) {
   int __pyx_r;
 
   /* "cysox/sox.pyx":835
@@ -19094,7 +19094,7 @@ static PyObject *__pyx_pf_5cysox_3sox_6Format_8seekable___get__(struct __pyx_obj
  *     @property
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_sox_bool(__pyx_v_self->ptr->seekable); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 966, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_enum__sox_bool(__pyx_v_self->ptr->seekable); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 966, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -19489,7 +19489,7 @@ static PyObject *__pyx_pf_5cysox_3sox_6Format_7io_type___get__(struct __pyx_obj_
  *     @property
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_lsx_io_type(__pyx_v_self->ptr->io_type); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 996, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_enum__lsx_io_type(__pyx_v_self->ptr->io_type); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 996, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -20403,7 +20403,7 @@ static struct __pyx_obj_5cysox_3sox_FormatHandler *__pyx_pf_5cysox_3sox_13Format
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   char *__pyx_t_2;
-  sox_bool __pyx_t_3;
+  enum sox_bool __pyx_t_3;
   int __pyx_t_4;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -20430,7 +20430,7 @@ static struct __pyx_obj_5cysox_3sox_FormatHandler *__pyx_pf_5cysox_3sox_13Format
  *             return None
 */
   __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_v_name_bytes); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1040, __pyx_L1_error)
-  __pyx_t_3 = ((sox_bool)__Pyx_PyLong_As_sox_bool(__pyx_v_ignore_devices)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 1040, __pyx_L1_error)
+  __pyx_t_3 = ((enum sox_bool)__Pyx_PyLong_As_enum__sox_bool(__pyx_v_ignore_devices)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 1040, __pyx_L1_error)
   __pyx_v_handler = sox_find_format(__pyx_t_2, __pyx_t_3);
 
   /* "cysox/sox.pyx":1041
@@ -27741,7 +27741,7 @@ static PyObject *__pyx_pf_5cysox_3sox_2version_info(CYTHON_UNUSED PyObject *__py
  *         'version_code': info.version_code,
  *         'version': info.version.decode() if info.version else None,
 */
-  __pyx_t_3 = __Pyx_PyLong_From_sox_version_flags_t(__pyx_v_info->flags); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1447, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyLong_From_enum__sox_version_flags_t(__pyx_v_info->flags); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1447, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   if (PyDict_SetItem(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_flags, __pyx_t_3) < 0) __PYX_ERR(0, 1446, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -28032,7 +28032,7 @@ static PyObject *__pyx_pf_5cysox_3sox_4get_globals(CYTHON_UNUSED PyObject *__pyx
  *         'bufsiz': globals.bufsiz,
  *         'input_bufsiz': globals.input_bufsiz,
 */
-  __pyx_t_3 = __Pyx_PyLong_From_sox_bool(__pyx_v_globals->repeatable); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1466, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyLong_From_enum__sox_bool(__pyx_v_globals->repeatable); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1466, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   if (PyDict_SetItem(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_repeatable, __pyx_t_3) < 0) __PYX_ERR(0, 1465, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -28172,7 +28172,7 @@ static PyObject *__pyx_pf_5cysox_3sox_4get_globals(CYTHON_UNUSED PyObject *__pyx
  *         'use_threads': globals.use_threads,
  *         'log2_dft_min_size': globals.log2_dft_min_size
 */
-  __pyx_t_3 = __Pyx_PyLong_From_sox_bool(__pyx_v_globals->use_magic); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1474, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyLong_From_enum__sox_bool(__pyx_v_globals->use_magic); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1474, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   if (PyDict_SetItem(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_use_magic, __pyx_t_3) < 0) __PYX_ERR(0, 1465, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -28184,7 +28184,7 @@ static PyObject *__pyx_pf_5cysox_3sox_4get_globals(CYTHON_UNUSED PyObject *__pyx
  *         'log2_dft_min_size': globals.log2_dft_min_size
  *     }
 */
-  __pyx_t_3 = __Pyx_PyLong_From_sox_bool(__pyx_v_globals->use_threads); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1475, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyLong_From_enum__sox_bool(__pyx_v_globals->use_threads); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1475, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   if (PyDict_SetItem(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_use_threads, __pyx_t_3) < 0) __PYX_ERR(0, 1465, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -28352,7 +28352,7 @@ static PyObject *__pyx_pf_5cysox_3sox_6get_encodings_info(CYTHON_UNUSED PyObject
 */
     __pyx_t_2 = __Pyx_PyDict_NewPresized(3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1491, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_3 = __Pyx_PyLong_From_sox_encodings_flags_t((__pyx_v_encodings[__pyx_v_i]).flags); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1491, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyLong_From_enum__sox_encodings_flags_t((__pyx_v_encodings[__pyx_v_i]).flags); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1491, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     if (PyDict_SetItem(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_flags, __pyx_t_3) < 0) __PYX_ERR(0, 1491, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -29213,7 +29213,7 @@ static PyObject *__pyx_pf_5cysox_3sox_20is_playlist(CYTHON_UNUSED PyObject *__py
 */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_v_filename_bytes); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1533, __pyx_L1_error)
-  __pyx_t_1 = __Pyx_PyLong_From_sox_bool(sox_is_playlist(__pyx_t_2)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1533, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_enum__sox_bool(sox_is_playlist(__pyx_t_2)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1533, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -29560,7 +29560,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
 static PyObject *__pyx_pf_5cysox_3sox_24precision(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_encoding, PyObject *__pyx_v_bits_per_sample) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
-  sox_encoding_t __pyx_t_1;
+  enum sox_encoding_t __pyx_t_1;
   unsigned int __pyx_t_2;
   PyObject *__pyx_t_3 = NULL;
   int __pyx_lineno = 0;
@@ -29576,9 +29576,9 @@ static PyObject *__pyx_pf_5cysox_3sox_24precision(CYTHON_UNUSED PyObject *__pyx_
  * 
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = ((sox_encoding_t)__Pyx_PyLong_As_sox_encoding_t(__pyx_v_encoding)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 1550, __pyx_L1_error)
+  __pyx_t_1 = ((enum sox_encoding_t)__Pyx_PyLong_As_enum__sox_encoding_t(__pyx_v_encoding)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 1550, __pyx_L1_error)
   __pyx_t_2 = __Pyx_PyLong_As_unsigned_int(__pyx_v_bits_per_sample); if (unlikely((__pyx_t_2 == (unsigned int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1550, __pyx_L1_error)
-  __pyx_t_3 = __Pyx_PyLong_From_unsigned_int(sox_precision(((sox_encoding_t)__pyx_t_1), ((unsigned int)__pyx_t_2))); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1550, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyLong_From_unsigned_int(sox_precision(((enum sox_encoding_t)__pyx_t_1), ((unsigned int)__pyx_t_2))); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1550, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   if (!(likely(PyLong_CheckExact(__pyx_t_3)) || __Pyx_RaiseUnexpectedTypeError("int", __pyx_t_3))) __PYX_ERR(0, 1550, __pyx_L1_error)
   __pyx_r = ((PyObject*)__pyx_t_3);
@@ -29698,7 +29698,7 @@ static PyObject *__pyx_pf_5cysox_3sox_26get_effects_globals(CYTHON_UNUSED PyObje
 */
   __pyx_t_2 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1560, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyLong_From_sox_plot_t(__pyx_v_globals->plot); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1560, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyLong_From_enum__sox_plot_t(__pyx_v_globals->plot); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1560, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   if (PyDict_SetItem(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_plot, __pyx_t_3) < 0) __PYX_ERR(0, 1560, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -29865,7 +29865,7 @@ static PyObject *__pyx_pf_5cysox_3sox_28format_supports_encoding(CYTHON_UNUSED P
   __pyx_t_1 = PyUnicode_AsEncodedString(__pyx_v_path, NULL, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1566, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1566, __pyx_L1_error)
-  __pyx_t_3 = __Pyx_PyLong_From_sox_bool(sox_format_supports_encoding(__pyx_t_2, NULL, __pyx_v_encoding->ptr)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1566, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyLong_From_enum__sox_bool(sox_format_supports_encoding(__pyx_t_2, NULL, __pyx_v_encoding->ptr)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1566, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_r = __pyx_t_3;
@@ -32569,7 +32569,7 @@ static struct __pyx_obj_5cysox_3sox_FormatHandler *__pyx_pf_5cysox_3sox_48find_f
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   char *__pyx_t_2;
-  sox_bool __pyx_t_3;
+  enum sox_bool __pyx_t_3;
   int __pyx_t_4;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -32596,7 +32596,7 @@ static struct __pyx_obj_5cysox_3sox_FormatHandler *__pyx_pf_5cysox_3sox_48find_f
  *         return None
 */
   __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_v_name_bytes); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1719, __pyx_L1_error)
-  __pyx_t_3 = ((sox_bool)__Pyx_PyLong_As_sox_bool(__pyx_v_ignore_devices)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 1719, __pyx_L1_error)
+  __pyx_t_3 = ((enum sox_bool)__Pyx_PyLong_As_enum__sox_bool(__pyx_v_ignore_devices)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 1719, __pyx_L1_error)
   __pyx_v_handler = sox_find_format(__pyx_t_2, __pyx_t_3);
 
   /* "cysox/sox.pyx":1720
@@ -45182,21 +45182,21 @@ raise_neg_overflow:
 }
 
 /* CIntFromPy */
-static CYTHON_INLINE sox_encoding_t __Pyx_PyLong_As_sox_encoding_t(PyObject *x) {
+static CYTHON_INLINE enum sox_encoding_t __Pyx_PyLong_As_enum__sox_encoding_t(PyObject *x) {
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
-    const sox_encoding_t neg_one = (sox_encoding_t) -1, const_zero = (sox_encoding_t) 0;
+    const enum sox_encoding_t neg_one = (enum sox_encoding_t) -1, const_zero = (enum sox_encoding_t) 0;
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic pop
 #endif
     const int is_unsigned = neg_one > const_zero;
     if (unlikely(!PyLong_Check(x))) {
-        sox_encoding_t val;
+        enum sox_encoding_t val;
         PyObject *tmp = __Pyx_PyNumber_Long(x);
-        if (!tmp) return (sox_encoding_t) -1;
-        val = __Pyx_PyLong_As_sox_encoding_t(tmp);
+        if (!tmp) return (enum sox_encoding_t) -1;
+        val = __Pyx_PyLong_As_enum__sox_encoding_t(tmp);
         Py_DECREF(tmp);
         return val;
     }
@@ -45205,35 +45205,35 @@ static CYTHON_INLINE sox_encoding_t __Pyx_PyLong_As_sox_encoding_t(PyObject *x) 
         if (unlikely(__Pyx_PyLong_IsNeg(x))) {
             goto raise_neg_overflow;
         } else if (__Pyx_PyLong_IsCompact(x)) {
-            __PYX_VERIFY_RETURN_INT(sox_encoding_t, __Pyx_compact_upylong, __Pyx_PyLong_CompactValueUnsigned(x))
+            __PYX_VERIFY_RETURN_INT(enum sox_encoding_t, __Pyx_compact_upylong, __Pyx_PyLong_CompactValueUnsigned(x))
         } else {
             const digit* digits = __Pyx_PyLong_Digits(x);
             assert(__Pyx_PyLong_DigitCount(x) > 1);
             switch (__Pyx_PyLong_DigitCount(x)) {
                 case 2:
-                    if ((8 * sizeof(sox_encoding_t) > 1 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_encoding_t) > 1 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 2 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_encoding_t, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_encoding_t) >= 2 * PyLong_SHIFT)) {
-                            return (sox_encoding_t) (((((sox_encoding_t)digits[1]) << PyLong_SHIFT) | (sox_encoding_t)digits[0]));
+                            __PYX_VERIFY_RETURN_INT(enum sox_encoding_t, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_encoding_t) >= 2 * PyLong_SHIFT)) {
+                            return (enum sox_encoding_t) (((((enum sox_encoding_t)digits[1]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[0]));
                         }
                     }
                     break;
                 case 3:
-                    if ((8 * sizeof(sox_encoding_t) > 2 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_encoding_t) > 2 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 3 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_encoding_t, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_encoding_t) >= 3 * PyLong_SHIFT)) {
-                            return (sox_encoding_t) (((((((sox_encoding_t)digits[2]) << PyLong_SHIFT) | (sox_encoding_t)digits[1]) << PyLong_SHIFT) | (sox_encoding_t)digits[0]));
+                            __PYX_VERIFY_RETURN_INT(enum sox_encoding_t, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_encoding_t) >= 3 * PyLong_SHIFT)) {
+                            return (enum sox_encoding_t) (((((((enum sox_encoding_t)digits[2]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[1]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[0]));
                         }
                     }
                     break;
                 case 4:
-                    if ((8 * sizeof(sox_encoding_t) > 3 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_encoding_t) > 3 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 4 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_encoding_t, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_encoding_t) >= 4 * PyLong_SHIFT)) {
-                            return (sox_encoding_t) (((((((((sox_encoding_t)digits[3]) << PyLong_SHIFT) | (sox_encoding_t)digits[2]) << PyLong_SHIFT) | (sox_encoding_t)digits[1]) << PyLong_SHIFT) | (sox_encoding_t)digits[0]));
+                            __PYX_VERIFY_RETURN_INT(enum sox_encoding_t, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_encoding_t) >= 4 * PyLong_SHIFT)) {
+                            return (enum sox_encoding_t) (((((((((enum sox_encoding_t)digits[3]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[2]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[1]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[0]));
                         }
                     }
                     break;
@@ -45248,93 +45248,93 @@ static CYTHON_INLINE sox_encoding_t __Pyx_PyLong_As_sox_encoding_t(PyObject *x) 
         {
             int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
             if (unlikely(result < 0))
-                return (sox_encoding_t) -1;
+                return (enum sox_encoding_t) -1;
             if (unlikely(result == 1))
                 goto raise_neg_overflow;
         }
 #endif
-        if ((sizeof(sox_encoding_t) <= sizeof(unsigned long))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_encoding_t, unsigned long, PyLong_AsUnsignedLong(x))
+        if ((sizeof(enum sox_encoding_t) <= sizeof(unsigned long))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_encoding_t, unsigned long, PyLong_AsUnsignedLong(x))
 #ifdef HAVE_LONG_LONG
-        } else if ((sizeof(sox_encoding_t) <= sizeof(unsigned PY_LONG_LONG))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_encoding_t, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+        } else if ((sizeof(enum sox_encoding_t) <= sizeof(unsigned PY_LONG_LONG))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_encoding_t, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
 #endif
         }
     } else {
 #if CYTHON_USE_PYLONG_INTERNALS
         if (__Pyx_PyLong_IsCompact(x)) {
-            __PYX_VERIFY_RETURN_INT(sox_encoding_t, __Pyx_compact_pylong, __Pyx_PyLong_CompactValue(x))
+            __PYX_VERIFY_RETURN_INT(enum sox_encoding_t, __Pyx_compact_pylong, __Pyx_PyLong_CompactValue(x))
         } else {
             const digit* digits = __Pyx_PyLong_Digits(x);
             assert(__Pyx_PyLong_DigitCount(x) > 1);
             switch (__Pyx_PyLong_SignedDigitCount(x)) {
                 case -2:
-                    if ((8 * sizeof(sox_encoding_t) - 1 > 1 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_encoding_t) - 1 > 1 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 2 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_encoding_t, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_encoding_t) - 1 > 2 * PyLong_SHIFT)) {
-                            return (sox_encoding_t) (((sox_encoding_t)-1)*(((((sox_encoding_t)digits[1]) << PyLong_SHIFT) | (sox_encoding_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_encoding_t, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_encoding_t) - 1 > 2 * PyLong_SHIFT)) {
+                            return (enum sox_encoding_t) (((enum sox_encoding_t)-1)*(((((enum sox_encoding_t)digits[1]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[0])));
                         }
                     }
                     break;
                 case 2:
-                    if ((8 * sizeof(sox_encoding_t) > 1 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_encoding_t) > 1 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 2 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_encoding_t, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_encoding_t) - 1 > 2 * PyLong_SHIFT)) {
-                            return (sox_encoding_t) ((((((sox_encoding_t)digits[1]) << PyLong_SHIFT) | (sox_encoding_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_encoding_t, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_encoding_t) - 1 > 2 * PyLong_SHIFT)) {
+                            return (enum sox_encoding_t) ((((((enum sox_encoding_t)digits[1]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[0])));
                         }
                     }
                     break;
                 case -3:
-                    if ((8 * sizeof(sox_encoding_t) - 1 > 2 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_encoding_t) - 1 > 2 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 3 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_encoding_t, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_encoding_t) - 1 > 3 * PyLong_SHIFT)) {
-                            return (sox_encoding_t) (((sox_encoding_t)-1)*(((((((sox_encoding_t)digits[2]) << PyLong_SHIFT) | (sox_encoding_t)digits[1]) << PyLong_SHIFT) | (sox_encoding_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_encoding_t, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_encoding_t) - 1 > 3 * PyLong_SHIFT)) {
+                            return (enum sox_encoding_t) (((enum sox_encoding_t)-1)*(((((((enum sox_encoding_t)digits[2]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[1]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[0])));
                         }
                     }
                     break;
                 case 3:
-                    if ((8 * sizeof(sox_encoding_t) > 2 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_encoding_t) > 2 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 3 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_encoding_t, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_encoding_t) - 1 > 3 * PyLong_SHIFT)) {
-                            return (sox_encoding_t) ((((((((sox_encoding_t)digits[2]) << PyLong_SHIFT) | (sox_encoding_t)digits[1]) << PyLong_SHIFT) | (sox_encoding_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_encoding_t, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_encoding_t) - 1 > 3 * PyLong_SHIFT)) {
+                            return (enum sox_encoding_t) ((((((((enum sox_encoding_t)digits[2]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[1]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[0])));
                         }
                     }
                     break;
                 case -4:
-                    if ((8 * sizeof(sox_encoding_t) - 1 > 3 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_encoding_t) - 1 > 3 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 4 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_encoding_t, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_encoding_t) - 1 > 4 * PyLong_SHIFT)) {
-                            return (sox_encoding_t) (((sox_encoding_t)-1)*(((((((((sox_encoding_t)digits[3]) << PyLong_SHIFT) | (sox_encoding_t)digits[2]) << PyLong_SHIFT) | (sox_encoding_t)digits[1]) << PyLong_SHIFT) | (sox_encoding_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_encoding_t, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_encoding_t) - 1 > 4 * PyLong_SHIFT)) {
+                            return (enum sox_encoding_t) (((enum sox_encoding_t)-1)*(((((((((enum sox_encoding_t)digits[3]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[2]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[1]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[0])));
                         }
                     }
                     break;
                 case 4:
-                    if ((8 * sizeof(sox_encoding_t) > 3 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_encoding_t) > 3 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 4 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_encoding_t, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_encoding_t) - 1 > 4 * PyLong_SHIFT)) {
-                            return (sox_encoding_t) ((((((((((sox_encoding_t)digits[3]) << PyLong_SHIFT) | (sox_encoding_t)digits[2]) << PyLong_SHIFT) | (sox_encoding_t)digits[1]) << PyLong_SHIFT) | (sox_encoding_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_encoding_t, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_encoding_t) - 1 > 4 * PyLong_SHIFT)) {
+                            return (enum sox_encoding_t) ((((((((((enum sox_encoding_t)digits[3]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[2]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[1]) << PyLong_SHIFT) | (enum sox_encoding_t)digits[0])));
                         }
                     }
                     break;
             }
         }
 #endif
-        if ((sizeof(sox_encoding_t) <= sizeof(long))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_encoding_t, long, PyLong_AsLong(x))
+        if ((sizeof(enum sox_encoding_t) <= sizeof(long))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_encoding_t, long, PyLong_AsLong(x))
 #ifdef HAVE_LONG_LONG
-        } else if ((sizeof(sox_encoding_t) <= sizeof(PY_LONG_LONG))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_encoding_t, PY_LONG_LONG, PyLong_AsLongLong(x))
+        } else if ((sizeof(enum sox_encoding_t) <= sizeof(PY_LONG_LONG))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_encoding_t, PY_LONG_LONG, PyLong_AsLongLong(x))
 #endif
         }
     }
     {
-        sox_encoding_t val;
+        enum sox_encoding_t val;
         int ret = -1;
 #if PY_VERSION_HEX >= 0x030d00A6 && !CYTHON_COMPILING_IN_LIMITED_API
         Py_ssize_t bytes_copied = PyLong_AsNativeBytes(
@@ -45354,20 +45354,20 @@ static CYTHON_INLINE sox_encoding_t __Pyx_PyLong_As_sox_encoding_t(PyObject *x) 
 #else
         PyErr_SetString(PyExc_RuntimeError,
                         "_PyLong_AsByteArray() or PyLong_AsNativeBytes() not available, cannot convert large enums");
-        val = (sox_encoding_t) -1;
+        val = (enum sox_encoding_t) -1;
 #endif
         if (unlikely(ret))
-            return (sox_encoding_t) -1;
+            return (enum sox_encoding_t) -1;
         return val;
     }
 raise_overflow:
     PyErr_SetString(PyExc_OverflowError,
-        "value too large to convert to sox_encoding_t");
-    return (sox_encoding_t) -1;
+        "value too large to convert to enum sox_encoding_t");
+    return (enum sox_encoding_t) -1;
 raise_neg_overflow:
     PyErr_SetString(PyExc_OverflowError,
-        "can't convert negative value to sox_encoding_t");
-    return (sox_encoding_t) -1;
+        "can't convert negative value to enum sox_encoding_t");
+    return (enum sox_encoding_t) -1;
 }
 
 /* CIntFromPy */
@@ -45625,21 +45625,21 @@ raise_neg_overflow:
 }
 
 /* CIntFromPy */
-static CYTHON_INLINE sox_option_t __Pyx_PyLong_As_sox_option_t(PyObject *x) {
+static CYTHON_INLINE enum sox_option_t __Pyx_PyLong_As_enum__sox_option_t(PyObject *x) {
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
-    const sox_option_t neg_one = (sox_option_t) -1, const_zero = (sox_option_t) 0;
+    const enum sox_option_t neg_one = (enum sox_option_t) -1, const_zero = (enum sox_option_t) 0;
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic pop
 #endif
     const int is_unsigned = neg_one > const_zero;
     if (unlikely(!PyLong_Check(x))) {
-        sox_option_t val;
+        enum sox_option_t val;
         PyObject *tmp = __Pyx_PyNumber_Long(x);
-        if (!tmp) return (sox_option_t) -1;
-        val = __Pyx_PyLong_As_sox_option_t(tmp);
+        if (!tmp) return (enum sox_option_t) -1;
+        val = __Pyx_PyLong_As_enum__sox_option_t(tmp);
         Py_DECREF(tmp);
         return val;
     }
@@ -45648,35 +45648,35 @@ static CYTHON_INLINE sox_option_t __Pyx_PyLong_As_sox_option_t(PyObject *x) {
         if (unlikely(__Pyx_PyLong_IsNeg(x))) {
             goto raise_neg_overflow;
         } else if (__Pyx_PyLong_IsCompact(x)) {
-            __PYX_VERIFY_RETURN_INT(sox_option_t, __Pyx_compact_upylong, __Pyx_PyLong_CompactValueUnsigned(x))
+            __PYX_VERIFY_RETURN_INT(enum sox_option_t, __Pyx_compact_upylong, __Pyx_PyLong_CompactValueUnsigned(x))
         } else {
             const digit* digits = __Pyx_PyLong_Digits(x);
             assert(__Pyx_PyLong_DigitCount(x) > 1);
             switch (__Pyx_PyLong_DigitCount(x)) {
                 case 2:
-                    if ((8 * sizeof(sox_option_t) > 1 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_option_t) > 1 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 2 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_option_t, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_option_t) >= 2 * PyLong_SHIFT)) {
-                            return (sox_option_t) (((((sox_option_t)digits[1]) << PyLong_SHIFT) | (sox_option_t)digits[0]));
+                            __PYX_VERIFY_RETURN_INT(enum sox_option_t, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_option_t) >= 2 * PyLong_SHIFT)) {
+                            return (enum sox_option_t) (((((enum sox_option_t)digits[1]) << PyLong_SHIFT) | (enum sox_option_t)digits[0]));
                         }
                     }
                     break;
                 case 3:
-                    if ((8 * sizeof(sox_option_t) > 2 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_option_t) > 2 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 3 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_option_t, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_option_t) >= 3 * PyLong_SHIFT)) {
-                            return (sox_option_t) (((((((sox_option_t)digits[2]) << PyLong_SHIFT) | (sox_option_t)digits[1]) << PyLong_SHIFT) | (sox_option_t)digits[0]));
+                            __PYX_VERIFY_RETURN_INT(enum sox_option_t, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_option_t) >= 3 * PyLong_SHIFT)) {
+                            return (enum sox_option_t) (((((((enum sox_option_t)digits[2]) << PyLong_SHIFT) | (enum sox_option_t)digits[1]) << PyLong_SHIFT) | (enum sox_option_t)digits[0]));
                         }
                     }
                     break;
                 case 4:
-                    if ((8 * sizeof(sox_option_t) > 3 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_option_t) > 3 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 4 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_option_t, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_option_t) >= 4 * PyLong_SHIFT)) {
-                            return (sox_option_t) (((((((((sox_option_t)digits[3]) << PyLong_SHIFT) | (sox_option_t)digits[2]) << PyLong_SHIFT) | (sox_option_t)digits[1]) << PyLong_SHIFT) | (sox_option_t)digits[0]));
+                            __PYX_VERIFY_RETURN_INT(enum sox_option_t, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_option_t) >= 4 * PyLong_SHIFT)) {
+                            return (enum sox_option_t) (((((((((enum sox_option_t)digits[3]) << PyLong_SHIFT) | (enum sox_option_t)digits[2]) << PyLong_SHIFT) | (enum sox_option_t)digits[1]) << PyLong_SHIFT) | (enum sox_option_t)digits[0]));
                         }
                     }
                     break;
@@ -45691,93 +45691,93 @@ static CYTHON_INLINE sox_option_t __Pyx_PyLong_As_sox_option_t(PyObject *x) {
         {
             int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
             if (unlikely(result < 0))
-                return (sox_option_t) -1;
+                return (enum sox_option_t) -1;
             if (unlikely(result == 1))
                 goto raise_neg_overflow;
         }
 #endif
-        if ((sizeof(sox_option_t) <= sizeof(unsigned long))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_option_t, unsigned long, PyLong_AsUnsignedLong(x))
+        if ((sizeof(enum sox_option_t) <= sizeof(unsigned long))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_option_t, unsigned long, PyLong_AsUnsignedLong(x))
 #ifdef HAVE_LONG_LONG
-        } else if ((sizeof(sox_option_t) <= sizeof(unsigned PY_LONG_LONG))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_option_t, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+        } else if ((sizeof(enum sox_option_t) <= sizeof(unsigned PY_LONG_LONG))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_option_t, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
 #endif
         }
     } else {
 #if CYTHON_USE_PYLONG_INTERNALS
         if (__Pyx_PyLong_IsCompact(x)) {
-            __PYX_VERIFY_RETURN_INT(sox_option_t, __Pyx_compact_pylong, __Pyx_PyLong_CompactValue(x))
+            __PYX_VERIFY_RETURN_INT(enum sox_option_t, __Pyx_compact_pylong, __Pyx_PyLong_CompactValue(x))
         } else {
             const digit* digits = __Pyx_PyLong_Digits(x);
             assert(__Pyx_PyLong_DigitCount(x) > 1);
             switch (__Pyx_PyLong_SignedDigitCount(x)) {
                 case -2:
-                    if ((8 * sizeof(sox_option_t) - 1 > 1 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_option_t) - 1 > 1 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 2 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_option_t, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_option_t) - 1 > 2 * PyLong_SHIFT)) {
-                            return (sox_option_t) (((sox_option_t)-1)*(((((sox_option_t)digits[1]) << PyLong_SHIFT) | (sox_option_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_option_t, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_option_t) - 1 > 2 * PyLong_SHIFT)) {
+                            return (enum sox_option_t) (((enum sox_option_t)-1)*(((((enum sox_option_t)digits[1]) << PyLong_SHIFT) | (enum sox_option_t)digits[0])));
                         }
                     }
                     break;
                 case 2:
-                    if ((8 * sizeof(sox_option_t) > 1 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_option_t) > 1 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 2 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_option_t, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_option_t) - 1 > 2 * PyLong_SHIFT)) {
-                            return (sox_option_t) ((((((sox_option_t)digits[1]) << PyLong_SHIFT) | (sox_option_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_option_t, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_option_t) - 1 > 2 * PyLong_SHIFT)) {
+                            return (enum sox_option_t) ((((((enum sox_option_t)digits[1]) << PyLong_SHIFT) | (enum sox_option_t)digits[0])));
                         }
                     }
                     break;
                 case -3:
-                    if ((8 * sizeof(sox_option_t) - 1 > 2 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_option_t) - 1 > 2 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 3 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_option_t, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_option_t) - 1 > 3 * PyLong_SHIFT)) {
-                            return (sox_option_t) (((sox_option_t)-1)*(((((((sox_option_t)digits[2]) << PyLong_SHIFT) | (sox_option_t)digits[1]) << PyLong_SHIFT) | (sox_option_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_option_t, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_option_t) - 1 > 3 * PyLong_SHIFT)) {
+                            return (enum sox_option_t) (((enum sox_option_t)-1)*(((((((enum sox_option_t)digits[2]) << PyLong_SHIFT) | (enum sox_option_t)digits[1]) << PyLong_SHIFT) | (enum sox_option_t)digits[0])));
                         }
                     }
                     break;
                 case 3:
-                    if ((8 * sizeof(sox_option_t) > 2 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_option_t) > 2 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 3 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_option_t, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_option_t) - 1 > 3 * PyLong_SHIFT)) {
-                            return (sox_option_t) ((((((((sox_option_t)digits[2]) << PyLong_SHIFT) | (sox_option_t)digits[1]) << PyLong_SHIFT) | (sox_option_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_option_t, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_option_t) - 1 > 3 * PyLong_SHIFT)) {
+                            return (enum sox_option_t) ((((((((enum sox_option_t)digits[2]) << PyLong_SHIFT) | (enum sox_option_t)digits[1]) << PyLong_SHIFT) | (enum sox_option_t)digits[0])));
                         }
                     }
                     break;
                 case -4:
-                    if ((8 * sizeof(sox_option_t) - 1 > 3 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_option_t) - 1 > 3 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 4 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_option_t, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_option_t) - 1 > 4 * PyLong_SHIFT)) {
-                            return (sox_option_t) (((sox_option_t)-1)*(((((((((sox_option_t)digits[3]) << PyLong_SHIFT) | (sox_option_t)digits[2]) << PyLong_SHIFT) | (sox_option_t)digits[1]) << PyLong_SHIFT) | (sox_option_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_option_t, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_option_t) - 1 > 4 * PyLong_SHIFT)) {
+                            return (enum sox_option_t) (((enum sox_option_t)-1)*(((((((((enum sox_option_t)digits[3]) << PyLong_SHIFT) | (enum sox_option_t)digits[2]) << PyLong_SHIFT) | (enum sox_option_t)digits[1]) << PyLong_SHIFT) | (enum sox_option_t)digits[0])));
                         }
                     }
                     break;
                 case 4:
-                    if ((8 * sizeof(sox_option_t) > 3 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_option_t) > 3 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 4 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_option_t, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_option_t) - 1 > 4 * PyLong_SHIFT)) {
-                            return (sox_option_t) ((((((((((sox_option_t)digits[3]) << PyLong_SHIFT) | (sox_option_t)digits[2]) << PyLong_SHIFT) | (sox_option_t)digits[1]) << PyLong_SHIFT) | (sox_option_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_option_t, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_option_t) - 1 > 4 * PyLong_SHIFT)) {
+                            return (enum sox_option_t) ((((((((((enum sox_option_t)digits[3]) << PyLong_SHIFT) | (enum sox_option_t)digits[2]) << PyLong_SHIFT) | (enum sox_option_t)digits[1]) << PyLong_SHIFT) | (enum sox_option_t)digits[0])));
                         }
                     }
                     break;
             }
         }
 #endif
-        if ((sizeof(sox_option_t) <= sizeof(long))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_option_t, long, PyLong_AsLong(x))
+        if ((sizeof(enum sox_option_t) <= sizeof(long))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_option_t, long, PyLong_AsLong(x))
 #ifdef HAVE_LONG_LONG
-        } else if ((sizeof(sox_option_t) <= sizeof(PY_LONG_LONG))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_option_t, PY_LONG_LONG, PyLong_AsLongLong(x))
+        } else if ((sizeof(enum sox_option_t) <= sizeof(PY_LONG_LONG))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_option_t, PY_LONG_LONG, PyLong_AsLongLong(x))
 #endif
         }
     }
     {
-        sox_option_t val;
+        enum sox_option_t val;
         int ret = -1;
 #if PY_VERSION_HEX >= 0x030d00A6 && !CYTHON_COMPILING_IN_LIMITED_API
         Py_ssize_t bytes_copied = PyLong_AsNativeBytes(
@@ -45797,38 +45797,38 @@ static CYTHON_INLINE sox_option_t __Pyx_PyLong_As_sox_option_t(PyObject *x) {
 #else
         PyErr_SetString(PyExc_RuntimeError,
                         "_PyLong_AsByteArray() or PyLong_AsNativeBytes() not available, cannot convert large enums");
-        val = (sox_option_t) -1;
+        val = (enum sox_option_t) -1;
 #endif
         if (unlikely(ret))
-            return (sox_option_t) -1;
+            return (enum sox_option_t) -1;
         return val;
     }
 raise_overflow:
     PyErr_SetString(PyExc_OverflowError,
-        "value too large to convert to sox_option_t");
-    return (sox_option_t) -1;
+        "value too large to convert to enum sox_option_t");
+    return (enum sox_option_t) -1;
 raise_neg_overflow:
     PyErr_SetString(PyExc_OverflowError,
-        "can't convert negative value to sox_option_t");
-    return (sox_option_t) -1;
+        "can't convert negative value to enum sox_option_t");
+    return (enum sox_option_t) -1;
 }
 
 /* CIntFromPy */
-static CYTHON_INLINE sox_bool __Pyx_PyLong_As_sox_bool(PyObject *x) {
+static CYTHON_INLINE enum sox_bool __Pyx_PyLong_As_enum__sox_bool(PyObject *x) {
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
-    const sox_bool neg_one = (sox_bool) -1, const_zero = (sox_bool) 0;
+    const enum sox_bool neg_one = (enum sox_bool) -1, const_zero = (enum sox_bool) 0;
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic pop
 #endif
     const int is_unsigned = neg_one > const_zero;
     if (unlikely(!PyLong_Check(x))) {
-        sox_bool val;
+        enum sox_bool val;
         PyObject *tmp = __Pyx_PyNumber_Long(x);
-        if (!tmp) return (sox_bool) -1;
-        val = __Pyx_PyLong_As_sox_bool(tmp);
+        if (!tmp) return (enum sox_bool) -1;
+        val = __Pyx_PyLong_As_enum__sox_bool(tmp);
         Py_DECREF(tmp);
         return val;
     }
@@ -45837,35 +45837,35 @@ static CYTHON_INLINE sox_bool __Pyx_PyLong_As_sox_bool(PyObject *x) {
         if (unlikely(__Pyx_PyLong_IsNeg(x))) {
             goto raise_neg_overflow;
         } else if (__Pyx_PyLong_IsCompact(x)) {
-            __PYX_VERIFY_RETURN_INT(sox_bool, __Pyx_compact_upylong, __Pyx_PyLong_CompactValueUnsigned(x))
+            __PYX_VERIFY_RETURN_INT(enum sox_bool, __Pyx_compact_upylong, __Pyx_PyLong_CompactValueUnsigned(x))
         } else {
             const digit* digits = __Pyx_PyLong_Digits(x);
             assert(__Pyx_PyLong_DigitCount(x) > 1);
             switch (__Pyx_PyLong_DigitCount(x)) {
                 case 2:
-                    if ((8 * sizeof(sox_bool) > 1 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_bool) > 1 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 2 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_bool, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_bool) >= 2 * PyLong_SHIFT)) {
-                            return (sox_bool) (((((sox_bool)digits[1]) << PyLong_SHIFT) | (sox_bool)digits[0]));
+                            __PYX_VERIFY_RETURN_INT(enum sox_bool, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_bool) >= 2 * PyLong_SHIFT)) {
+                            return (enum sox_bool) (((((enum sox_bool)digits[1]) << PyLong_SHIFT) | (enum sox_bool)digits[0]));
                         }
                     }
                     break;
                 case 3:
-                    if ((8 * sizeof(sox_bool) > 2 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_bool) > 2 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 3 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_bool, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_bool) >= 3 * PyLong_SHIFT)) {
-                            return (sox_bool) (((((((sox_bool)digits[2]) << PyLong_SHIFT) | (sox_bool)digits[1]) << PyLong_SHIFT) | (sox_bool)digits[0]));
+                            __PYX_VERIFY_RETURN_INT(enum sox_bool, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_bool) >= 3 * PyLong_SHIFT)) {
+                            return (enum sox_bool) (((((((enum sox_bool)digits[2]) << PyLong_SHIFT) | (enum sox_bool)digits[1]) << PyLong_SHIFT) | (enum sox_bool)digits[0]));
                         }
                     }
                     break;
                 case 4:
-                    if ((8 * sizeof(sox_bool) > 3 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_bool) > 3 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 4 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_bool, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_bool) >= 4 * PyLong_SHIFT)) {
-                            return (sox_bool) (((((((((sox_bool)digits[3]) << PyLong_SHIFT) | (sox_bool)digits[2]) << PyLong_SHIFT) | (sox_bool)digits[1]) << PyLong_SHIFT) | (sox_bool)digits[0]));
+                            __PYX_VERIFY_RETURN_INT(enum sox_bool, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_bool) >= 4 * PyLong_SHIFT)) {
+                            return (enum sox_bool) (((((((((enum sox_bool)digits[3]) << PyLong_SHIFT) | (enum sox_bool)digits[2]) << PyLong_SHIFT) | (enum sox_bool)digits[1]) << PyLong_SHIFT) | (enum sox_bool)digits[0]));
                         }
                     }
                     break;
@@ -45880,93 +45880,93 @@ static CYTHON_INLINE sox_bool __Pyx_PyLong_As_sox_bool(PyObject *x) {
         {
             int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
             if (unlikely(result < 0))
-                return (sox_bool) -1;
+                return (enum sox_bool) -1;
             if (unlikely(result == 1))
                 goto raise_neg_overflow;
         }
 #endif
-        if ((sizeof(sox_bool) <= sizeof(unsigned long))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_bool, unsigned long, PyLong_AsUnsignedLong(x))
+        if ((sizeof(enum sox_bool) <= sizeof(unsigned long))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_bool, unsigned long, PyLong_AsUnsignedLong(x))
 #ifdef HAVE_LONG_LONG
-        } else if ((sizeof(sox_bool) <= sizeof(unsigned PY_LONG_LONG))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_bool, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+        } else if ((sizeof(enum sox_bool) <= sizeof(unsigned PY_LONG_LONG))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_bool, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
 #endif
         }
     } else {
 #if CYTHON_USE_PYLONG_INTERNALS
         if (__Pyx_PyLong_IsCompact(x)) {
-            __PYX_VERIFY_RETURN_INT(sox_bool, __Pyx_compact_pylong, __Pyx_PyLong_CompactValue(x))
+            __PYX_VERIFY_RETURN_INT(enum sox_bool, __Pyx_compact_pylong, __Pyx_PyLong_CompactValue(x))
         } else {
             const digit* digits = __Pyx_PyLong_Digits(x);
             assert(__Pyx_PyLong_DigitCount(x) > 1);
             switch (__Pyx_PyLong_SignedDigitCount(x)) {
                 case -2:
-                    if ((8 * sizeof(sox_bool) - 1 > 1 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_bool) - 1 > 1 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 2 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_bool, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_bool) - 1 > 2 * PyLong_SHIFT)) {
-                            return (sox_bool) (((sox_bool)-1)*(((((sox_bool)digits[1]) << PyLong_SHIFT) | (sox_bool)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_bool, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_bool) - 1 > 2 * PyLong_SHIFT)) {
+                            return (enum sox_bool) (((enum sox_bool)-1)*(((((enum sox_bool)digits[1]) << PyLong_SHIFT) | (enum sox_bool)digits[0])));
                         }
                     }
                     break;
                 case 2:
-                    if ((8 * sizeof(sox_bool) > 1 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_bool) > 1 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 2 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_bool, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_bool) - 1 > 2 * PyLong_SHIFT)) {
-                            return (sox_bool) ((((((sox_bool)digits[1]) << PyLong_SHIFT) | (sox_bool)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_bool, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_bool) - 1 > 2 * PyLong_SHIFT)) {
+                            return (enum sox_bool) ((((((enum sox_bool)digits[1]) << PyLong_SHIFT) | (enum sox_bool)digits[0])));
                         }
                     }
                     break;
                 case -3:
-                    if ((8 * sizeof(sox_bool) - 1 > 2 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_bool) - 1 > 2 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 3 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_bool, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_bool) - 1 > 3 * PyLong_SHIFT)) {
-                            return (sox_bool) (((sox_bool)-1)*(((((((sox_bool)digits[2]) << PyLong_SHIFT) | (sox_bool)digits[1]) << PyLong_SHIFT) | (sox_bool)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_bool, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_bool) - 1 > 3 * PyLong_SHIFT)) {
+                            return (enum sox_bool) (((enum sox_bool)-1)*(((((((enum sox_bool)digits[2]) << PyLong_SHIFT) | (enum sox_bool)digits[1]) << PyLong_SHIFT) | (enum sox_bool)digits[0])));
                         }
                     }
                     break;
                 case 3:
-                    if ((8 * sizeof(sox_bool) > 2 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_bool) > 2 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 3 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_bool, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_bool) - 1 > 3 * PyLong_SHIFT)) {
-                            return (sox_bool) ((((((((sox_bool)digits[2]) << PyLong_SHIFT) | (sox_bool)digits[1]) << PyLong_SHIFT) | (sox_bool)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_bool, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_bool) - 1 > 3 * PyLong_SHIFT)) {
+                            return (enum sox_bool) ((((((((enum sox_bool)digits[2]) << PyLong_SHIFT) | (enum sox_bool)digits[1]) << PyLong_SHIFT) | (enum sox_bool)digits[0])));
                         }
                     }
                     break;
                 case -4:
-                    if ((8 * sizeof(sox_bool) - 1 > 3 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_bool) - 1 > 3 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 4 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_bool, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_bool) - 1 > 4 * PyLong_SHIFT)) {
-                            return (sox_bool) (((sox_bool)-1)*(((((((((sox_bool)digits[3]) << PyLong_SHIFT) | (sox_bool)digits[2]) << PyLong_SHIFT) | (sox_bool)digits[1]) << PyLong_SHIFT) | (sox_bool)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_bool, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_bool) - 1 > 4 * PyLong_SHIFT)) {
+                            return (enum sox_bool) (((enum sox_bool)-1)*(((((((((enum sox_bool)digits[3]) << PyLong_SHIFT) | (enum sox_bool)digits[2]) << PyLong_SHIFT) | (enum sox_bool)digits[1]) << PyLong_SHIFT) | (enum sox_bool)digits[0])));
                         }
                     }
                     break;
                 case 4:
-                    if ((8 * sizeof(sox_bool) > 3 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_bool) > 3 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 4 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_bool, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_bool) - 1 > 4 * PyLong_SHIFT)) {
-                            return (sox_bool) ((((((((((sox_bool)digits[3]) << PyLong_SHIFT) | (sox_bool)digits[2]) << PyLong_SHIFT) | (sox_bool)digits[1]) << PyLong_SHIFT) | (sox_bool)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_bool, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_bool) - 1 > 4 * PyLong_SHIFT)) {
+                            return (enum sox_bool) ((((((((((enum sox_bool)digits[3]) << PyLong_SHIFT) | (enum sox_bool)digits[2]) << PyLong_SHIFT) | (enum sox_bool)digits[1]) << PyLong_SHIFT) | (enum sox_bool)digits[0])));
                         }
                     }
                     break;
             }
         }
 #endif
-        if ((sizeof(sox_bool) <= sizeof(long))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_bool, long, PyLong_AsLong(x))
+        if ((sizeof(enum sox_bool) <= sizeof(long))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_bool, long, PyLong_AsLong(x))
 #ifdef HAVE_LONG_LONG
-        } else if ((sizeof(sox_bool) <= sizeof(PY_LONG_LONG))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_bool, PY_LONG_LONG, PyLong_AsLongLong(x))
+        } else if ((sizeof(enum sox_bool) <= sizeof(PY_LONG_LONG))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_bool, PY_LONG_LONG, PyLong_AsLongLong(x))
 #endif
         }
     }
     {
-        sox_bool val;
+        enum sox_bool val;
         int ret = -1;
 #if PY_VERSION_HEX >= 0x030d00A6 && !CYTHON_COMPILING_IN_LIMITED_API
         Py_ssize_t bytes_copied = PyLong_AsNativeBytes(
@@ -45986,20 +45986,20 @@ static CYTHON_INLINE sox_bool __Pyx_PyLong_As_sox_bool(PyObject *x) {
 #else
         PyErr_SetString(PyExc_RuntimeError,
                         "_PyLong_AsByteArray() or PyLong_AsNativeBytes() not available, cannot convert large enums");
-        val = (sox_bool) -1;
+        val = (enum sox_bool) -1;
 #endif
         if (unlikely(ret))
-            return (sox_bool) -1;
+            return (enum sox_bool) -1;
         return val;
     }
 raise_overflow:
     PyErr_SetString(PyExc_OverflowError,
-        "value too large to convert to sox_bool");
-    return (sox_bool) -1;
+        "value too large to convert to enum sox_bool");
+    return (enum sox_bool) -1;
 raise_neg_overflow:
     PyErr_SetString(PyExc_OverflowError,
-        "can't convert negative value to sox_bool");
-    return (sox_bool) -1;
+        "can't convert negative value to enum sox_bool");
+    return (enum sox_bool) -1;
 }
 
 /* CIntFromPy */
@@ -47019,21 +47019,21 @@ raise_neg_overflow:
 }
 
 /* CIntFromPy */
-static CYTHON_INLINE sox_plot_t __Pyx_PyLong_As_sox_plot_t(PyObject *x) {
+static CYTHON_INLINE enum sox_plot_t __Pyx_PyLong_As_enum__sox_plot_t(PyObject *x) {
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
-    const sox_plot_t neg_one = (sox_plot_t) -1, const_zero = (sox_plot_t) 0;
+    const enum sox_plot_t neg_one = (enum sox_plot_t) -1, const_zero = (enum sox_plot_t) 0;
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic pop
 #endif
     const int is_unsigned = neg_one > const_zero;
     if (unlikely(!PyLong_Check(x))) {
-        sox_plot_t val;
+        enum sox_plot_t val;
         PyObject *tmp = __Pyx_PyNumber_Long(x);
-        if (!tmp) return (sox_plot_t) -1;
-        val = __Pyx_PyLong_As_sox_plot_t(tmp);
+        if (!tmp) return (enum sox_plot_t) -1;
+        val = __Pyx_PyLong_As_enum__sox_plot_t(tmp);
         Py_DECREF(tmp);
         return val;
     }
@@ -47042,35 +47042,35 @@ static CYTHON_INLINE sox_plot_t __Pyx_PyLong_As_sox_plot_t(PyObject *x) {
         if (unlikely(__Pyx_PyLong_IsNeg(x))) {
             goto raise_neg_overflow;
         } else if (__Pyx_PyLong_IsCompact(x)) {
-            __PYX_VERIFY_RETURN_INT(sox_plot_t, __Pyx_compact_upylong, __Pyx_PyLong_CompactValueUnsigned(x))
+            __PYX_VERIFY_RETURN_INT(enum sox_plot_t, __Pyx_compact_upylong, __Pyx_PyLong_CompactValueUnsigned(x))
         } else {
             const digit* digits = __Pyx_PyLong_Digits(x);
             assert(__Pyx_PyLong_DigitCount(x) > 1);
             switch (__Pyx_PyLong_DigitCount(x)) {
                 case 2:
-                    if ((8 * sizeof(sox_plot_t) > 1 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_plot_t) > 1 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 2 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_plot_t, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_plot_t) >= 2 * PyLong_SHIFT)) {
-                            return (sox_plot_t) (((((sox_plot_t)digits[1]) << PyLong_SHIFT) | (sox_plot_t)digits[0]));
+                            __PYX_VERIFY_RETURN_INT(enum sox_plot_t, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_plot_t) >= 2 * PyLong_SHIFT)) {
+                            return (enum sox_plot_t) (((((enum sox_plot_t)digits[1]) << PyLong_SHIFT) | (enum sox_plot_t)digits[0]));
                         }
                     }
                     break;
                 case 3:
-                    if ((8 * sizeof(sox_plot_t) > 2 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_plot_t) > 2 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 3 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_plot_t, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_plot_t) >= 3 * PyLong_SHIFT)) {
-                            return (sox_plot_t) (((((((sox_plot_t)digits[2]) << PyLong_SHIFT) | (sox_plot_t)digits[1]) << PyLong_SHIFT) | (sox_plot_t)digits[0]));
+                            __PYX_VERIFY_RETURN_INT(enum sox_plot_t, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_plot_t) >= 3 * PyLong_SHIFT)) {
+                            return (enum sox_plot_t) (((((((enum sox_plot_t)digits[2]) << PyLong_SHIFT) | (enum sox_plot_t)digits[1]) << PyLong_SHIFT) | (enum sox_plot_t)digits[0]));
                         }
                     }
                     break;
                 case 4:
-                    if ((8 * sizeof(sox_plot_t) > 3 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_plot_t) > 3 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 4 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_plot_t, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_plot_t) >= 4 * PyLong_SHIFT)) {
-                            return (sox_plot_t) (((((((((sox_plot_t)digits[3]) << PyLong_SHIFT) | (sox_plot_t)digits[2]) << PyLong_SHIFT) | (sox_plot_t)digits[1]) << PyLong_SHIFT) | (sox_plot_t)digits[0]));
+                            __PYX_VERIFY_RETURN_INT(enum sox_plot_t, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_plot_t) >= 4 * PyLong_SHIFT)) {
+                            return (enum sox_plot_t) (((((((((enum sox_plot_t)digits[3]) << PyLong_SHIFT) | (enum sox_plot_t)digits[2]) << PyLong_SHIFT) | (enum sox_plot_t)digits[1]) << PyLong_SHIFT) | (enum sox_plot_t)digits[0]));
                         }
                     }
                     break;
@@ -47085,93 +47085,93 @@ static CYTHON_INLINE sox_plot_t __Pyx_PyLong_As_sox_plot_t(PyObject *x) {
         {
             int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
             if (unlikely(result < 0))
-                return (sox_plot_t) -1;
+                return (enum sox_plot_t) -1;
             if (unlikely(result == 1))
                 goto raise_neg_overflow;
         }
 #endif
-        if ((sizeof(sox_plot_t) <= sizeof(unsigned long))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_plot_t, unsigned long, PyLong_AsUnsignedLong(x))
+        if ((sizeof(enum sox_plot_t) <= sizeof(unsigned long))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_plot_t, unsigned long, PyLong_AsUnsignedLong(x))
 #ifdef HAVE_LONG_LONG
-        } else if ((sizeof(sox_plot_t) <= sizeof(unsigned PY_LONG_LONG))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_plot_t, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+        } else if ((sizeof(enum sox_plot_t) <= sizeof(unsigned PY_LONG_LONG))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_plot_t, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
 #endif
         }
     } else {
 #if CYTHON_USE_PYLONG_INTERNALS
         if (__Pyx_PyLong_IsCompact(x)) {
-            __PYX_VERIFY_RETURN_INT(sox_plot_t, __Pyx_compact_pylong, __Pyx_PyLong_CompactValue(x))
+            __PYX_VERIFY_RETURN_INT(enum sox_plot_t, __Pyx_compact_pylong, __Pyx_PyLong_CompactValue(x))
         } else {
             const digit* digits = __Pyx_PyLong_Digits(x);
             assert(__Pyx_PyLong_DigitCount(x) > 1);
             switch (__Pyx_PyLong_SignedDigitCount(x)) {
                 case -2:
-                    if ((8 * sizeof(sox_plot_t) - 1 > 1 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_plot_t) - 1 > 1 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 2 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_plot_t, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_plot_t) - 1 > 2 * PyLong_SHIFT)) {
-                            return (sox_plot_t) (((sox_plot_t)-1)*(((((sox_plot_t)digits[1]) << PyLong_SHIFT) | (sox_plot_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_plot_t, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_plot_t) - 1 > 2 * PyLong_SHIFT)) {
+                            return (enum sox_plot_t) (((enum sox_plot_t)-1)*(((((enum sox_plot_t)digits[1]) << PyLong_SHIFT) | (enum sox_plot_t)digits[0])));
                         }
                     }
                     break;
                 case 2:
-                    if ((8 * sizeof(sox_plot_t) > 1 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_plot_t) > 1 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 2 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_plot_t, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_plot_t) - 1 > 2 * PyLong_SHIFT)) {
-                            return (sox_plot_t) ((((((sox_plot_t)digits[1]) << PyLong_SHIFT) | (sox_plot_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_plot_t, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_plot_t) - 1 > 2 * PyLong_SHIFT)) {
+                            return (enum sox_plot_t) ((((((enum sox_plot_t)digits[1]) << PyLong_SHIFT) | (enum sox_plot_t)digits[0])));
                         }
                     }
                     break;
                 case -3:
-                    if ((8 * sizeof(sox_plot_t) - 1 > 2 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_plot_t) - 1 > 2 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 3 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_plot_t, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_plot_t) - 1 > 3 * PyLong_SHIFT)) {
-                            return (sox_plot_t) (((sox_plot_t)-1)*(((((((sox_plot_t)digits[2]) << PyLong_SHIFT) | (sox_plot_t)digits[1]) << PyLong_SHIFT) | (sox_plot_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_plot_t, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_plot_t) - 1 > 3 * PyLong_SHIFT)) {
+                            return (enum sox_plot_t) (((enum sox_plot_t)-1)*(((((((enum sox_plot_t)digits[2]) << PyLong_SHIFT) | (enum sox_plot_t)digits[1]) << PyLong_SHIFT) | (enum sox_plot_t)digits[0])));
                         }
                     }
                     break;
                 case 3:
-                    if ((8 * sizeof(sox_plot_t) > 2 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_plot_t) > 2 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 3 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_plot_t, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_plot_t) - 1 > 3 * PyLong_SHIFT)) {
-                            return (sox_plot_t) ((((((((sox_plot_t)digits[2]) << PyLong_SHIFT) | (sox_plot_t)digits[1]) << PyLong_SHIFT) | (sox_plot_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_plot_t, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_plot_t) - 1 > 3 * PyLong_SHIFT)) {
+                            return (enum sox_plot_t) ((((((((enum sox_plot_t)digits[2]) << PyLong_SHIFT) | (enum sox_plot_t)digits[1]) << PyLong_SHIFT) | (enum sox_plot_t)digits[0])));
                         }
                     }
                     break;
                 case -4:
-                    if ((8 * sizeof(sox_plot_t) - 1 > 3 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_plot_t) - 1 > 3 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 4 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_plot_t, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_plot_t) - 1 > 4 * PyLong_SHIFT)) {
-                            return (sox_plot_t) (((sox_plot_t)-1)*(((((((((sox_plot_t)digits[3]) << PyLong_SHIFT) | (sox_plot_t)digits[2]) << PyLong_SHIFT) | (sox_plot_t)digits[1]) << PyLong_SHIFT) | (sox_plot_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_plot_t, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_plot_t) - 1 > 4 * PyLong_SHIFT)) {
+                            return (enum sox_plot_t) (((enum sox_plot_t)-1)*(((((((((enum sox_plot_t)digits[3]) << PyLong_SHIFT) | (enum sox_plot_t)digits[2]) << PyLong_SHIFT) | (enum sox_plot_t)digits[1]) << PyLong_SHIFT) | (enum sox_plot_t)digits[0])));
                         }
                     }
                     break;
                 case 4:
-                    if ((8 * sizeof(sox_plot_t) > 3 * PyLong_SHIFT)) {
+                    if ((8 * sizeof(enum sox_plot_t) > 3 * PyLong_SHIFT)) {
                         if ((8 * sizeof(unsigned long) > 4 * PyLong_SHIFT)) {
-                            __PYX_VERIFY_RETURN_INT(sox_plot_t, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if ((8 * sizeof(sox_plot_t) - 1 > 4 * PyLong_SHIFT)) {
-                            return (sox_plot_t) ((((((((((sox_plot_t)digits[3]) << PyLong_SHIFT) | (sox_plot_t)digits[2]) << PyLong_SHIFT) | (sox_plot_t)digits[1]) << PyLong_SHIFT) | (sox_plot_t)digits[0])));
+                            __PYX_VERIFY_RETURN_INT(enum sox_plot_t, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if ((8 * sizeof(enum sox_plot_t) - 1 > 4 * PyLong_SHIFT)) {
+                            return (enum sox_plot_t) ((((((((((enum sox_plot_t)digits[3]) << PyLong_SHIFT) | (enum sox_plot_t)digits[2]) << PyLong_SHIFT) | (enum sox_plot_t)digits[1]) << PyLong_SHIFT) | (enum sox_plot_t)digits[0])));
                         }
                     }
                     break;
             }
         }
 #endif
-        if ((sizeof(sox_plot_t) <= sizeof(long))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_plot_t, long, PyLong_AsLong(x))
+        if ((sizeof(enum sox_plot_t) <= sizeof(long))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_plot_t, long, PyLong_AsLong(x))
 #ifdef HAVE_LONG_LONG
-        } else if ((sizeof(sox_plot_t) <= sizeof(PY_LONG_LONG))) {
-            __PYX_VERIFY_RETURN_INT_EXC(sox_plot_t, PY_LONG_LONG, PyLong_AsLongLong(x))
+        } else if ((sizeof(enum sox_plot_t) <= sizeof(PY_LONG_LONG))) {
+            __PYX_VERIFY_RETURN_INT_EXC(enum sox_plot_t, PY_LONG_LONG, PyLong_AsLongLong(x))
 #endif
         }
     }
     {
-        sox_plot_t val;
+        enum sox_plot_t val;
         int ret = -1;
 #if PY_VERSION_HEX >= 0x030d00A6 && !CYTHON_COMPILING_IN_LIMITED_API
         Py_ssize_t bytes_copied = PyLong_AsNativeBytes(
@@ -47191,20 +47191,20 @@ static CYTHON_INLINE sox_plot_t __Pyx_PyLong_As_sox_plot_t(PyObject *x) {
 #else
         PyErr_SetString(PyExc_RuntimeError,
                         "_PyLong_AsByteArray() or PyLong_AsNativeBytes() not available, cannot convert large enums");
-        val = (sox_plot_t) -1;
+        val = (enum sox_plot_t) -1;
 #endif
         if (unlikely(ret))
-            return (sox_plot_t) -1;
+            return (enum sox_plot_t) -1;
         return val;
     }
 raise_overflow:
     PyErr_SetString(PyExc_OverflowError,
-        "value too large to convert to sox_plot_t");
-    return (sox_plot_t) -1;
+        "value too large to convert to enum sox_plot_t");
+    return (enum sox_plot_t) -1;
 raise_neg_overflow:
     PyErr_SetString(PyExc_OverflowError,
-        "can't convert negative value to sox_plot_t");
-    return (sox_plot_t) -1;
+        "can't convert negative value to enum sox_plot_t");
+    return (enum sox_plot_t) -1;
 }
 
 /* CIntToPy */
@@ -47279,31 +47279,31 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_unsigned_int(unsigned int value
 }
 
 /* CIntToPy */
-static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_encoding_t(sox_encoding_t value) {
+static CYTHON_INLINE PyObject* __Pyx_PyLong_From_enum__sox_encoding_t(enum sox_encoding_t value) {
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
-    const sox_encoding_t neg_one = (sox_encoding_t) -1, const_zero = (sox_encoding_t) 0;
+    const enum sox_encoding_t neg_one = (enum sox_encoding_t) -1, const_zero = (enum sox_encoding_t) 0;
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic pop
 #endif
     const int is_unsigned = neg_one > const_zero;
     if (is_unsigned) {
-        if (sizeof(sox_encoding_t) < sizeof(long)) {
+        if (sizeof(enum sox_encoding_t) < sizeof(long)) {
             return PyLong_FromLong((long) value);
-        } else if (sizeof(sox_encoding_t) <= sizeof(unsigned long)) {
+        } else if (sizeof(enum sox_encoding_t) <= sizeof(unsigned long)) {
             return PyLong_FromUnsignedLong((unsigned long) value);
 #if defined(HAVE_LONG_LONG) && !CYTHON_COMPILING_IN_PYPY
-        } else if (sizeof(sox_encoding_t) <= sizeof(unsigned PY_LONG_LONG)) {
+        } else if (sizeof(enum sox_encoding_t) <= sizeof(unsigned PY_LONG_LONG)) {
             return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
 #endif
         }
     } else {
-        if (sizeof(sox_encoding_t) <= sizeof(long)) {
+        if (sizeof(enum sox_encoding_t) <= sizeof(long)) {
             return PyLong_FromLong((long) value);
 #ifdef HAVE_LONG_LONG
-        } else if (sizeof(sox_encoding_t) <= sizeof(PY_LONG_LONG)) {
+        } else if (sizeof(enum sox_encoding_t) <= sizeof(PY_LONG_LONG)) {
             return PyLong_FromLongLong((PY_LONG_LONG) value);
 #endif
         }
@@ -47318,7 +47318,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_encoding_t(sox_encoding_t v
         }
 #elif !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX < 0x030d0000
         int one = 1; int little = (int)*(unsigned char *)&one;
-        return _PyLong_FromByteArray(bytes, sizeof(sox_encoding_t),
+        return _PyLong_FromByteArray(bytes, sizeof(enum sox_encoding_t),
                                      little, !is_unsigned);
 #else
         int one = 1; int little = (int)*(unsigned char *)&one;
@@ -47326,7 +47326,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_encoding_t(sox_encoding_t v
         PyObject *py_bytes = NULL, *order_str = NULL;
         from_bytes = PyObject_GetAttrString((PyObject*)&PyLong_Type, "from_bytes");
         if (!from_bytes) return NULL;
-        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(sox_encoding_t));
+        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(enum sox_encoding_t));
         if (!py_bytes) goto limited_bad;
         order_str = PyUnicode_FromString(little ? "little" : "big");
         if (!order_str) goto limited_bad;
@@ -47350,31 +47350,31 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_encoding_t(sox_encoding_t v
 }
 
 /* CIntToPy */
-static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_option_t(sox_option_t value) {
+static CYTHON_INLINE PyObject* __Pyx_PyLong_From_enum__sox_option_t(enum sox_option_t value) {
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
-    const sox_option_t neg_one = (sox_option_t) -1, const_zero = (sox_option_t) 0;
+    const enum sox_option_t neg_one = (enum sox_option_t) -1, const_zero = (enum sox_option_t) 0;
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic pop
 #endif
     const int is_unsigned = neg_one > const_zero;
     if (is_unsigned) {
-        if (sizeof(sox_option_t) < sizeof(long)) {
+        if (sizeof(enum sox_option_t) < sizeof(long)) {
             return PyLong_FromLong((long) value);
-        } else if (sizeof(sox_option_t) <= sizeof(unsigned long)) {
+        } else if (sizeof(enum sox_option_t) <= sizeof(unsigned long)) {
             return PyLong_FromUnsignedLong((unsigned long) value);
 #if defined(HAVE_LONG_LONG) && !CYTHON_COMPILING_IN_PYPY
-        } else if (sizeof(sox_option_t) <= sizeof(unsigned PY_LONG_LONG)) {
+        } else if (sizeof(enum sox_option_t) <= sizeof(unsigned PY_LONG_LONG)) {
             return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
 #endif
         }
     } else {
-        if (sizeof(sox_option_t) <= sizeof(long)) {
+        if (sizeof(enum sox_option_t) <= sizeof(long)) {
             return PyLong_FromLong((long) value);
 #ifdef HAVE_LONG_LONG
-        } else if (sizeof(sox_option_t) <= sizeof(PY_LONG_LONG)) {
+        } else if (sizeof(enum sox_option_t) <= sizeof(PY_LONG_LONG)) {
             return PyLong_FromLongLong((PY_LONG_LONG) value);
 #endif
         }
@@ -47389,7 +47389,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_option_t(sox_option_t value
         }
 #elif !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX < 0x030d0000
         int one = 1; int little = (int)*(unsigned char *)&one;
-        return _PyLong_FromByteArray(bytes, sizeof(sox_option_t),
+        return _PyLong_FromByteArray(bytes, sizeof(enum sox_option_t),
                                      little, !is_unsigned);
 #else
         int one = 1; int little = (int)*(unsigned char *)&one;
@@ -47397,7 +47397,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_option_t(sox_option_t value
         PyObject *py_bytes = NULL, *order_str = NULL;
         from_bytes = PyObject_GetAttrString((PyObject*)&PyLong_Type, "from_bytes");
         if (!from_bytes) return NULL;
-        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(sox_option_t));
+        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(enum sox_option_t));
         if (!py_bytes) goto limited_bad;
         order_str = PyUnicode_FromString(little ? "little" : "big");
         if (!order_str) goto limited_bad;
@@ -47421,31 +47421,31 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_option_t(sox_option_t value
 }
 
 /* CIntToPy */
-static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_bool(sox_bool value) {
+static CYTHON_INLINE PyObject* __Pyx_PyLong_From_enum__sox_bool(enum sox_bool value) {
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
-    const sox_bool neg_one = (sox_bool) -1, const_zero = (sox_bool) 0;
+    const enum sox_bool neg_one = (enum sox_bool) -1, const_zero = (enum sox_bool) 0;
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic pop
 #endif
     const int is_unsigned = neg_one > const_zero;
     if (is_unsigned) {
-        if (sizeof(sox_bool) < sizeof(long)) {
+        if (sizeof(enum sox_bool) < sizeof(long)) {
             return PyLong_FromLong((long) value);
-        } else if (sizeof(sox_bool) <= sizeof(unsigned long)) {
+        } else if (sizeof(enum sox_bool) <= sizeof(unsigned long)) {
             return PyLong_FromUnsignedLong((unsigned long) value);
 #if defined(HAVE_LONG_LONG) && !CYTHON_COMPILING_IN_PYPY
-        } else if (sizeof(sox_bool) <= sizeof(unsigned PY_LONG_LONG)) {
+        } else if (sizeof(enum sox_bool) <= sizeof(unsigned PY_LONG_LONG)) {
             return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
 #endif
         }
     } else {
-        if (sizeof(sox_bool) <= sizeof(long)) {
+        if (sizeof(enum sox_bool) <= sizeof(long)) {
             return PyLong_FromLong((long) value);
 #ifdef HAVE_LONG_LONG
-        } else if (sizeof(sox_bool) <= sizeof(PY_LONG_LONG)) {
+        } else if (sizeof(enum sox_bool) <= sizeof(PY_LONG_LONG)) {
             return PyLong_FromLongLong((PY_LONG_LONG) value);
 #endif
         }
@@ -47460,7 +47460,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_bool(sox_bool value) {
         }
 #elif !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX < 0x030d0000
         int one = 1; int little = (int)*(unsigned char *)&one;
-        return _PyLong_FromByteArray(bytes, sizeof(sox_bool),
+        return _PyLong_FromByteArray(bytes, sizeof(enum sox_bool),
                                      little, !is_unsigned);
 #else
         int one = 1; int little = (int)*(unsigned char *)&one;
@@ -47468,7 +47468,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_bool(sox_bool value) {
         PyObject *py_bytes = NULL, *order_str = NULL;
         from_bytes = PyObject_GetAttrString((PyObject*)&PyLong_Type, "from_bytes");
         if (!from_bytes) return NULL;
-        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(sox_bool));
+        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(enum sox_bool));
         if (!py_bytes) goto limited_bad;
         order_str = PyUnicode_FromString(little ? "little" : "big");
         if (!order_str) goto limited_bad;
@@ -47888,31 +47888,31 @@ raise_neg_overflow:
 }
 
 /* CIntToPy */
-static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_version_flags_t(sox_version_flags_t value) {
+static CYTHON_INLINE PyObject* __Pyx_PyLong_From_enum__sox_version_flags_t(enum sox_version_flags_t value) {
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
-    const sox_version_flags_t neg_one = (sox_version_flags_t) -1, const_zero = (sox_version_flags_t) 0;
+    const enum sox_version_flags_t neg_one = (enum sox_version_flags_t) -1, const_zero = (enum sox_version_flags_t) 0;
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic pop
 #endif
     const int is_unsigned = neg_one > const_zero;
     if (is_unsigned) {
-        if (sizeof(sox_version_flags_t) < sizeof(long)) {
+        if (sizeof(enum sox_version_flags_t) < sizeof(long)) {
             return PyLong_FromLong((long) value);
-        } else if (sizeof(sox_version_flags_t) <= sizeof(unsigned long)) {
+        } else if (sizeof(enum sox_version_flags_t) <= sizeof(unsigned long)) {
             return PyLong_FromUnsignedLong((unsigned long) value);
 #if defined(HAVE_LONG_LONG) && !CYTHON_COMPILING_IN_PYPY
-        } else if (sizeof(sox_version_flags_t) <= sizeof(unsigned PY_LONG_LONG)) {
+        } else if (sizeof(enum sox_version_flags_t) <= sizeof(unsigned PY_LONG_LONG)) {
             return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
 #endif
         }
     } else {
-        if (sizeof(sox_version_flags_t) <= sizeof(long)) {
+        if (sizeof(enum sox_version_flags_t) <= sizeof(long)) {
             return PyLong_FromLong((long) value);
 #ifdef HAVE_LONG_LONG
-        } else if (sizeof(sox_version_flags_t) <= sizeof(PY_LONG_LONG)) {
+        } else if (sizeof(enum sox_version_flags_t) <= sizeof(PY_LONG_LONG)) {
             return PyLong_FromLongLong((PY_LONG_LONG) value);
 #endif
         }
@@ -47927,7 +47927,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_version_flags_t(sox_version
         }
 #elif !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX < 0x030d0000
         int one = 1; int little = (int)*(unsigned char *)&one;
-        return _PyLong_FromByteArray(bytes, sizeof(sox_version_flags_t),
+        return _PyLong_FromByteArray(bytes, sizeof(enum sox_version_flags_t),
                                      little, !is_unsigned);
 #else
         int one = 1; int little = (int)*(unsigned char *)&one;
@@ -47935,7 +47935,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_version_flags_t(sox_version
         PyObject *py_bytes = NULL, *order_str = NULL;
         from_bytes = PyObject_GetAttrString((PyObject*)&PyLong_Type, "from_bytes");
         if (!from_bytes) return NULL;
-        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(sox_version_flags_t));
+        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(enum sox_version_flags_t));
         if (!py_bytes) goto limited_bad;
         order_str = PyUnicode_FromString(little ? "little" : "big");
         if (!order_str) goto limited_bad;
@@ -48101,31 +48101,31 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_int32_t(sox_int32_t value) 
 }
 
 /* CIntToPy */
-static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_plot_t(sox_plot_t value) {
+static CYTHON_INLINE PyObject* __Pyx_PyLong_From_enum__sox_plot_t(enum sox_plot_t value) {
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
-    const sox_plot_t neg_one = (sox_plot_t) -1, const_zero = (sox_plot_t) 0;
+    const enum sox_plot_t neg_one = (enum sox_plot_t) -1, const_zero = (enum sox_plot_t) 0;
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic pop
 #endif
     const int is_unsigned = neg_one > const_zero;
     if (is_unsigned) {
-        if (sizeof(sox_plot_t) < sizeof(long)) {
+        if (sizeof(enum sox_plot_t) < sizeof(long)) {
             return PyLong_FromLong((long) value);
-        } else if (sizeof(sox_plot_t) <= sizeof(unsigned long)) {
+        } else if (sizeof(enum sox_plot_t) <= sizeof(unsigned long)) {
             return PyLong_FromUnsignedLong((unsigned long) value);
 #if defined(HAVE_LONG_LONG) && !CYTHON_COMPILING_IN_PYPY
-        } else if (sizeof(sox_plot_t) <= sizeof(unsigned PY_LONG_LONG)) {
+        } else if (sizeof(enum sox_plot_t) <= sizeof(unsigned PY_LONG_LONG)) {
             return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
 #endif
         }
     } else {
-        if (sizeof(sox_plot_t) <= sizeof(long)) {
+        if (sizeof(enum sox_plot_t) <= sizeof(long)) {
             return PyLong_FromLong((long) value);
 #ifdef HAVE_LONG_LONG
-        } else if (sizeof(sox_plot_t) <= sizeof(PY_LONG_LONG)) {
+        } else if (sizeof(enum sox_plot_t) <= sizeof(PY_LONG_LONG)) {
             return PyLong_FromLongLong((PY_LONG_LONG) value);
 #endif
         }
@@ -48140,7 +48140,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_plot_t(sox_plot_t value) {
         }
 #elif !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX < 0x030d0000
         int one = 1; int little = (int)*(unsigned char *)&one;
-        return _PyLong_FromByteArray(bytes, sizeof(sox_plot_t),
+        return _PyLong_FromByteArray(bytes, sizeof(enum sox_plot_t),
                                      little, !is_unsigned);
 #else
         int one = 1; int little = (int)*(unsigned char *)&one;
@@ -48148,7 +48148,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_plot_t(sox_plot_t value) {
         PyObject *py_bytes = NULL, *order_str = NULL;
         from_bytes = PyObject_GetAttrString((PyObject*)&PyLong_Type, "from_bytes");
         if (!from_bytes) return NULL;
-        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(sox_plot_t));
+        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(enum sox_plot_t));
         if (!py_bytes) goto limited_bad;
         order_str = PyUnicode_FromString(little ? "little" : "big");
         if (!order_str) goto limited_bad;
@@ -48172,31 +48172,31 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_plot_t(sox_plot_t value) {
 }
 
 /* CIntToPy */
-static CYTHON_INLINE PyObject* __Pyx_PyLong_From_lsx_io_type(lsx_io_type value) {
+static CYTHON_INLINE PyObject* __Pyx_PyLong_From_enum__lsx_io_type(enum lsx_io_type value) {
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
-    const lsx_io_type neg_one = (lsx_io_type) -1, const_zero = (lsx_io_type) 0;
+    const enum lsx_io_type neg_one = (enum lsx_io_type) -1, const_zero = (enum lsx_io_type) 0;
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic pop
 #endif
     const int is_unsigned = neg_one > const_zero;
     if (is_unsigned) {
-        if (sizeof(lsx_io_type) < sizeof(long)) {
+        if (sizeof(enum lsx_io_type) < sizeof(long)) {
             return PyLong_FromLong((long) value);
-        } else if (sizeof(lsx_io_type) <= sizeof(unsigned long)) {
+        } else if (sizeof(enum lsx_io_type) <= sizeof(unsigned long)) {
             return PyLong_FromUnsignedLong((unsigned long) value);
 #if defined(HAVE_LONG_LONG) && !CYTHON_COMPILING_IN_PYPY
-        } else if (sizeof(lsx_io_type) <= sizeof(unsigned PY_LONG_LONG)) {
+        } else if (sizeof(enum lsx_io_type) <= sizeof(unsigned PY_LONG_LONG)) {
             return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
 #endif
         }
     } else {
-        if (sizeof(lsx_io_type) <= sizeof(long)) {
+        if (sizeof(enum lsx_io_type) <= sizeof(long)) {
             return PyLong_FromLong((long) value);
 #ifdef HAVE_LONG_LONG
-        } else if (sizeof(lsx_io_type) <= sizeof(PY_LONG_LONG)) {
+        } else if (sizeof(enum lsx_io_type) <= sizeof(PY_LONG_LONG)) {
             return PyLong_FromLongLong((PY_LONG_LONG) value);
 #endif
         }
@@ -48211,7 +48211,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_lsx_io_type(lsx_io_type value) 
         }
 #elif !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX < 0x030d0000
         int one = 1; int little = (int)*(unsigned char *)&one;
-        return _PyLong_FromByteArray(bytes, sizeof(lsx_io_type),
+        return _PyLong_FromByteArray(bytes, sizeof(enum lsx_io_type),
                                      little, !is_unsigned);
 #else
         int one = 1; int little = (int)*(unsigned char *)&one;
@@ -48219,7 +48219,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_lsx_io_type(lsx_io_type value) 
         PyObject *py_bytes = NULL, *order_str = NULL;
         from_bytes = PyObject_GetAttrString((PyObject*)&PyLong_Type, "from_bytes");
         if (!from_bytes) return NULL;
-        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(lsx_io_type));
+        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(enum lsx_io_type));
         if (!py_bytes) goto limited_bad;
         order_str = PyUnicode_FromString(little ? "little" : "big");
         if (!order_str) goto limited_bad;
@@ -48243,31 +48243,31 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_lsx_io_type(lsx_io_type value) 
 }
 
 /* CIntToPy */
-static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_encodings_flags_t(sox_encodings_flags_t value) {
+static CYTHON_INLINE PyObject* __Pyx_PyLong_From_enum__sox_encodings_flags_t(enum sox_encodings_flags_t value) {
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
-    const sox_encodings_flags_t neg_one = (sox_encodings_flags_t) -1, const_zero = (sox_encodings_flags_t) 0;
+    const enum sox_encodings_flags_t neg_one = (enum sox_encodings_flags_t) -1, const_zero = (enum sox_encodings_flags_t) 0;
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
 #pragma GCC diagnostic pop
 #endif
     const int is_unsigned = neg_one > const_zero;
     if (is_unsigned) {
-        if (sizeof(sox_encodings_flags_t) < sizeof(long)) {
+        if (sizeof(enum sox_encodings_flags_t) < sizeof(long)) {
             return PyLong_FromLong((long) value);
-        } else if (sizeof(sox_encodings_flags_t) <= sizeof(unsigned long)) {
+        } else if (sizeof(enum sox_encodings_flags_t) <= sizeof(unsigned long)) {
             return PyLong_FromUnsignedLong((unsigned long) value);
 #if defined(HAVE_LONG_LONG) && !CYTHON_COMPILING_IN_PYPY
-        } else if (sizeof(sox_encodings_flags_t) <= sizeof(unsigned PY_LONG_LONG)) {
+        } else if (sizeof(enum sox_encodings_flags_t) <= sizeof(unsigned PY_LONG_LONG)) {
             return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
 #endif
         }
     } else {
-        if (sizeof(sox_encodings_flags_t) <= sizeof(long)) {
+        if (sizeof(enum sox_encodings_flags_t) <= sizeof(long)) {
             return PyLong_FromLong((long) value);
 #ifdef HAVE_LONG_LONG
-        } else if (sizeof(sox_encodings_flags_t) <= sizeof(PY_LONG_LONG)) {
+        } else if (sizeof(enum sox_encodings_flags_t) <= sizeof(PY_LONG_LONG)) {
             return PyLong_FromLongLong((PY_LONG_LONG) value);
 #endif
         }
@@ -48282,7 +48282,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_encodings_flags_t(sox_encod
         }
 #elif !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX < 0x030d0000
         int one = 1; int little = (int)*(unsigned char *)&one;
-        return _PyLong_FromByteArray(bytes, sizeof(sox_encodings_flags_t),
+        return _PyLong_FromByteArray(bytes, sizeof(enum sox_encodings_flags_t),
                                      little, !is_unsigned);
 #else
         int one = 1; int little = (int)*(unsigned char *)&one;
@@ -48290,7 +48290,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyLong_From_sox_encodings_flags_t(sox_encod
         PyObject *py_bytes = NULL, *order_str = NULL;
         from_bytes = PyObject_GetAttrString((PyObject*)&PyLong_Type, "from_bytes");
         if (!from_bytes) return NULL;
-        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(sox_encodings_flags_t));
+        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(enum sox_encodings_flags_t));
         if (!py_bytes) goto limited_bad;
         order_str = PyUnicode_FromString(little ? "little" : "big");
         if (!order_str) goto limited_bad;

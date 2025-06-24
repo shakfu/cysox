@@ -11,7 +11,9 @@ INCLUDE_DIR = root / "include"
 EXTRA_OBJECTS = [str(p) for p in LIB_DIR.glob('*.a')]
 
 extensions = [
-    Extension("cysox.sox", ["src/cysox/sox.pyx"],
+    Extension("cysox.sox", sources = [
+            "src/cysox/sox.pyx",
+        ],
         #libraries=LIBNAME,
         include_dirs=[str(INCLUDE_DIR)],
         library_dirs=[str(LIB_DIR)],

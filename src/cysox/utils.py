@@ -44,17 +44,6 @@ def uint_max(bits: int) -> int:
 
 
 
-# Add error code constants
-# ERROR_CODES = {
-#     'SOX_SUCCESS': SOX_SUCCESS,
-#     'SOX_EOF': SOX_EOF,
-#     'SOX_EHDR': SOX_EHDR,
-#     'SOX_EFMT': SOX_EFMT,
-#     'SOX_ENOMEM': SOX_ENOMEM,
-#     'SOX_EPERM': SOX_EPERM,
-#     'SOX_ENOTSUP': SOX_ENOTSUP,
-#     'SOX_EINVAL': SOX_EINVAL,
-# }
 
 # Sample conversion utility functions
 # def sample_to_unsigned(bits: int, sample: int, clips: int) -> int:
