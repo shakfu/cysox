@@ -270,7 +270,7 @@ cdef extern from "sox.h":
         sox_format_t * ft,
         sox_sample_t * buf, # Buffer to which samples are written.
         size_t len # Capacity of buf, measured in samples.
-        )
+    )
 
     # Callback to close writer (decoder),
     # used by sox_format_handler.stopwrite.
@@ -283,7 +283,7 @@ cdef extern from "sox.h":
     ctypedef int (* sox_format_handler_seek)(
         sox_format_t * ft,
         sox_uint64_t offset # Sample offset to which reader should be positioned.
-        )
+    )
 
     # Callback to parse command-line arguments (called once per effect),
     # used by sox_effect_handler.getopts.
@@ -292,7 +292,7 @@ cdef extern from "sox.h":
         sox_effect_t * effp,
         int argc, # Number of arguments in argv.
         char *argv[] # Array of command-line arguments.
-        )
+    )
 
     # Callback to initialize effect (called once per flow),
     # used by sox_effect_handler.start.
@@ -308,7 +308,7 @@ cdef extern from "sox.h":
         sox_sample_t * obuf, # Buffer to which samples are written.
         size_t *isamp, # On entry, contains capacity of ibuf on exit, contains number of samples consumed.
         size_t *osamp # On entry, contains capacity of obuf on exit, contains number of samples written.
-        )
+    )
 
     # Callback to finish getting output after input is complete,
     # used by sox_effect_handler.drain.
@@ -317,7 +317,7 @@ cdef extern from "sox.h":
         sox_effect_t * effp,
         sox_sample_t *obuf, # Buffer to which samples are written.
         size_t *osamp # On entry, contains capacity of obuf on exit, contains number of samples written.
-        )
+    )
 
     # Callback to shut down effect (called once per flow),
     # used by sox_effect_handler.stop.
@@ -431,17 +431,17 @@ cdef extern from "sox.h":
 
     # Handler structure defined by each format.
     ctypedef struct sox_format_handler_t:
-        unsigned     sox_lib_version_code  # Checked on load must be 1st in struct*/
-        const char   * description   # short description of format
-        const char   ** names        # null-terminated array of filename extensions that are handled by this format
-        unsigned int flags                 # File flags (SOX_FILE_* values).
+        unsigned     sox_lib_version_code   # Checked on load must be 1st in struct*/
+        const char   * description          # short description of format
+        const char   ** names               # null-terminated array of filename extensions that are handled by this format
+        unsigned int flags                  # File flags (SOX_FILE_* values).
         sox_format_handler_startread startread # called to initialize reader (decoder)
-        sox_format_handler_read read       # called to read (decode) a block of samples
+        sox_format_handler_read read        # called to read (decode) a block of samples
         sox_format_handler_stopread stopread # called to close reader (decoder) may be null if no closing necessary
         sox_format_handler_startwrite startwrite # called to initialize writer (encoder)
-        sox_format_handler_write write     # called to write (encode) a block of samples
+        sox_format_handler_write write      # called to write (encode) a block of samples
         sox_format_handler_stopwrite stopwrite # called to close writer (decoder) may be null if no closing necessary
-        sox_format_handler_seek seek       # called to reposition reader may be null if not supported
+        sox_format_handler_seek seek        # called to reposition reader may be null if not supported
 
         # Array of values indicating the encodings and precisions supported for
         # writing (encoding). Precisions specified with default precision first.
@@ -634,7 +634,8 @@ cdef extern from "sox.h":
         const char               * path,
         const sox_signalinfo_t   * signal,
         const sox_encodinginfo_t * encoding,
-        const char               * filetype)
+        const char               * filetype
+    )
 
 
     # Opens a decoding session for a memory buffer. Returned handle must be closed with sox_close().
@@ -644,8 +645,8 @@ cdef extern from "sox.h":
         size_t buffer_size,                  # Number of bytes to read from audio data buffer.
         const sox_signalinfo_t * signal,     # Information already known about audio stream, or NULL if none.     
         const sox_encodinginfo_t * encoding, # Information already known about sample encoding, or NULL if none.   
-        const char * filetype)               # Previously-determined file type, or NULL to auto-detect.
-
+        const char * filetype                # Previously-determined file type, or NULL to auto-detect.
+    )
 
     # Opens an encoding session for a file. Returned handle must be closed with sox_close().
     # @returns The new session handle, or null on failure.
@@ -656,7 +657,7 @@ cdef extern from "sox.h":
         const char * filetype,               # Previously-determined file type, or NULL to auto-detect. 
         const sox_oob_t * oob,               # Out-of-band data to add to file, or NULL if none. 
         sox_bool (* overwrite_permitted)(char * filename) # Called if file exists to determine whether overwrite is ok. 
-        )
+    )
 
     # Returns true if the format handler for the specified file type supports the specified encoding.
     # @returns true if the format handler for the specified file type supports the specified encoding.
@@ -664,7 +665,7 @@ cdef extern from "sox.h":
         const char * path,       # Path to file to be examined (required if filetype is NULL). */
         const char * filetype,   # Previously-determined file type, or NULL to use extension from path. */
         const sox_encodinginfo_t * encoding    # Encoding for which format handler should be queried. */
-        )
+    )
 
     # Gets the format handler for a specified file type.
     # @returns The found format handler, or null if not found.
@@ -672,7 +673,7 @@ cdef extern from "sox.h":
         const char * path,         # Path to file (required if filetype is NULL). 
         const char * filetype,     # Filetype for which handler is needed, or NULL to use extension from path. 
         const char ** filetype1    # Receives the filetype that was detected. Pass NULL if not needed. 
-        )
+    )
 
     # Opens an encoding session for a memory buffer. Returned handle must be closed with sox_close().
     # @returns The new session handle, or null on failure.
@@ -683,7 +684,7 @@ cdef extern from "sox.h":
         const sox_encodinginfo_t * encoding,    # Information about desired sample encoding, or NULL to use defaults. 
         const char               * filetype,    # Previously-determined file type, or NULL to auto-detect. 
         const sox_oob_t          * oob          # Out-of-band data to add to file, or NULL if none. 
-        )
+    )
 
     # Opens an encoding session for a memstream buffer. Returned handle must be closed with sox_close().
     # @returns The new session handle, or null on failure.
@@ -694,7 +695,7 @@ cdef extern from "sox.h":
         const sox_encodinginfo_t * encoding,        # Information about desired sample encoding, or NULL to use defaults. 
         const char * filetype,        # Previously-determined file type, or NULL to auto-detect. 
         const sox_oob_t * oob         # Out-of-band data to add to file, or NULL if none. 
-        )
+    )
 
     # Reads samples from a decoding session into a sample buffer.
     # @returns Number of samples decoded, or 0 for EOF.
@@ -702,7 +703,7 @@ cdef extern from "sox.h":
         sox_format_t * ft, # Format pointer. 
         sox_sample_t *buf, # Buffer from which to read samples. 
         size_t len # Number of samples available in buf. 
-        )
+    )
 
     # Writes samples to an encoding session from a sample buffer.
     # @returns Number of samples encoded.
@@ -710,7 +711,7 @@ cdef extern from "sox.h":
         sox_format_t * ft,        # Format pointer. 
         const sox_sample_t * buf, # Buffer from which to read samples. 
         size_t len # Number of samples available in buf. 
-        )
+    )
 
     # Closes an encoding or decoding session.
     # @returns SOX_SUCCESS if successful.
@@ -722,14 +723,14 @@ cdef extern from "sox.h":
         sox_format_t * ft, # Format pointer. 
         sox_uint64_t offset, # Sample offset at which to position reader. 
         int whence # Set to SOX_SEEK_SET. 
-        )
+    )
 
     # Finds a format handler by name.
     # @returns Format handler data, or null if not found.
     cdef const sox_format_handler_t * sox_find_format(
         const char * name, # Name of format handler to find. 
         sox_bool ignore_devices # Set to true to ignore device names. 
-        )
+    )
 
     # Returns global parameters for effects
     # @returns global parameters for effects.
@@ -749,7 +750,7 @@ cdef extern from "sox.h":
         sox_effect_t *effp, # Effect pointer on which to set options. 
         int argc, # Number of arguments in argv. 
         const char * argv[] # Array of command-line options. 
-        )
+    )
 
     # Returns an array containing the known effect handlers.
     # @returns An array containing the known effect handlers.
@@ -760,7 +761,7 @@ cdef extern from "sox.h":
     cdef sox_effects_chain_t * sox_create_effects_chain(
         const sox_encodinginfo_t * in_enc, # Input encoding. 
         const sox_encodinginfo_t * out_enc # Output encoding. 
-        )
+    )
 
     # Closes an effects chain.
     cdef void sox_delete_effects_chain(sox_effects_chain_t *ecp)
@@ -772,21 +773,21 @@ cdef extern from "sox.h":
         sox_effect_t * effp,         # Effect to be added. 
         sox_signalinfo_t * in_,      # Input format. 
         const sox_signalinfo_t * out # Output format. 
-        )
+    )
 
     # Runs the effects chain, returns SOX_SUCCESS if successful.
     # @returns SOX_SUCCESS if successful.
     cdef int sox_flow_effects(
-         sox_effects_chain_t * chain, # Effects chain to run. 
-         sox_flow_effects_callback callback, # Callback for monitoring flow progress. 
-         void * client_data # Data to pass into callback. 
-        )
+        sox_effects_chain_t * chain, # Effects chain to run. 
+        sox_flow_effects_callback callback, # Callback for monitoring flow progress. 
+        void * client_data # Data to pass into callback. 
+    )
 
     # Gets the number of clips that occurred while running an effects chain.
     # @returns the number of clips that occurred while running an effects chain.
     cdef sox_uint64_t sox_effects_clips(
         sox_effects_chain_t * chain # Effects chain from which to read clip information. 
-        )
+    )
 
     # Shuts down an effect (calls stop on each of its flows).
     # @returns the number of clips from all flows.
@@ -796,13 +797,13 @@ cdef extern from "sox.h":
     cdef void sox_push_effect_last(
         sox_effects_chain_t * chain, # Effects chain to which effect should be added. 
         sox_effect_t * effp # Effect to be added. 
-        )
+    )
 
     # Removes and returns an effect from the end of the chain.
     # @returns the removed effect, or null if no effects.
     sox_effect_t * sox_pop_effect_last(
         sox_effects_chain_t *chain # Effects chain from which to remove an effect. 
-        )
+    )
 
     # Shut down and delete an effect.
     cdef void sox_delete_effect(sox_effect_t *effp)
@@ -832,7 +833,7 @@ cdef extern from "sox.h":
         sox_playlist_callback_t callback, # Callback to call for each item in the playlist. 
         void * p, # Data to pass to callback. 
         const char * listname # Filename of playlist file. 
-        )
+    )
 
     # Converts a SoX error code into an error string.
     # @returns error string corresponding to the specified error code,
@@ -847,4 +848,4 @@ cdef extern from "sox.h":
         char * base_buffer, # Buffer into which basename should be written. 
         size_t base_buffer_len, # Size of base_buffer, in bytes. 
         const char * filename # Filename from which to extract basename. 
-        )
+    )
