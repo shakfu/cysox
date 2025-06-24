@@ -1754,6 +1754,17 @@ def get_effect_fns():
     return result
 
 
+
+def int_min(int bits) -> int:
+    return SOX_INT_MIN(bits)
+
+def int_max(int bits) -> int:
+    return SOX_INT_MAX(bits)
+
+def uint_max(int bits) -> int:
+    return SOX_UINT_MAX(bits)
+
+
 # cdef int playlist_callback(void * callback, char * filename) noexcept:
 #     return SOX_SUCCESS
 
@@ -1791,6 +1802,15 @@ def get_effect_fns():
 #     returns Unsigned integer of width (bits).
 #     """
 #     return SOX_SAMPLE_TO_UNSIGNED(bits, sample, clips)
+
+
+
+
+
+# cdef int demo():
+#     cdef sox_sample_t sox_macro_temp_sample = 0
+#     cdef double sox_macro_temp_double = 0.0
+#     return SOX_SAMPLE_TO_UNSIGNED(8, 121330, 0)
 
 # def sample_to_signed(bits: int, sample: int, clips: int) -> int:
 #     """Converts sox_sample_t to a signed integer of width (bits).
@@ -1934,14 +1954,9 @@ def get_effect_fns():
 #     """Get maximum unsigned value for given bit depth."""
 #     return SOX_UINT_MAX(bits)
 
-# # Version utility functions
-# def lib_version(a: int, b: int, c: int) -> int:
-#     """Compute a 32-bit integer API version from three 8-bit parts."""
-#     return SOX_LIB_VERSION(a, b, c)
 
-# def lib_version_code() -> int:
-#     """Get the current libSoX version code."""
-#     return SOX_LIB_VERSION_CODE()
+
+
 
 def read_samples(format: Format, buffer: list, length: int) -> int:
     """Reads samples from a decoding session into a sample buffer."""
