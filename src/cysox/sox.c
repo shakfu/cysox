@@ -12448,7 +12448,7 @@ static PyObject *__pyx_pf_5cysox_3sox_9OutOfBand_8append_comment(struct __pyx_ob
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  char *__pyx_t_2;
+  char const *__pyx_t_2;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -12463,7 +12463,7 @@ static PyObject *__pyx_pf_5cysox_3sox_9OutOfBand_8append_comment(struct __pyx_ob
 */
   __pyx_t_1 = PyUnicode_AsEncodedString(__pyx_v_item, NULL, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 560, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 560, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBytes_AsString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 560, __pyx_L1_error)
   sox_append_comment((&__pyx_v_self->ptr->comments), __pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
@@ -12596,7 +12596,7 @@ static PyObject *__pyx_pf_5cysox_3sox_9OutOfBand_10append_comments(struct __pyx_
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  char *__pyx_t_2;
+  char const *__pyx_t_2;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -12611,7 +12611,7 @@ static PyObject *__pyx_pf_5cysox_3sox_9OutOfBand_10append_comments(struct __pyx_
 */
   __pyx_t_1 = PyUnicode_AsEncodedString(__pyx_v_items, NULL, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 564, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 564, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBytes_AsString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 564, __pyx_L1_error)
   sox_append_comments((&__pyx_v_self->ptr->comments), __pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
@@ -12779,7 +12779,7 @@ static PyObject *__pyx_pf_5cysox_3sox_9OutOfBand_12find_comment(struct __pyx_obj
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  char *__pyx_t_2;
+  char const *__pyx_t_2;
   int __pyx_t_3;
   Py_ssize_t __pyx_t_4;
   int __pyx_lineno = 0;
@@ -12796,7 +12796,7 @@ static PyObject *__pyx_pf_5cysox_3sox_9OutOfBand_12find_comment(struct __pyx_obj
 */
   __pyx_t_1 = PyUnicode_AsEncodedString(__pyx_v_id, NULL, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 572, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 572, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBytes_AsString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 572, __pyx_L1_error)
   __pyx_v_value = ((char *)sox_find_comment(__pyx_v_self->ptr->comments, __pyx_t_2));
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
@@ -17232,15 +17232,16 @@ static int __pyx_pf_5cysox_3sox_6Format_4__init__(struct __pyx_obj_5cysox_3sox_F
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
   PyObject *__pyx_t_2 = NULL;
-  char *__pyx_t_3;
+  char const *__pyx_t_3;
   sox_signalinfo_t *__pyx_t_4;
   sox_encodinginfo_t *__pyx_t_5;
   PyObject *__pyx_t_6 = NULL;
   PyObject *__pyx_t_7 = NULL;
   size_t __pyx_t_8;
-  PyObject *__pyx_t_9 = NULL;
-  PyObject *__pyx_t_10[4];
-  PyObject *__pyx_t_11 = NULL;
+  char const *__pyx_t_9;
+  PyObject *__pyx_t_10 = NULL;
+  PyObject *__pyx_t_11[4];
+  PyObject *__pyx_t_12 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -17269,7 +17270,7 @@ static int __pyx_pf_5cysox_3sox_6Format_4__init__(struct __pyx_obj_5cysox_3sox_F
     }
     __pyx_t_2 = PyUnicode_AsEncodedString(__pyx_v_filename, NULL, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 869, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_3 = __Pyx_PyBytes_AsWritableString(__pyx_t_2); if (unlikely((!__pyx_t_3) && PyErr_Occurred())) __PYX_ERR(0, 869, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyBytes_AsString(__pyx_t_2); if (unlikely((!__pyx_t_3) && PyErr_Occurred())) __PYX_ERR(0, 869, __pyx_L1_error)
 
     /* "cysox/sox.pyx":870
  *             self.ptr = sox_open_read(
@@ -17384,7 +17385,7 @@ static int __pyx_pf_5cysox_3sox_6Format_4__init__(struct __pyx_obj_5cysox_3sox_F
     }
     __pyx_t_2 = PyUnicode_AsEncodedString(__pyx_v_filename, NULL, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 878, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_3 = __Pyx_PyBytes_AsWritableString(__pyx_t_2); if (unlikely((!__pyx_t_3) && PyErr_Occurred())) __PYX_ERR(0, 878, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_PyBytes_AsString(__pyx_t_2); if (unlikely((!__pyx_t_9) && PyErr_Occurred())) __PYX_ERR(0, 878, __pyx_L1_error)
 
     /* "cysox/sox.pyx":880
  *                 filename.encode(),
@@ -17407,7 +17408,7 @@ static int __pyx_pf_5cysox_3sox_6Format_4__init__(struct __pyx_obj_5cysox_3sox_F
  *                 filename.encode(),
  *                 signal.ptr,
 */
-    __pyx_v_self->ptr = sox_open_write(__pyx_t_3, __pyx_v_signal->ptr, __pyx_t_5, NULL, NULL, NULL);
+    __pyx_v_self->ptr = sox_open_write(__pyx_t_9, __pyx_v_signal->ptr, __pyx_t_5, NULL, NULL, NULL);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
     /* "cysox/sox.pyx":874
@@ -17466,22 +17467,22 @@ static int __pyx_pf_5cysox_3sox_6Format_4__init__(struct __pyx_obj_5cysox_3sox_F
     __pyx_t_6 = NULL;
     __Pyx_INCREF(__pyx_builtin_MemoryError);
     __pyx_t_7 = __pyx_builtin_MemoryError; 
-    __pyx_t_9 = __Pyx_PyUnicode_Unicode(__pyx_v_filename); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 889, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_9);
-    __pyx_t_10[0] = __pyx_mstate_global->__pyx_kp_u_Failed_to_open_file;
-    __pyx_t_10[1] = __pyx_t_9;
-    __pyx_t_10[2] = __pyx_mstate_global->__pyx_kp_u_in_mode;
-    __pyx_t_10[3] = __pyx_v_mode;
-    __pyx_t_11 = __Pyx_PyUnicode_Join(__pyx_t_10, 4, 20 + __Pyx_PyUnicode_GET_LENGTH(__pyx_t_9) + 9 + __Pyx_PyUnicode_GET_LENGTH(__pyx_v_mode), 127 | __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_9) | __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_v_mode));
-    if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 889, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_11);
-    __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __pyx_t_10 = __Pyx_PyUnicode_Unicode(__pyx_v_filename); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 889, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_10);
+    __pyx_t_11[0] = __pyx_mstate_global->__pyx_kp_u_Failed_to_open_file;
+    __pyx_t_11[1] = __pyx_t_10;
+    __pyx_t_11[2] = __pyx_mstate_global->__pyx_kp_u_in_mode;
+    __pyx_t_11[3] = __pyx_v_mode;
+    __pyx_t_12 = __Pyx_PyUnicode_Join(__pyx_t_11, 4, 20 + __Pyx_PyUnicode_GET_LENGTH(__pyx_t_10) + 9 + __Pyx_PyUnicode_GET_LENGTH(__pyx_v_mode), 127 | __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_10) | __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_v_mode));
+    if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 889, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_12);
+    __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
     __pyx_t_8 = 1;
     {
-      PyObject *__pyx_callargs[2] = {__pyx_t_6, __pyx_t_11};
+      PyObject *__pyx_callargs[2] = {__pyx_t_6, __pyx_t_12};
       __pyx_t_2 = __Pyx_PyObject_FastCall(__pyx_t_7, __pyx_callargs+__pyx_t_8, (2-__pyx_t_8) | (__pyx_t_8*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
       __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
-      __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
+      __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
       if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 889, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
@@ -17523,8 +17524,8 @@ static int __pyx_pf_5cysox_3sox_6Format_4__init__(struct __pyx_obj_5cysox_3sox_F
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_XDECREF(__pyx_t_9);
-  __Pyx_XDECREF(__pyx_t_11);
+  __Pyx_XDECREF(__pyx_t_10);
+  __Pyx_XDECREF(__pyx_t_12);
   __Pyx_AddTraceback("cysox.sox.Format.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = -1;
   __pyx_L0:;
@@ -20086,7 +20087,7 @@ static int __pyx_pf_5cysox_3sox_13FormatHandler_4__init__(struct __pyx_obj_5cyso
   int __pyx_r;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  char *__pyx_t_2;
+  char const *__pyx_t_2;
   int __pyx_t_3;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -20106,7 +20107,7 @@ static int __pyx_pf_5cysox_3sox_13FormatHandler_4__init__(struct __pyx_obj_5cyso
   }
   __pyx_t_1 = PyUnicode_AsEncodedString(__pyx_v_path, NULL, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1024, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1024, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBytes_AsString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1024, __pyx_L1_error)
   __pyx_v_self->ptr = ((sox_format_handler_t *)sox_write_handler(__pyx_t_2, NULL, NULL));
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
@@ -20402,7 +20403,7 @@ static struct __pyx_obj_5cysox_3sox_FormatHandler *__pyx_pf_5cysox_3sox_13Format
   struct __pyx_obj_5cysox_3sox_FormatHandler *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  char *__pyx_t_2;
+  char const *__pyx_t_2;
   enum sox_bool __pyx_t_3;
   int __pyx_t_4;
   int __pyx_lineno = 0;
@@ -20429,7 +20430,7 @@ static struct __pyx_obj_5cysox_3sox_FormatHandler *__pyx_pf_5cysox_3sox_13Format
  *         if handler == NULL:
  *             return None
 */
-  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_v_name_bytes); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1040, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBytes_AsString(__pyx_v_name_bytes); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1040, __pyx_L1_error)
   __pyx_t_3 = ((enum sox_bool)__Pyx_PyLong_As_enum__sox_bool(__pyx_v_ignore_devices)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 1040, __pyx_L1_error)
   __pyx_v_handler = sox_find_format(__pyx_t_2, __pyx_t_3);
 
@@ -22339,7 +22340,7 @@ static struct __pyx_obj_5cysox_3sox_Effect *__pyx_pf_5cysox_3sox_13EffectHandler
   struct __pyx_obj_5cysox_3sox_Effect *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  char *__pyx_t_2;
+  char const *__pyx_t_2;
   int __pyx_t_3;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -22365,7 +22366,7 @@ static struct __pyx_obj_5cysox_3sox_Effect *__pyx_pf_5cysox_3sox_13EffectHandler
  *         if handler == NULL:
  *             return None
 */
-  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_v_name_bytes); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1157, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBytes_AsString(__pyx_v_name_bytes); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1157, __pyx_L1_error)
   __pyx_v_handler = sox_find_effect(__pyx_t_2);
 
   /* "cysox/sox.pyx":1158
@@ -29186,7 +29187,7 @@ static PyObject *__pyx_pf_5cysox_3sox_20is_playlist(CYTHON_UNUSED PyObject *__py
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  char *__pyx_t_2;
+  char const *__pyx_t_2;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -29212,7 +29213,7 @@ static PyObject *__pyx_pf_5cysox_3sox_20is_playlist(CYTHON_UNUSED PyObject *__py
  * 
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_v_filename_bytes); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1533, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBytes_AsString(__pyx_v_filename_bytes); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1533, __pyx_L1_error)
   __pyx_t_1 = __Pyx_PyLong_From_enum__sox_bool(sox_is_playlist(__pyx_t_2)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1533, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
@@ -29350,7 +29351,7 @@ static PyObject *__pyx_pf_5cysox_3sox_22basename(CYTHON_UNUSED PyObject *__pyx_s
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  char *__pyx_t_2;
+  char const *__pyx_t_2;
   int __pyx_t_3;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -29376,7 +29377,7 @@ static PyObject *__pyx_pf_5cysox_3sox_22basename(CYTHON_UNUSED PyObject *__pyx_s
  * 
  *     if result == 0:
 */
-  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_v_filename_bytes); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1540, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBytes_AsString(__pyx_v_filename_bytes); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1540, __pyx_L1_error)
   __pyx_v_result = sox_basename(__pyx_v_base_buffer, 0x100, __pyx_t_2);
 
   /* "cysox/sox.pyx":1542
@@ -29843,7 +29844,7 @@ static PyObject *__pyx_pf_5cysox_3sox_28format_supports_encoding(CYTHON_UNUSED P
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  char *__pyx_t_2;
+  char const *__pyx_t_2;
   PyObject *__pyx_t_3 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -29864,7 +29865,7 @@ static PyObject *__pyx_pf_5cysox_3sox_28format_supports_encoding(CYTHON_UNUSED P
   }
   __pyx_t_1 = PyUnicode_AsEncodedString(__pyx_v_path, NULL, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1566, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1566, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBytes_AsString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1566, __pyx_L1_error)
   __pyx_t_3 = __Pyx_PyLong_From_enum__sox_bool(sox_format_supports_encoding(__pyx_t_2, NULL, __pyx_v_encoding->ptr)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1566, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -32350,7 +32351,7 @@ static struct __pyx_obj_5cysox_3sox_EffectHandler *__pyx_pf_5cysox_3sox_46find_e
   struct __pyx_obj_5cysox_3sox_EffectHandler *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  char *__pyx_t_2;
+  char const *__pyx_t_2;
   int __pyx_t_3;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -32376,7 +32377,7 @@ static struct __pyx_obj_5cysox_3sox_EffectHandler *__pyx_pf_5cysox_3sox_46find_e
  *     if handler == NULL:
  *         return None
 */
-  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_v_name_bytes); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1710, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBytes_AsString(__pyx_v_name_bytes); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1710, __pyx_L1_error)
   __pyx_v_handler = sox_find_effect(__pyx_t_2);
 
   /* "cysox/sox.pyx":1711
@@ -32568,7 +32569,7 @@ static struct __pyx_obj_5cysox_3sox_FormatHandler *__pyx_pf_5cysox_3sox_48find_f
   struct __pyx_obj_5cysox_3sox_FormatHandler *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  char *__pyx_t_2;
+  char const *__pyx_t_2;
   enum sox_bool __pyx_t_3;
   int __pyx_t_4;
   int __pyx_lineno = 0;
@@ -32595,7 +32596,7 @@ static struct __pyx_obj_5cysox_3sox_FormatHandler *__pyx_pf_5cysox_3sox_48find_f
  *     if handler == NULL:
  *         return None
 */
-  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_v_name_bytes); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1719, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBytes_AsString(__pyx_v_name_bytes); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1719, __pyx_L1_error)
   __pyx_t_3 = ((enum sox_bool)__Pyx_PyLong_As_enum__sox_bool(__pyx_v_ignore_devices)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 1719, __pyx_L1_error)
   __pyx_v_handler = sox_find_format(__pyx_t_2, __pyx_t_3);
 
