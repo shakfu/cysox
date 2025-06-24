@@ -23,6 +23,7 @@
 
 #include "sox.h"
 #include "util.h"
+#include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 

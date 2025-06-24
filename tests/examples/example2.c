@@ -23,6 +23,7 @@
 
 #include "sox.h"
 #include "util.h"
+#include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <assert.h>
@@ -98,9 +99,9 @@ int main(int argc, char * argv[])
        * even-numbered samples, and the right channel audio in odd-numbered
        * samples: */
       if (i & 1)
-        right = max(right, fabs(sample)); /* Find the peak volume in the block */
+        right = fmax(right, fabs(sample)); /* Find the peak volume in the block */
       else
-        left = max(left, fabs(sample)); /* Find the peak volume in the block */
+        left = fmax(left, fabs(sample)); /* Find the peak volume in the block */
     }
 
     /* Build up the wave form by displaying the left & right channel

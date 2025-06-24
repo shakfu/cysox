@@ -23,8 +23,14 @@
 
 #include "sox.h"
 #include "util.h"
+#include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+
+int min(int a, int b) 
+{
+  return (a < b) ? a : b;
+}
 
 /*
  * Example of a custom output message handler.
