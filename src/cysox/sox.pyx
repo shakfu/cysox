@@ -709,12 +709,36 @@ cdef class Globals:
             free(self.ptr)
             self.ptr = NULL
 
+    def __init__(self):
+        self.ptr = sox_get_globals()
+        self.owner = False # not owned
+        if self.ptr is NULL:
+            raise MemoryError
+
     @staticmethod
     cdef Globals from_ptr(sox_globals_t* ptr, bint owner=False):
         cdef Globals wrapper = Globals.__new__(Globals)
         wrapper.ptr = ptr
         wrapper.owner = owner
         return wrapper
+
+    def as_dict(self):
+        """Returns a dict of libSoX's global settings."""
+        return {
+            'verbosity': self.verbosity,
+            'repeatable': self.repeatable,
+            'bufsiz': self.bufsiz,
+            'input_bufsiz': self.input_bufsiz,
+            'ranqd1': self.ranqd1,
+            'stdin_in_use_by': self.stdin_in_use_by.decode() if self.stdin_in_use_by else None,
+            'stdout_in_use_by': self.stdout_in_use_by.decode() if self.stdout_in_use_by else None,
+            'subsystem': self.subsystem.decode() if self.subsystem else None,
+            'tmp_path': self.tmp_path.decode() if self.tmp_path else None,
+            'use_magic': self.use_magic,
+            'use_threads': self.use_threads,
+            'log2_dft_min_size': self.log2_dft_min_size
+        }
+
 
     @property
     def verbosity(self) -> int:
@@ -817,6 +841,10 @@ cdef class EffectsGlobals:
         if self.ptr is not NULL and self.owner is True:
             free(self.ptr)
             self.ptr = NULL
+
+    def __init__(self):
+        self.ptr = sox_get_effects_globals()
+        self.owner = False # never owned
 
     @staticmethod
     cdef EffectsGlobals from_ptr(sox_effects_globals_t* ptr, bint owner=False):
@@ -1431,6 +1459,10 @@ cdef class EffectsChain:
         return None
 
 
+# -------------------------------------------------------------------
+# functions
+
+
 def version() -> str:
     """Returns version number string of libSoX, for example, 14.4.0."""
     return (<const char*>sox_version()).decode()
@@ -1455,29 +1487,10 @@ def version_info():
     }
 
 
-def get_globals():
-    """Returns a pointer to the structure with libSoX's global settings."""
-    cdef sox_globals_t* globals = sox_get_globals()
-    if globals == NULL:
-        return None
-    
-    return {
-        'verbosity': globals.verbosity,
-        'repeatable': globals.repeatable,
-        'bufsiz': globals.bufsiz,
-        'input_bufsiz': globals.input_bufsiz,
-        'ranqd1': globals.ranqd1,
-        'stdin_in_use_by': globals.stdin_in_use_by.decode() if globals.stdin_in_use_by else None,
-        'stdout_in_use_by': globals.stdout_in_use_by.decode() if globals.stdout_in_use_by else None,
-        'subsystem': globals.subsystem.decode() if globals.subsystem else None,
-        'tmp_path': globals.tmp_path.decode() if globals.tmp_path else None,
-        'use_magic': globals.use_magic,
-        'use_threads': globals.use_threads,
-        'log2_dft_min_size': globals.log2_dft_min_size
-    }
 
 
-def get_encodings_info() -> list[dict]:
+
+def get_encodings() -> list[EncodingsInfo]:
     """Returns the list of available encodings."""
     cdef const sox_encodings_info_t* encodings = sox_get_encodings_info()
     if encodings == NULL:
@@ -1485,9 +1498,9 @@ def get_encodings_info() -> list[dict]:
     
     result = []
     cdef int i = 0
-    while encodings[i].name != NULL:
+    while encodings[i].name != NULL and encodings[i].flags < 3:
         result.append(
-            dict(
+            EncodingsInfo(
                 flags=encodings[i].flags,
                 name=encodings[i].name.decode(),
                 desc=encodings[i].desc.decode() if encodings[i].desc else None
@@ -1495,11 +1508,6 @@ def get_encodings_info() -> list[dict]:
         )
         i += 1
     return result
-
-
-def get_encodings() -> list[EncodingsInfo]:
-    _encodings = get_encodings_info()
-    return [EncodingsInfo(**e) for e in _encodings if e['flags'] < 3]
 
 
 def format_init():

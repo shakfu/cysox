@@ -459,41 +459,14 @@ def test_effects_globals_creation():
     assert g is not None
 
 
-# def test_effects_globals_properties():
-#     """Test EffectsGlobals properties"""
-#     g = sox.EffectsGlobals()
-    
-#     assert isinstance(g.verbosity, int)
-#     assert isinstance(g.repeatable, bool)
-#     assert isinstance(g.bufsiz, int)
-#     assert isinstance(g.input_bufsiz, int)
-#     assert isinstance(g.ranqd1, int)
-#     assert isinstance(g.use_magic, bool)
-#     assert isinstance(g.use_threads, bool)
-#     assert isinstance(g.log2_dft_min_size, int)
-
-
-# def test_effects_globals_property_setters():
-#     """Test EffectsGlobals property setters"""
-#     g = sox.EffectsGlobals()
-    
-#     g.verbosity = 2
-#     g.repeatable = True
-#     g.bufsiz = 8192
-#     g.input_bufsiz = 4096
-#     g.ranqd1 = 12345
-#     g.use_magic = False
-#     g.use_threads = True
-#     g.log2_dft_min_size = 8
-    
-#     assert g.verbosity == 2
-#     assert g.repeatable == True
-#     assert g.bufsiz == 8192
-#     assert g.input_bufsiz == 4096
-#     assert g.ranqd1 == 12345
-#     assert g.use_magic == False
-#     assert g.use_threads == True
-#     assert g.log2_dft_min_size == 8
+def test_effects_globals_properties():
+    """Test EffectsGlobals properties"""
+    g = sox.EffectsGlobals()
+    assert g.plot == 0
+    assert isinstance(g.global_info, sox.Globals)
+    assert g.global_info.verbosity == 2
+    assert g.global_info.repeatable == 0
+    assert g.global_info.bufsiz == 8192
 
 
 # # Test Effect class
@@ -548,6 +521,17 @@ def test_effects_chain_creation():
 #     assert len(chain.effects) == 1
 
 
+# Test Globals class
+
+def test_globals():
+    """Test get_globals function"""
+    g = sox.Globals()
+    assert isinstance(g, sox.Globals)
+    assert g.verbosity == 2
+    assert g.repeatable == 0
+    assert g.bufsiz == 8192
+
+
 # Test utility functions
 def test_version():
     """Test version function"""
@@ -562,29 +546,6 @@ def test_version_info():
     assert isinstance(info, dict)
     assert 'version' in info
     assert isinstance(info['version'], str) or info['version'] is None
-
-
-def test_get_globals():
-    """Test get_globals function"""
-    globals = sox.get_globals()
-    assert isinstance(globals, dict)
-    assert 'verbosity' in globals
-    assert 'repeatable' in globals
-    assert 'bufsiz' in globals
-
-
-def test_get_encodings_info():
-    """Test get_encodings_info function"""
-    encodings = sox.get_encodings_info()
-    assert isinstance(encodings, list)
-    assert len(encodings) > 0
-    
-    for encoding in encodings:
-        assert isinstance(encoding, dict)
-        assert 'flags' in encoding
-        assert 'name' in encoding
-        assert 'desc' in encoding
-
 
 def test_get_encodings():
     """Test get_encodings function"""
