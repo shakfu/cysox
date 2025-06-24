@@ -5,6 +5,17 @@ from types import SimpleNamespace
 cimport cysox.sox
 
 
+ERROR_CODES = {
+    'SOX_SUCCESS': SOX_SUCCESS,
+    'SOX_EOF': SOX_EOF,
+    'SOX_EHDR': SOX_EHDR,
+    'SOX_EFMT': SOX_EFMT,
+    'SOX_ENOMEM': SOX_ENOMEM,
+    'SOX_EPERM': SOX_EPERM,
+    'SOX_ENOTSUP': SOX_ENOTSUP,
+    'SOX_EINVAL': SOX_EINVAL,
+}
+
 ENCODINGS = [
     ("UNKNOWN",     "encoding has not yet been determined"),
     ("SIGN2",       "signed linear 2's comp: Mac"),
@@ -88,7 +99,6 @@ constant = SimpleNamespace({
     'EFF_INTERNAL': SOX_EFF_INTERNAL,
     'SEEK_SET': SOX_SEEK_SET,
 })
-
 
 
 
@@ -925,7 +935,7 @@ cdef class Format:
         return result
 
     def close(self) -> int:
-        """Close the file."""
+        """Closes an encoding or decoding session."""
         cdef int result = sox_close(self.ptr)
         if result != SOX_SUCCESS:
             raise RuntimeError(f"Failed to close: {strerror(result)}")
@@ -1022,6 +1032,15 @@ cdef class FormatHandler:
         wrapper.ptr = ptr
         wrapper.owner = owner
         return wrapper
+
+    @staticmethod
+    def find(name: str, ignore_devices: bool = False) -> FormatHandler:
+        """Finds a format handler by name."""
+        cdef bytes name_bytes = name.encode('utf-8')
+        cdef const sox_format_handler_t* handler = sox_find_format(name_bytes, ignore_devices)
+        if handler == NULL:
+            return None
+        return FormatHandler.from_ptr(<sox_format_handler_t*>handler)
 
     @property
     def sox_lib_version_code(self) -> int:
@@ -1131,6 +1150,15 @@ cdef class EffectHandler:
         wrapper.owner = owner
         return wrapper
 
+    @staticmethod
+    def find(name: str) -> Effect:
+        """Finds the effect handler with the given name."""
+        cdef bytes name_bytes = name.encode('utf-8')
+        cdef const sox_effect_handler_t* handler = sox_find_effect(name_bytes)
+        if handler == NULL:
+            return None
+        return EffectHandler.from_ptr(<sox_effect_handler_t*>handler)
+
     @property
     def name(self) -> str:
         """Effect name"""
@@ -1189,7 +1217,7 @@ cdef class Effect:
         wrapper.owner = owner
         return wrapper
 
-    def set_options(self, options: list):
+    def set_options(self, options: list[str]):
         """Applies the command-line options to the effect. Returns the number of arguments consumed."""
         cdef int argc = len(options)
         cdef char** argv = <char**>malloc(argc * sizeof(char*))
@@ -1407,6 +1435,7 @@ def version() -> str:
     """Returns version number string of libSoX, for example, 14.4.0."""
     return (<const char*>sox_version()).decode()
 
+
 def version_info():
     """Returns information about this build of libsox."""
     cdef const sox_version_info_t* info = sox_version_info()
@@ -1424,6 +1453,7 @@ def version_info():
         'compiler': info.compiler.decode() if info.compiler else None,
         'arch': info.arch.decode() if info.arch else None
     }
+
 
 def get_globals():
     """Returns a pointer to the structure with libSoX's global settings."""
@@ -1446,6 +1476,7 @@ def get_globals():
         'log2_dft_min_size': globals.log2_dft_min_size
     }
 
+
 def get_encodings_info() -> list[dict]:
     """Returns the list of available encodings."""
     cdef const sox_encodings_info_t* encodings = sox_get_encodings_info()
@@ -1465,34 +1496,42 @@ def get_encodings_info() -> list[dict]:
         i += 1
     return result
 
+
 def get_encodings() -> list[EncodingsInfo]:
     _encodings = get_encodings_info()
     return [EncodingsInfo(**e) for e in _encodings if e['flags'] < 3]
+
 
 def format_init():
     """Find and load format handler plugins."""
     assert SOX_SUCCESS == sox_format_init()
 
+
 def format_quit():
     """Unload format handler plugins."""
     sox_format_quit()
+
 
 def init():
     """Initialize effects library."""
     assert SOX_SUCCESS == sox_init()
 
+
 def quit():
     """Close effects library and unload format handler plugins."""
     assert SOX_SUCCESS == sox_quit()
+
 
 def strerror(sox_errno: int) -> str:
     """Converts a SoX error code into an error string."""
     return (<const char*>sox_strerror(sox_errno)).decode()
 
+
 def is_playlist(filename: str) -> bool:
     """Returns true if the specified file is a known playlist file type."""
     cdef bytes filename_bytes = filename.encode('utf-8')
     return sox_is_playlist(filename_bytes)
+
 
 def basename(filename: str) -> str:
     """Gets the basename of the specified file."""
@@ -1505,21 +1544,11 @@ def basename(filename: str) -> str:
     
     return base_buffer[:result].decode('utf-8')
 
+
 def precision(encoding: int, bits_per_sample: int) -> int:
     """Given an encoding and bits_per_sample, returns the number of useful bits per sample."""
     return sox_precision(<sox_encoding_t>encoding, <unsigned>bits_per_sample)
 
-def find_format(name: str, ignore_devices: bool = False):
-    """Finds a format handler by name."""
-    cdef bytes name_bytes = name.encode('utf-8')
-    cdef const sox_format_handler_t* handler = sox_find_format(name_bytes, ignore_devices)
-    if handler == NULL:
-        return None
-    
-    return {
-        'description': handler.description.decode() if handler.description else None,
-        'names': [handler.names[i].decode() for i in range(10) if handler.names[i] != NULL]  # Assuming max 10 names
-    }
 
 def get_effects_globals():
     """Returns global parameters for effects."""
@@ -1531,23 +1560,11 @@ def get_effects_globals():
         'plot': globals.plot
     }
 
-def find_effect(name: str):
-    """Finds the effect handler with the given name."""
-    cdef bytes name_bytes = name.encode('utf-8')
-    cdef const sox_effect_handler_t* handler = sox_find_effect(name_bytes)
-    if handler == NULL:
-        return None
-    
-    return {
-        'name': handler.name.decode() if handler.name else None,
-        'usage': handler.usage.decode() if handler.usage else None,
-        'flags': handler.flags,
-        'priv_size': handler.priv_size
-    }
 
 def format_supports_encoding(str path, EncodingInfo encoding) -> bool:
     """Returns true if the format handler for the specified file type supports the specified encoding."""
     return <bint>sox_format_supports_encoding(path.encode(), NULL, encoding.ptr)
+
 
 def open_mem_read(buffer: bytes, signal: SignalInfo = None, encoding: EncodingInfo = None, filetype: str = None):
     """Opens a decoding session for a memory buffer. Returns a Format object or raises MemoryError."""
@@ -1598,129 +1615,6 @@ def open_memstream_write(signal: SignalInfo, encoding: EncodingInfo, filetype: s
     return Format.from_ptr(fmt, True), buffer_ptr, buffer_size
 
 
-def create_effects_chain(in_encoding: EncodingInfo = None, out_encoding: EncodingInfo = None):
-    """Initializes an effects chain. Returns an EffectsChain object or raises MemoryError."""
-    cdef sox_effects_chain_t* chain
-    chain = sox_create_effects_chain(in_encoding.ptr if in_encoding else NULL,
-                                    out_encoding.ptr if out_encoding else NULL)
-    if chain == NULL:
-        raise MemoryError("Failed to create effects chain")
-    return EffectsChain.from_ptr(chain, True)
-
-
-def delete_effects_chain(chain: EffectsChain):
-    """Closes an effects chain."""
-    if chain.ptr != NULL:
-        sox_delete_effects_chain(chain.ptr)
-        chain.ptr = NULL
-
-
-def add_effect(chain: EffectsChain, effect: Effect, in_signal: SignalInfo, out_signal: SignalInfo):
-    """Adds an effect to the effects chain. Returns SOX_SUCCESS if successful."""
-    cdef int result = sox_add_effect(chain.ptr, effect.ptr, in_signal.ptr, out_signal.ptr)
-    if result != SOX_SUCCESS:
-        raise RuntimeError(f"Failed to add effect to chain: {strerror(result)}")
-    return result
-
-
-def flow_effects(chain: EffectsChain, callback=None, client_data=None):
-    """Runs the effects chain. Returns SOX_SUCCESS if successful."""
-    cdef int result
-    if callback is not None:
-        # TODO: Implement callback support
-        result = sox_flow_effects(chain.ptr, NULL, NULL)
-    else:
-        result = sox_flow_effects(chain.ptr, NULL, NULL)
-    if result != SOX_SUCCESS:
-        raise RuntimeError(f"Failed to flow effects: {strerror(result)}")
-    return result
-
-
-def effects_clips(chain: EffectsChain) -> int:
-    """Gets the number of clips that occurred while running an effects chain."""
-    return <int>sox_effects_clips(chain.ptr)
-
-
-def create_effect(handler: EffectHandler):
-    """Creates an effect using the given handler. Returns an Effect object or raises MemoryError."""
-    cdef sox_effect_t* effect
-    effect = sox_create_effect(handler.ptr)
-    if effect == NULL:
-        raise MemoryError("Failed to create effect")
-    return Effect.from_ptr(effect, True)
-
-
-def effect_options(effect: Effect, options: list):
-    """Applies the command-line options to the effect. Returns the number of arguments consumed."""
-    cdef int argc = len(options)
-    cdef char** argv = <char**>malloc(argc * sizeof(char*))
-    if argv == NULL:
-        raise MemoryError("Failed to allocate argument array")
-    
-    try:
-        for i in range(argc):
-            argv[i] = <bytes>options[i]
-        return sox_effect_options(effect.ptr, argc, argv)
-    finally:
-        free(argv)
-
-
-def delete_effect(effect: Effect):
-    """Shut down and delete an effect."""
-    if effect.ptr != NULL:
-        sox_delete_effect(effect.ptr)
-        effect.ptr = NULL
-
-
-def delete_effect_last(chain: EffectsChain):
-    """Shut down and delete the last effect in the chain."""
-    if chain.ptr != NULL:
-        sox_delete_effect_last(chain.ptr)
-
-
-def delete_effects(chain: EffectsChain):
-    """Shut down and delete all effects in the chain."""
-    if chain.ptr != NULL:
-        sox_delete_effects(chain.ptr)
-
-
-def push_effect_last(chain: EffectsChain, effect: Effect):
-    """Adds an already-initialized effect to the end of the chain."""
-    if chain.ptr != NULL and effect.ptr != NULL:
-        sox_push_effect_last(chain.ptr, effect.ptr)
-
-
-def pop_effect_last(chain: EffectsChain):
-    """Removes and returns an effect from the end of the chain. Returns None if no effects."""
-    cdef sox_effect_t* effect
-    if chain.ptr == NULL:
-        return None
-    effect = sox_pop_effect_last(chain.ptr)
-    if effect == NULL:
-        return None
-    return Effect.from_ptr(effect, True)
-
-
-def stop_effect(effect: Effect) -> int:
-    """Shuts down an effect (calls stop on each of its flows). Returns the number of clips from all flows."""
-    if effect.ptr == NULL:
-        return 0
-    return <int>sox_stop_effect(effect.ptr)
-
-
-def trim_get_start(effect: Effect) -> int:
-    """Gets the sample offset of the start of the trim."""
-    if effect.ptr == NULL:
-        return 0
-    return <int>sox_trim_get_start(effect.ptr)
-
-
-def trim_clear_start(effect: Effect):
-    """Clears the start of the trim to 0."""
-    if effect.ptr != NULL:
-        sox_trim_clear_start(effect.ptr)
-
-
 def get_format_fns():
     """Returns the table of format handler names and functions."""
     cdef const sox_format_tab_t* format_fns = sox_get_format_fns()
@@ -1754,17 +1648,6 @@ def get_effect_fns():
     return result
 
 
-
-def int_min(int bits) -> int:
-    return SOX_INT_MIN(bits)
-
-def int_max(int bits) -> int:
-    return SOX_INT_MAX(bits)
-
-def uint_max(int bits) -> int:
-    return SOX_UINT_MAX(bits)
-
-
 # cdef int playlist_callback(void * callback, char * filename) noexcept:
 #     return SOX_SUCCESS
 
@@ -1778,184 +1661,6 @@ def uint_max(int bits) -> int:
 #     if result != SOX_SUCCESS:
 #         raise RuntimeError(f"Failed to parse playlist: {strerror(result)}")
 #     return result
-
-
-# Add error code constants
-# ERROR_CODES = {
-#     'SOX_SUCCESS': SOX_SUCCESS,
-#     'SOX_EOF': SOX_EOF,
-#     'SOX_EHDR': SOX_EHDR,
-#     'SOX_EFMT': SOX_EFMT,
-#     'SOX_ENOMEM': SOX_ENOMEM,
-#     'SOX_EPERM': SOX_EPERM,
-#     'SOX_ENOTSUP': SOX_ENOTSUP,
-#     'SOX_EINVAL': SOX_EINVAL,
-# }
-
-# Sample conversion utility functions
-# def sample_to_unsigned(bits: int, sample: int, clips: int) -> int:
-#     """Converts sox_sample_t to an unsigned integer of width (bits).
-
-#     bits    Width of resulting sample (1 through 32).
-#     sample  Input sample to be converted.
-#     clips   Variable that is incremented if the result is too big.
-#     returns Unsigned integer of width (bits).
-#     """
-#     return SOX_SAMPLE_TO_UNSIGNED(bits, sample, clips)
-
-
-
-
-
-# cdef int demo():
-#     cdef sox_sample_t sox_macro_temp_sample = 0
-#     cdef double sox_macro_temp_double = 0.0
-#     return SOX_SAMPLE_TO_UNSIGNED(8, 121330, 0)
-
-# def sample_to_signed(bits: int, sample: int, clips: int) -> int:
-#     """Converts sox_sample_t to a signed integer of width (bits).
-
-#     bits    Width of resulting sample (1 through 32).
-#     sample  Input sample to be converted.
-#     clips   Variable that is incremented if the result is too big.
-#     returns Signed integer of width (bits).        
-#     """
-#     return SOX_SAMPLE_TO_SIGNED(bits, sample, clips)
-
-# def signed_to_sample(bits: int, value: int) -> int:
-#     """Converts signed integer of width (bits) to sox_sample_t.
-    
-#     bits    Width of input sample (1 through 32).
-#     sample  Input sample to be converted.
-#     returns SoX native sample value.    
-#     """
-#     return SOX_SIGNED_TO_SAMPLE(bits, value)
-
-# def unsigned_to_sample(bits: int, value: int) -> int:
-#     """Converts unsigned integer of width (bits) to sox_sample_t.
-    
-#     bits    Width of input sample (1 through 32).
-#     sample  Input sample to be converted.
-#     returns SoX native sample value.
-#     """
-#     return SOX_UNSIGNED_TO_SAMPLE(bits, value)
-
-# def unsigned_8bit_to_sample(value: int, clips: int) -> int:
-#     """Convert 8-bit unsigned value to sample."""
-#     return SOX_UNSIGNED_8BIT_TO_SAMPLE(value, clips)
-
-# def signed_8bit_to_sample(value: int, clips: int) -> int:
-#     """Convert 8-bit signed value to sample."""
-#     return SOX_SIGNED_8BIT_TO_SAMPLE(value, clips)
-
-# def unsigned_16bit_to_sample(value: int, clips: int) -> int:
-#     """Convert 16-bit unsigned value to sample."""
-#     return SOX_UNSIGNED_16BIT_TO_SAMPLE(value, clips)
-
-# def signed_16bit_to_sample(value: int, clips: int) -> int:
-#     """Convert 16-bit signed value to sample."""
-#     return SOX_SIGNED_16BIT_TO_SAMPLE(value, clips)
-
-# def unsigned_24bit_to_sample(value: int, clips: int) -> int:
-#     """Convert 24-bit unsigned value to sample."""
-#     return SOX_UNSIGNED_24BIT_TO_SAMPLE(value, clips)
-
-# def signed_24bit_to_sample(value: int, clips: int) -> int:
-#     """Convert 24-bit signed value to sample."""
-#     return SOX_SIGNED_24BIT_TO_SAMPLE(value, clips)
-
-# def unsigned_32bit_to_sample(value: int, clips: int) -> int:
-#     """Convert 32-bit unsigned value to sample."""
-#     return SOX_UNSIGNED_32BIT_TO_SAMPLE(value, clips)
-
-# def signed_32bit_to_sample(value: int, clips: int) -> int:
-#     """Convert 32-bit signed value to sample."""
-#     return SOX_SIGNED_32BIT_TO_SAMPLE(value, clips)
-
-# def float_32bit_to_sample(value: float, clips: int) -> int:
-#     """Convert 32-bit float value to sample."""
-#     return SOX_FLOAT_32BIT_TO_SAMPLE(value, clips)
-
-# def float_64bit_to_sample(value: float, clips: int) -> int:
-#     """Convert 64-bit float value to sample."""
-#     return SOX_FLOAT_64BIT_TO_SAMPLE(value, clips)
-
-# def sample_to_unsigned_8bit(sample: int, clips: int) -> int:
-#     """Convert sample to 8-bit unsigned value."""
-#     return SOX_SAMPLE_TO_UNSIGNED_8BIT(sample, clips)
-
-# def sample_to_signed_8bit(sample: int, clips: int) -> int:
-#     """Convert sample to 8-bit signed value."""
-#     return SOX_SAMPLE_TO_SIGNED_8BIT(sample, clips)
-
-# def sample_to_unsigned_16bit(sample: int, clips: int) -> int:
-#     """Convert sample to 16-bit unsigned value."""
-#     return SOX_SAMPLE_TO_UNSIGNED_16BIT(sample, clips)
-
-# def sample_to_signed_16bit(sample: int, clips: int) -> int:
-#     """Convert sample to 16-bit signed value."""
-#     return SOX_SAMPLE_TO_SIGNED_16BIT(sample, clips)
-
-# def sample_to_unsigned_24bit(sample: int, clips: int) -> int:
-#     """Convert sample to 24-bit unsigned value."""
-#     return SOX_SAMPLE_TO_UNSIGNED_24BIT(sample, clips)
-
-# def sample_to_signed_24bit(sample: int, clips: int) -> int:
-#     """Convert sample to 24-bit signed value."""
-#     return SOX_SAMPLE_TO_SIGNED_24BIT(sample, clips)
-
-# def sample_to_unsigned_32bit(sample: int, clips: int) -> int:
-#     """Convert sample to 32-bit unsigned value."""
-#     return SOX_SAMPLE_TO_UNSIGNED_32BIT(sample, clips)
-
-# def sample_to_signed_32bit(sample: int, clips: int) -> int:
-#     """Convert sample to 32-bit signed value."""
-#     return SOX_SAMPLE_TO_SIGNED_32BIT(sample, clips)
-
-# def sample_to_float_32bit(sample: int, clips: int) -> float:
-#     """Convert sample to 32-bit float value."""
-#     return SOX_SAMPLE_TO_FLOAT_32BIT(sample, clips)
-
-# def sample_to_float_64bit(sample: int, clips: int) -> float:
-#     """Convert sample to 64-bit float value."""
-#     return SOX_SAMPLE_TO_FLOAT_64BIT(sample, clips)
-
-# # Clip counting utility functions
-# def sample_clip_count(sample: int, clips: int) -> int:
-#     """Get clip count for sample."""
-#     return SOX_SAMPLE_CLIP_COUNT(sample, clips)
-
-# # def round_clip_count(value: float, clips: int) -> int:
-# #     """Get clip count for rounded value."""
-# #     return SOX_ROUND_CLIP_COUNT(value, clips)
-
-# def integer_clip_count(value: int, clips: int) -> int:
-#     """Get clip count for integer value."""
-#     return SOX_INTEGER_CLIP_COUNT(value, clips)
-
-# def clip_count_16bit(value: int, clips: int) -> int:
-#     """Get clip count for 16-bit value."""
-#     return SOX_16BIT_CLIP_COUNT(value, clips)
-
-# def clip_count_24bit(value: int, clips: int) -> int:
-#     """Get clip count for 24-bit value."""
-#     return SOX_24BIT_CLIP_COUNT(value, clips)
-
-# # Utility functions for integer limits
-# def int_min(bits: int) -> int:
-#     """Get minimum value for given bit depth."""
-#     return SOX_INT_MIN(bits)
-
-# def int_max(bits: int) -> int:
-#     """Get maximum value for given bit depth."""
-#     return SOX_INT_MAX(bits)
-
-# def uint_max(bits: int) -> int:
-#     """Get maximum unsigned value for given bit depth."""
-#     return SOX_UINT_MAX(bits)
-
-
-
 
 
 def read_samples(format: Format, buffer: list, length: int) -> int:
@@ -1999,12 +1704,24 @@ def seek_samples(format: Format, offset: int, whence: int = SOX_SEEK_SET) -> int
     return result
 
 
-def close_format(format: Format) -> int:
-    """Closes an encoding or decoding session."""
-    cdef int result = sox_close(format.ptr)
-    if result != SOX_SUCCESS:
-        raise RuntimeError(f"Failed to close format: {strerror(result)}")
-    return result
+def find_effect(name: str) -> EffectHandler:
+    """Finds the effect handler with the given name."""
+    cdef bytes name_bytes = name.encode('utf-8')
+    cdef const sox_effect_handler_t* handler = sox_find_effect(name_bytes)
+    if handler == NULL:
+        return None    
+    return EffectHandler.from_ptr(<sox_effect_handler_t*>handler)
+
+
+def find_format(name: str, ignore_devices: bool = False) -> FormatHandler:
+    """Finds a format handler by name."""
+    cdef bytes name_bytes = name.encode('utf-8')
+    cdef const sox_format_handler_t* handler = sox_find_format(name_bytes, ignore_devices)
+    if handler == NULL:
+        return None
+    return FormatHandler.from_ptr(<sox_format_handler_t*>handler)
+
+
 
 
 

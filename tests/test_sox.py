@@ -658,18 +658,18 @@ def test_precision():
     assert precision_val >= 0
 
 
-# def test_find_format():
-#     """Test find_format function"""
-#     # Test finding a known format
-#     format_info = sox.find_format('wav')
-#     assert format_info is not None
-#     assert isinstance(format_info, dict)
-#     assert 'description' in format_info
-#     assert 'names' in format_info
+def test_find_format():
+    """Test find_format function"""
+    # Test finding a known format
+    format_handler = sox.find_format('wav')
+    assert format_handler is not None
+    assert isinstance(format_handler, sox.FormatHandler)
+    assert format_handler.description
+    assert format_handler.names
     
-#     # Test finding a non-existent format
-#     format_info = sox.find_format('nonexistent_format')
-#     assert format_info is None
+    # Test finding a non-existent format
+    format_info = sox.find_format('nonexistent_format')
+    assert format_info is None
 
 
 def test_get_effects_globals():
@@ -682,13 +682,13 @@ def test_get_effects_globals():
 def test_find_effect():
     """Test find_effect function"""
     # Test finding a known effect
-    effect_info = sox.find_effect('trim')
-    assert effect_info is not None
-    assert isinstance(effect_info, dict)
-    assert 'name' in effect_info
-    assert 'usage' in effect_info
-    assert 'flags' in effect_info
-    assert 'priv_size' in effect_info
+    effect_handler = sox.find_effect('trim')
+    assert effect_handler is not None
+    assert isinstance(effect_handler, sox.EffectHandler)
+    assert effect_handler.name
+    assert effect_handler.usage
+    assert effect_handler.flags
+    assert effect_handler.priv_size
     
     # Test finding a non-existent effect
     effect_info = sox.find_effect('nonexistent_effect')

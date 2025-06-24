@@ -32,7 +32,7 @@ cdef extern from "sox.h":
 
     # The libSoX-specific error codes.
     # libSoX functions may return these codes or others that map from errno codes.
-    ctypedef enum sox_error_t:
+    cdef enum sox_error_t:
         SOX_SUCCESS = 0     # Function succeeded = 0
         SOX_EOF     = -1    # End Of File or other error = -1
         SOX_EHDR    = 2000  # Invalid Audio Header = 2000
