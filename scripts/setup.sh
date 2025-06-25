@@ -8,6 +8,7 @@ function update_lib() {
 	DEP_LIB_DIR=${DEP_DIR}/lib
 	cp -rf ${DEP_INCLUDE_DIR}/* ${INCLUDE_DIR}
 	cp -af ${DEP_LIB_DIR}/*.a ${LIB_DIR}
+	cp -af ${DEP_LIB_DIR}/*.dylib ${LIB_DIR}
 }
 
 
@@ -29,4 +30,5 @@ rm -f \
 	lib/libpng.a \
 	lib/libsyn123.a \
 	lib/libout123.a \
-	lib/libFLAC++.a
+	lib/libFLAC++.a \
+	lib/libopusurl.a

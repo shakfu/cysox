@@ -1,5 +1,5 @@
-
-LIBRARIES=$(wildcard lib/*.a)
+LIBSOX := lib/libsox.a
+LIBRARIES := $(wildcard lib/*.a)
 
 define build-example
 gcc -std=c11 -o build/$1 \
@@ -10,15 +10,14 @@ gcc -std=c11 -o build/$1 \
 	tests/examples/$1.c
 endef
 
-
-.PHONY: all build examples wheel clean test strip
+.PHONY: all build examples wheel delocate clean reset test strip
 
 all: build
 
-$(LIBRARIES):
+$(LIBSOX):
 	@scripts/setup.sh
 
-build: clean $(LIBLAMMA)
+build: $(LIBSOX)
 	@python3 setup.py build_ext --inplace
 
 wheel:
@@ -29,6 +28,9 @@ clean:
 	@rm -rf build dist sox.*.so src/*.egg-info htmlcov
 	@find . -type d -name __pycache__ -exec rm -rf {} \; -prune
 	@find . -type d -path ".*_cache"  -exec rm -rf {} \; -prune
+
+reset: clean
+	@rm -rf include lib 
 
 test:
 	@pytest -v
@@ -41,3 +43,5 @@ examples:
 		do $(call build-example,example$$i); \
 	done
 
+delocate: wheel
+	@cd dist && delocate-wheel cysox-*.whl
