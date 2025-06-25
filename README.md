@@ -14,6 +14,32 @@ Towards a cython wrapper for [libsox](https://github.com/chirlu/sox)
 - **High Performance**: Direct C bindings through Cython for optimal performance
 - **Memory Efficient**: Low-level memory management for large audio files
 
+## Building
+
+Currently development and testing is only on MacOS. [Homebrew](https://brew.sh) is used for installing dependencies:
+
+```sh
+brew install sox libsndfile mad libpng
+```
+
+then you can build the cython extension:
+
+```sh
+make
+```
+
+build the wheel:
+
+```sh
+make wheel
+```
+
+run tests:
+
+```sh
+make test
+```
+
 ## Usage Example
 
 ```python
@@ -31,5 +57,8 @@ Towards a cython wrapper for [libsox](https://github.com/chirlu/sox)
 16
 ```
 
-## Todo
+## TODO
+
+- [ ] convert examples to tests
+- [ ] test on linux
 

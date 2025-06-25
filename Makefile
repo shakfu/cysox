@@ -15,7 +15,10 @@ endef
 
 all: build
 
-build: clean
+$(LIBRARIES):
+	@scripts/setup.sh
+
+build: clean $(LIBLAMMA)
 	@python3 setup.py build_ext --inplace
 
 wheel:
