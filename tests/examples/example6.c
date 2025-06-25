@@ -22,14 +22,13 @@
 #endif
 
 #include "sox.h"
-#include "util.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 
 /*
  * Shows how to explicitly specify output file signal and encoding attributes.
- * 
+ *
  * The example converts a given input file of any type to mono mu-law at 8kHz
  * sampling-rate (providing that this is supported by the given output file
  * type).

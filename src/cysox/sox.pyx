@@ -121,7 +121,8 @@ cdef class SignalInfo:
             free(self.ptr)
             self.ptr = NULL
 
-    def __init__(self, rate: float = 0.0, channels: int = 0, precision: int = 0, length: int = 0, mult: float = 0.0):
+    def __init__(self, rate: float = 0.0, channels: int = 0,
+                precision: int = 0, length: int = 0, mult: float = 0.0):
         self.ptr = <sox_signalinfo_t*>malloc(sizeof(sox_signalinfo_t))
         self.rate = rate
         self.channels = channels
@@ -224,9 +225,10 @@ cdef class EncodingInfo:
             free(self.ptr)
             self.ptr = NULL
 
-    def __init__(self, encoding: int = 0, bits_per_sample: int = 0, compression: float = 0.0, 
-                 reverse_bytes: int = 0, reverse_nibbles: int = 0, reverse_bits: int = 0, 
-                 opposite_endian: bool = False):
+    def __init__(self, encoding: int = 0, bits_per_sample: int = 0,
+                compression: float = 0.0, reverse_bytes: int = 0,
+                reverse_nibbles: int = 0, reverse_bits: int = 0,
+                opposite_endian: bool = False):
         self.ptr = <sox_encodinginfo_t*>malloc(sizeof(sox_encodinginfo_t))
         self.encoding = encoding
         self.bits_per_sample = bits_per_sample
@@ -327,7 +329,8 @@ cdef class LoopInfo:
             free(self.ptr)
             self.ptr = NULL
 
-    def __init__(self, start: int = 0, length: int = 0, count: int = 0, type: int = 0):
+    def __init__(self, start: int = 0, length: int = 0, count: int = 0,
+                 type: int = 0):
         self.ptr = <sox_loopinfo_t*>malloc(sizeof(sox_loopinfo_t))
         self.start = start
         self.length = length
@@ -392,7 +395,7 @@ cdef class InstrInfo:
             free(self.ptr)
             self.ptr = NULL
 
-    def __init__(self, note: int = 0, low: int = 0, high: int = 0, 
+    def __init__(self, note: int = 0, low: int = 0, high: int = 0,
                  loopmode: int = 0, nloops: int = 0):
         self.ptr = <sox_instrinfo_t*>malloc(sizeof(sox_instrinfo_t))
         self.note = note
@@ -468,7 +471,8 @@ cdef class FileInfo:
             free(self.ptr)
             self.ptr = NULL
 
-    def __init__(self, buf: bytes = None, size: int = 0, count: int = 0, pos: int = 0):
+    def __init__(self, buf: bytes = None, size: int = 0, count: int = 0,
+                 pos: int = 0):
         self.ptr = <sox_fileinfo_t*>malloc(sizeof(sox_fileinfo_t))
         self.buf = buf
         self.size = size
@@ -883,18 +887,18 @@ cdef class Format:
             sox_close(self.ptr)
             self.ptr = NULL
 
-    def __init__(self, str filename, SignalInfo signal = None, EncodingInfo encoding = None, mode: str = 'r'):
+    def __init__(self, str filename, SignalInfo signal = None,
+                 EncodingInfo encoding = None, mode: str = 'r'):
         """Opens a file for reading or writing.
-        
-        Args:
-            filename: Path to the file
-            signal: Signal information (required for writing)
-            encoding: Encoding information (optional)
-            mode: 'r' for reading, 'w' for writing
+
+        filename: Path to the file
+        signal: Signal information (required for writing)
+        encoding: Encoding information (optional)
+        mode: 'r' for reading, 'w' for writing
         """
         if mode == 'r':
             self.ptr = sox_open_read(
-                filename.encode(), 
+                filename.encode(),
                 signal.ptr if signal else NULL,
                 encoding.ptr if encoding else NULL,
                 NULL
@@ -912,7 +916,7 @@ cdef class Format:
             )
         else:
             raise ValueError("Mode must be 'r' or 'w'")
-            
+
         if self.ptr is NULL:
             raise MemoryError(f"Failed to open file {filename} in mode {mode}")
 
@@ -931,7 +935,7 @@ cdef class Format:
         cdef sox_sample_t* buffer = <sox_sample_t*>malloc(length * sizeof(sox_sample_t))
         if buffer == NULL:
             raise MemoryError("Failed to allocate read buffer")
-        
+
         try:
             samples_read = sox_read(self.ptr, buffer, length)
             result = []
@@ -947,7 +951,7 @@ cdef class Format:
         cdef sox_sample_t* buffer = <sox_sample_t*>malloc(length * sizeof(sox_sample_t))
         if buffer == NULL:
             raise MemoryError("Failed to allocate write buffer")
-        
+
         try:
             for i in range(length):
                 buffer[i] = samples[i]
@@ -1049,7 +1053,8 @@ cdef class FormatHandler:
             self.ptr = NULL
 
     def __init__(self, str path):
-        self.ptr = <sox_format_handler_t*>sox_write_handler(path.encode(), NULL, NULL)
+        self.ptr = <sox_format_handler_t*>sox_write_handler(
+            path.encode(), NULL, NULL)
         self.owner = True
         if self.ptr is NULL:
             raise MemoryError
@@ -1065,7 +1070,8 @@ cdef class FormatHandler:
     def find(name: str, ignore_devices: bool = False) -> FormatHandler:
         """Finds a format handler by name."""
         cdef bytes name_bytes = name.encode('utf-8')
-        cdef const sox_format_handler_t* handler = sox_find_format(name_bytes, ignore_devices)
+        cdef const sox_format_handler_t* handler = sox_find_format(
+            name_bytes, ignore_devices)
         if handler == NULL:
             return None
         return FormatHandler.from_ptr(<sox_format_handler_t*>handler)
@@ -1087,7 +1093,7 @@ cdef class FormatHandler:
         """null-terminated array of filename extensions that are handled by this format"""
         if self.ptr.names == NULL:
             return []
-        
+
         result = []
         cdef int i = 0
         while self.ptr.names[i] != NULL:
@@ -1246,12 +1252,14 @@ cdef class Effect:
         return wrapper
 
     def set_options(self, options: list[str]):
-        """Applies the command-line options to the effect. Returns the number of arguments consumed."""
+        """Applies the command-line options to the effect.
+
+        Returns the number of arguments consumed."""
         cdef int argc = len(options)
         cdef char** argv = <char**>malloc(argc * sizeof(char*))
         if argv == NULL:
             raise MemoryError("Failed to allocate argument array")
-        
+
         try:
             for i in range(argc):
                 argv[i] = <bytes>options[i]
@@ -1260,7 +1268,9 @@ cdef class Effect:
             free(argv)
 
     def stop(self) -> int:
-        """Shuts down an effect (calls stop on each of its flows). Returns the number of clips from all flows."""
+        """Shuts down an effect (calls stop on each of its flows).
+
+        Returns the number of clips from all flows."""
         if self.ptr == NULL:
             return 0
         return <int>sox_stop_effect(self.ptr)
@@ -1348,10 +1358,12 @@ cdef class EffectsChain:
             sox_delete_effects_chain(self.ptr)
             self.ptr = NULL
 
-    def __init__(self, in_encoding: EncodingInfo = None, out_encoding: EncodingInfo = None):
+    def __init__(self, in_encoding: EncodingInfo = None,
+                 out_encoding: EncodingInfo = None):
         """Initialize an effects chain with optional input and output encodings."""
-        self.ptr = sox_create_effects_chain(in_encoding.ptr if in_encoding else NULL,
-                                           out_encoding.ptr if out_encoding else NULL)
+        self.ptr = sox_create_effects_chain(
+            in_encoding.ptr if in_encoding else NULL,
+            out_encoding.ptr if out_encoding else NULL)
         if self.ptr == NULL:
             raise MemoryError("Failed to create effects chain")
         self.owner = True
@@ -1363,9 +1375,11 @@ cdef class EffectsChain:
         wrapper.owner = owner
         return wrapper
 
-    def add_effect(self, effect: Effect, in_signal: SignalInfo, out_signal: SignalInfo):
+    def add_effect(self, effect: Effect, in_signal: SignalInfo,
+                   out_signal: SignalInfo):
         """Adds an effect to the effects chain."""
-        cdef int result = sox_add_effect(self.ptr, effect.ptr, in_signal.ptr, out_signal.ptr)
+        cdef int result = sox_add_effect(
+            self.ptr, effect.ptr, in_signal.ptr, out_signal.ptr)
         if result != SOX_SUCCESS:
             raise RuntimeError(f"Failed to add effect to chain: {strerror(result)}")
         return result
@@ -1392,7 +1406,9 @@ cdef class EffectsChain:
             sox_push_effect_last(self.ptr, effect.ptr)
 
     def pop_effect_last(self):
-        """Removes and returns an effect from the end of the chain. Returns None if no effects."""
+        """Removes and returns an effect from the end of the chain.
+
+        Returns None if no effects."""
         cdef sox_effect_t* effect
         if self.ptr == NULL:
             return None
@@ -1416,7 +1432,7 @@ cdef class EffectsChain:
         """Table of effects to be applied to a stream"""
         if self.ptr.effects == NULL:
             return []
-        
+
         result = []
         for i in range(self.ptr.length):
             if self.ptr.effects[i] != NULL:
@@ -1473,7 +1489,7 @@ def version_info():
     cdef const sox_version_info_t* info = sox_version_info()
     if info == NULL:
         return None
-    
+
     return {
         'size': info.size,
         'flags': info.flags,
@@ -1495,7 +1511,7 @@ def get_encodings() -> list[EncodingsInfo]:
     cdef const sox_encodings_info_t* encodings = sox_get_encodings_info()
     if encodings == NULL:
         return []
-    
+
     result = []
     cdef int i = 0
     while encodings[i].name != NULL and encodings[i].flags < 3:
@@ -1546,15 +1562,17 @@ def basename(filename: str) -> str:
     cdef char base_buffer[256]
     cdef bytes filename_bytes = filename.encode('utf-8')
     cdef size_t result = sox_basename(base_buffer, 256, filename_bytes)
-    
+
     if result == 0:
         return ""
-    
+
     return base_buffer[:result].decode('utf-8')
 
 
 def precision(encoding: int, bits_per_sample: int) -> int:
-    """Given an encoding and bits_per_sample, returns the number of useful bits per sample."""
+    """Given an encoding and bits_per_sample
+
+    returns the number of useful bits per sample."""
     return sox_precision(<sox_encoding_t>encoding, <unsigned>bits_per_sample)
 
 
@@ -1563,7 +1581,7 @@ def get_effects_globals():
     cdef sox_effects_globals_t* globals = sox_get_effects_globals()
     if globals == NULL:
         return None
-    
+
     return {
         'plot': globals.plot
     }
@@ -1589,8 +1607,11 @@ def open_mem_read(buffer: bytes, signal: SignalInfo = None, encoding: EncodingIn
     return Format.from_ptr(fmt, True)
 
 
-def open_mem_write(buffer: bytearray, signal: SignalInfo, encoding: EncodingInfo, filetype: str = None, oob: OutOfBand = None):
-    """Opens an encoding session for a memory buffer. Returns a Format object or raises MemoryError."""
+def open_mem_write(buffer: bytearray, signal: SignalInfo,
+        encoding: EncodingInfo, filetype: str = None, oob: OutOfBand = None):
+    """Opens an encoding session for a memory buffer.
+
+    Returns a Format object or raises MemoryError."""
     cdef sox_format_t* fmt
     cdef char* filetype_c = NULL
     if filetype is not None:
@@ -1605,8 +1626,11 @@ def open_mem_write(buffer: bytearray, signal: SignalInfo, encoding: EncodingInfo
     return Format.from_ptr(fmt, True)
 
 
-def open_memstream_write(signal: SignalInfo, encoding: EncodingInfo, filetype: str = None, oob: OutOfBand = None):
-    """Opens an encoding session for a memstream buffer. Returns (Format, buffer_ptr, buffer_size_ptr) or raises MemoryError."""
+def open_memstream_write(signal: SignalInfo, encoding: EncodingInfo,
+        filetype: str = None, oob: OutOfBand = None):
+    """Opens an encoding session for a memstream buffer.
+
+    Returns (Format, buffer_ptr, buffer_size_ptr) or raises MemoryError."""
     cdef sox_format_t* fmt
     cdef char* filetype_c = NULL
     cdef char* buffer_ptr = NULL
@@ -1628,7 +1652,7 @@ def get_format_fns():
     cdef const sox_format_tab_t* format_fns = sox_get_format_fns()
     if format_fns == NULL:
         return []
-    
+
     result = []
     cdef int i = 0
     while format_fns[i].name != NULL:
@@ -1645,7 +1669,7 @@ def get_effect_fns():
     cdef const sox_effect_fn_t* effect_fns = sox_get_effect_fns()
     if effect_fns == NULL:
         return []
-    
+
     result = []
     cdef int i = 0
     while effect_fns[i] != NULL:
@@ -1664,7 +1688,7 @@ def get_effect_fns():
 #     """Parses the specified playlist file."""
 #     cdef int result
 #     cdef bytes listname_bytes = listname.encode()
-    
+
 #     result = sox_parse_playlist(playlist_callback, NULL, listname_bytes)
 #     if result != SOX_SUCCESS:
 #         raise RuntimeError(f"Failed to parse playlist: {strerror(result)}")
@@ -1677,7 +1701,7 @@ def read_samples(format: Format, buffer: list, length: int) -> int:
     cdef sox_sample_t* sample_buffer = <sox_sample_t*>malloc(length * sizeof(sox_sample_t))
     if sample_buffer == NULL:
         raise MemoryError("Failed to allocate sample buffer")
-    
+
     try:
         samples_read = sox_read(format.ptr, sample_buffer, length)
         # Convert C samples to Python list
@@ -1694,7 +1718,7 @@ def write_samples(format: Format, samples: list) -> int:
     cdef sox_sample_t* sample_buffer = <sox_sample_t*>malloc(length * sizeof(sox_sample_t))
     if sample_buffer == NULL:
         raise MemoryError("Failed to allocate sample buffer")
-    
+
     try:
         # Convert Python list to C samples
         for i in range(length):
@@ -1717,7 +1741,7 @@ def find_effect(name: str) -> EffectHandler:
     cdef bytes name_bytes = name.encode('utf-8')
     cdef const sox_effect_handler_t* handler = sox_find_effect(name_bytes)
     if handler == NULL:
-        return None    
+        return None
     return EffectHandler.from_ptr(<sox_effect_handler_t*>handler)
 
 
@@ -1728,8 +1752,3 @@ def find_format(name: str, ignore_devices: bool = False) -> FormatHandler:
     if handler == NULL:
         return None
     return FormatHandler.from_ptr(<sox_format_handler_t*>handler)
-
-
-
-
-

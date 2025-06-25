@@ -7,7 +7,6 @@ This test replicates the functionality of the C example:
 - Uses the Python bindings from src/cysox/sox.pyx
 """
 
-import os
 import tempfile
 from pathlib import Path
 

@@ -8,7 +8,7 @@ def test_get_encodings():
     encodings = sox.get_encodings()
     assert isinstance(encodings, list)
     assert len(encodings) > 0
-    
+
     for encoding in encodings:
         assert hasattr(encoding, 'flags')
         assert hasattr(encoding, 'name')
@@ -21,7 +21,7 @@ def test_encodings():
     assert hasattr(sox, 'ENCODINGS')
     assert isinstance(sox.ENCODINGS, list)
     assert len(sox.ENCODINGS) > 0
-    
+
     # Test some known encodings
     assert ("SIGN2", "signed linear 2's comp: Mac") in sox.ENCODINGS
     assert ("MP3", "MP3 compression") in sox.ENCODINGS
@@ -41,33 +41,33 @@ def test_encoding_info_creation():
         reverse_bits=0,
         opposite_endian=False
     )
-    
+
     assert encoding.encoding == 1
     assert encoding.bits_per_sample == 16
     assert encoding.compression == 1.0
     assert encoding.reverse_bytes == 0
     assert encoding.reverse_nibbles == 0
     assert encoding.reverse_bits == 0
-    assert encoding.opposite_endian == False
+    assert not encoding.opposite_endian
 
 
 def test_encoding_info_default_values():
     """Test EncodingInfo with default values"""
     encoding = sox.EncodingInfo()
-    
+
     assert encoding.encoding == 0
     assert encoding.bits_per_sample == 0
     assert encoding.compression == 0.0
     assert encoding.reverse_bytes == 0
     assert encoding.reverse_nibbles == 0
     assert encoding.reverse_bits == 0
-    assert encoding.opposite_endian == False
+    assert not encoding.opposite_endian
 
 
 def test_encoding_info_property_setters():
     """Test EncodingInfo property setters"""
     encoding = sox.EncodingInfo()
-    
+
     encoding.encoding = 22  # MP3
     encoding.bits_per_sample = 0
     encoding.compression = math.inf
@@ -75,31 +75,31 @@ def test_encoding_info_property_setters():
     encoding.reverse_nibbles = 1
     encoding.reverse_bits = 1
     encoding.opposite_endian = True
-    
+
     assert encoding.encoding == 22
     assert encoding.bits_per_sample == 0
     assert encoding.compression == math.inf
     assert encoding.reverse_bytes == 1
     assert encoding.reverse_nibbles == 1
     assert encoding.reverse_bits == 1
-    assert encoding.opposite_endian == True
+    assert encoding.opposite_endian
 
 
 def test_encoding_info_property_access():
     """Test EncodingInfo property access patterns"""
     encoding = sox.EncodingInfo(encoding=1, bits_per_sample=16)
-    
+
     # Test getting properties multiple times
     assert encoding.encoding == 1
     assert encoding.encoding == 1  # Should be consistent
-    
+
     assert encoding.bits_per_sample == 16
     assert encoding.bits_per_sample == 16  # Should be consistent
-    
+
     # Test setting and getting
     encoding.encoding = 22  # MP3
     assert encoding.encoding == 22
-    
+
     encoding.bits_per_sample = 0
     assert encoding.bits_per_sample == 0
 
@@ -115,14 +115,14 @@ def test_encoding_info_edge_cases():
         reverse_bits=1,
         opposite_endian=True
     )
-    
+
     assert encoding.encoding == 25
     assert encoding.bits_per_sample == 32
     assert encoding.compression == 100.0
     assert encoding.reverse_bytes == 1
     assert encoding.reverse_nibbles == 1
     assert encoding.reverse_bits == 1
-    assert encoding.opposite_endian == True
+    assert encoding.opposite_endian
 
 
 
@@ -130,6 +130,6 @@ def test_encoding_info_memory_management():
     """Test EncodingInfo memory management"""
     encoding = sox.EncodingInfo(encoding=1, bits_per_sample=16)
     assert encoding.encoding == 1
-    
+
     # Test that the object can be properly cleaned up
     del encoding

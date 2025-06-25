@@ -35,7 +35,7 @@ extensions = [
 
 setup(
     name="cysox",
-    ext_modules=cythonize(extensions, 
+    ext_modules=cythonize(extensions,
         compiler_directives={
             'language_level' : '3',
             'binding': True,             # default: True
@@ -43,7 +43,7 @@ setup(
             'wraparound': True,          # default: True
             'initializedcheck': True,    # default: True
             'nonecheck': False,          # default: False
-            'overflowcheck': True,       # default: False
+            'overflowcheck': False,      # default: False
             'overflowcheck.fold': True,  # default: True
             'embedsignature': False,     # default: False
             'cdivision': False,          # default: False

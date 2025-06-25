@@ -1,5 +1,9 @@
 .DS_Store
 
+# editor config
+.clangd
+.vscode
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -22,3 +26,4 @@ lib/
 # cache
 .*_cache/
 *.egg-info
+.ropeproject
