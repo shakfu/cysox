@@ -2,7 +2,7 @@
 LIBRARIES=$(wildcard lib/*.a)
 
 define build-example
-@gcc -std=c11 -o build/$1 \
+gcc -std=c11 -o build/$1 \
 	-I ./include -L ./lib \
 	$(LIBRARIES) \
 	-lz \
@@ -33,14 +33,8 @@ test:
 strip:
 	@strip -x src/cysox/sox.*.so
 
-
 examples:
-	$(call build-example,"example0")
-	$(call build-example,"example1")
-	$(call build-example,"example2")
-	$(call build-example,"example3")
-	$(call build-example,"example4")
-	$(call build-example,"example5")
-	$(call build-example,"example6")
-
+	@for i in $(shell seq 0 6); \
+		do $(call build-example,example$$i); \
+	done
 
