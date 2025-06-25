@@ -10,15 +10,15 @@ def test_get_encodings():
     assert len(encodings) > 0
 
     for encoding in encodings:
-        assert hasattr(encoding, 'flags')
-        assert hasattr(encoding, 'name')
-        assert hasattr(encoding, 'desc')
-        assert hasattr(encoding, 'type')
+        assert hasattr(encoding, "flags")
+        assert hasattr(encoding, "name")
+        assert hasattr(encoding, "desc")
+        assert hasattr(encoding, "type")
 
 
 def test_encodings():
     """Test that ENCODINGS list is properly defined"""
-    assert hasattr(sox, 'ENCODINGS')
+    assert hasattr(sox, "ENCODINGS")
     assert isinstance(sox.ENCODINGS, list)
     assert len(sox.ENCODINGS) > 0
 
@@ -26,7 +26,6 @@ def test_encodings():
     assert ("SIGN2", "signed linear 2's comp: Mac") in sox.ENCODINGS
     assert ("MP3", "MP3 compression") in sox.ENCODINGS
     assert ("FLOAT", "floating point (binary format)") in sox.ENCODINGS
-
 
 
 # Test EncodingInfo class
@@ -39,7 +38,7 @@ def test_encoding_info_creation():
         reverse_bytes=0,
         reverse_nibbles=0,
         reverse_bits=0,
-        opposite_endian=False
+        opposite_endian=False,
     )
 
     assert encoding.encoding == 1
@@ -107,13 +106,13 @@ def test_encoding_info_property_access():
 def test_encoding_info_edge_cases():
     """Test EncodingInfo with edge case values"""
     encoding = sox.EncodingInfo(
-        encoding=25,        # High encoding value
-        bits_per_sample=32, # High bits per sample
+        encoding=25,  # High encoding value
+        bits_per_sample=32,  # High bits per sample
         compression=100.0,  # High compression
         reverse_bytes=1,
         reverse_nibbles=1,
         reverse_bits=1,
-        opposite_endian=True
+        opposite_endian=True,
     )
 
     assert encoding.encoding == 25
@@ -123,7 +122,6 @@ def test_encoding_info_edge_cases():
     assert encoding.reverse_nibbles == 1
     assert encoding.reverse_bits == 1
     assert encoding.opposite_endian
-
 
 
 def test_encoding_info_memory_management():

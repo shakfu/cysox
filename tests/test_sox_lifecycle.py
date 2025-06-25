@@ -2,6 +2,7 @@ import cysox as sox
 
 # Test object lifecycle
 
+
 def test_object_lifecycle():
     """Test object lifecycle and cleanup"""
     # Create multiple objects
@@ -11,7 +12,7 @@ def test_object_lifecycle():
     instr = sox.InstrInfo(note=60, low=0, high=127)
     file_info = sox.FileInfo(buf=b"test", size=4, count=1, pos=0)
     # oob = sox.OutOfBand()
-    
+
     # Verify they were created successfully
     assert signal.rate == 44100.0
     assert encoding.encoding == 1
@@ -19,7 +20,7 @@ def test_object_lifecycle():
     assert instr.note == 60
     assert file_info.size == 4
     # assert oob.num_comments() == 0
-    
+
     # Clean up (should not raise exceptions)
     del signal
     del encoding

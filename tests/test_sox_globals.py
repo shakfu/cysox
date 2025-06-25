@@ -3,6 +3,7 @@ import cysox as sox
 
 # Test Globals class
 
+
 def test_globals():
     """Test get_globals function"""
     g = sox.Globals()
