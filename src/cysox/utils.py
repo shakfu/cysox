@@ -1,8 +1,10 @@
 # Version utility functions
 
+
 def lib_version(major: int, minor: int, patch: int) -> int:
     """Compute a 32-bit integer API version from three 8-bit parts."""
-    return (((major) << 16) + ((minor) << 8) + (patch))
+    return ((major) << 16) + ((minor) << 8) + (patch)
+
 
 def lib_version_code() -> int:
     """Get the current libSoX version code."""
@@ -18,7 +20,8 @@ def int_min(bits: int) -> int:
     @returns the smallest (negative) value storable in a twos-complement signed
     integer with the specified number of bits, cast to an unsigned integer.
     """
-    return (1 <<((bits)-1))
+    return 1 << ((bits) - 1)
+
 
 def int_max(bits: int) -> int:
     """Returns the largest (positive) value storable in a twos-complement signed
@@ -29,11 +32,12 @@ def int_max(bits: int) -> int:
     @returns the largest (positive) value storable in a twos-complement signed
     integer with the specified number of bits, cast to an unsigned integer.
     """
-    return ((-1 + 2**32)>>(33-(bits)))
+    return (-1 + 2**32) >> (33 - (bits))
+
 
 def uint_max(bits: int) -> int:
     """Returns the largest value storable in an unsigned integer with the specified
-    number of bits; 
+    number of bits;
 
     for example, SOX_UINT_MAX(8) = 0xFF, SOX_UINT_MAX(16) = 0xFFFF, etc.
     @param bits Size of value for which to calculate maximum.
@@ -41,8 +45,6 @@ def uint_max(bits: int) -> int:
     number of bits.
     """
     return int_min(bits) | int_max(bits)
-
-
 
 
 # Sample conversion utility functions
@@ -66,22 +68,22 @@ def uint_max(bits: int) -> int:
 #     bits    Width of resulting sample (1 through 32).
 #     sample  Input sample to be converted.
 #     clips   Variable that is incremented if the result is too big.
-#     returns Signed integer of width (bits).        
+#     returns Signed integer of width (bits).
 #     """
 #     return SOX_SAMPLE_TO_SIGNED(bits, sample, clips)
 
 # def signed_to_sample(bits: int, value: int) -> int:
 #     """Converts signed integer of width (bits) to sox_sample_t.
-    
+
 #     bits    Width of input sample (1 through 32).
 #     sample  Input sample to be converted.
-#     returns SoX native sample value.    
+#     returns SoX native sample value.
 #     """
 #     return SOX_SIGNED_TO_SAMPLE(bits, value)
 
 # def unsigned_to_sample(bits: int, value: int) -> int:
 #     """Converts unsigned integer of width (bits) to sox_sample_t.
-    
+
 #     bits    Width of input sample (1 through 32).
 #     sample  Input sample to be converted.
 #     returns SoX native sample value.
@@ -201,4 +203,5 @@ def uint_max(bits: int) -> int:
 # def uint_max(bits: int) -> int:
 #     """Get maximum unsigned value for given bit depth."""
 #     return SOX_UINT_MAX(bits)
+
 

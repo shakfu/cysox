@@ -27,20 +27,20 @@ cdef extern from "sox.h":
     # enumerations
 
     # Boolean type, assignment (but not necessarily binary) compatible with C++ bool.
-    cdef enum sox_bool:
+    cpdef enum sox_bool:
         sox_bool_dummy = -1
         sox_false = 0
         sox_true = 1
 
     # no, yes, or default (default usually implies some kind of auto-detect logic).
-    cdef enum sox_option_t:
+    cpdef enum sox_option_t:
         sox_option_no
         sox_option_yes
         sox_option_default
 
     # The libSoX-specific error codes.
     # libSoX functions may return these codes or others that map from errno codes.
-    cdef enum sox_error_t:
+    cpdef enum sox_error_t:
         SOX_SUCCESS = 0     # Function succeeded = 0
         SOX_EOF     = -1    # End Of File or other error = -1
         SOX_EHDR    = 2000  # Invalid Audio Header = 2000
@@ -51,7 +51,7 @@ cdef extern from "sox.h":
         SOX_EINVAL  = 2005  # Invalid argument = 2005
 
     # Flags indicating whether optional features are present in this build of libSoX.
-    cdef enum sox_version_flags_t:
+    cpdef enum sox_version_flags_t:
         sox_version_none = 0          # No special features = 0.
         sox_version_have_popen = 1    # popen = 1.
         sox_version_have_magic = 2    # magic = 2.
@@ -59,7 +59,7 @@ cdef extern from "sox.h":
         sox_version_have_memopen = 8  # memopen = 8.
 
     # Format of sample data.
-    cdef enum sox_encoding_t:
+    cpdef enum sox_encoding_t:
         SOX_ENCODING_UNKNOWN    # encoding has not yet been determined
         SOX_ENCODING_SIGN2      # signed linear 2's comp: Mac
         SOX_ENCODING_UNSIGNED   # unsigned linear: Sound Blaster
@@ -93,13 +93,13 @@ cdef extern from "sox.h":
         SOX_ENCODINGS           # End of list marker
 
     # Flags for sox_encodings_info_t: lossless/lossy1/lossy2.
-    cdef enum sox_encodings_flags_t:
+    cpdef enum sox_encodings_flags_t:
         sox_encodings_none   = 0    # no flags specified (implies lossless encoding) = 0.
         sox_encodings_lossy1 = 1    # encode, decode: lossy once = 1.
         sox_encodings_lossy2 = 2    # encode, decode, encode, decode: lossy twice = 2.
 
     # Type of plot.
-    cdef enum sox_plot_t:
+    cpdef enum sox_plot_t:
         sox_plot_off
         sox_plot_octave
         sox_plot_gnuplot
@@ -107,7 +107,7 @@ cdef extern from "sox.h":
 
     # Loop modes: upper 4 bits mask the loop blass, lower 4 bits describe
     # the loop behaviour, for example single shot, bidirectional etc.
-    cdef enum sox_loop_flags_t:
+    cpdef enum sox_loop_flags_t:
         sox_loop_none = 0           # single-shot = 0
         sox_loop_forward = 1        # forward loop = 1
         sox_loop_forward_back = 2   # forward/back loop = 2

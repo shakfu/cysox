@@ -51,9 +51,9 @@ setup(
             'annotation_typing': True,   # default: True
             'warn.undeclared': True,     # default: False
             'warn.unreachable': True,    # default: True
-            'warn.unused': True,         # default: False
-            'warn.unused_arg': True,     # default: False
-            'warn.unused_result': True,  # default: False
+            'warn.unused': False,        # default: False
+            'warn.unused_arg': False,    # default: False
+            'warn.unused_result': False, # default: False
         }),
     package_dir={"": "src"},
 )

@@ -195,7 +195,7 @@ cdef class SignalInfo:
 class EncodingsInfo:
     """Basic information about an encoding."""
 
-    def __init__(self, int flags, str name, str desc):
+    def __init__(self, sox_encodings_flags_t flags, str name, str desc):
         self.flags = flags
         self.name = name
         self.desc = desc
@@ -280,7 +280,7 @@ cdef class EncodingInfo:
         self.ptr.compression = value
 
     @property
-    def reverse_bytes(self) -> int:
+    def reverse_bytes(self) -> sox_option_t:
         """Should bytes be reversed?"""
         return self.ptr.reverse_bytes
 
@@ -289,7 +289,7 @@ cdef class EncodingInfo:
         self.ptr.reverse_bytes = value
 
     @property
-    def reverse_nibbles(self) -> int:
+    def reverse_nibbles(self) -> sox_option_t:
         """Should nibbles be reversed?"""
         return self.ptr.reverse_nibbles
 
@@ -298,7 +298,7 @@ cdef class EncodingInfo:
         self.ptr.reverse_nibbles = value
 
     @property
-    def reverse_bits(self) -> int:
+    def reverse_bits(self) -> sox_option_t:
         """Should bits be reversed?"""
         return self.ptr.reverse_bits
 
@@ -1569,11 +1569,11 @@ def basename(filename: str) -> str:
     return base_buffer[:result].decode('utf-8')
 
 
-def precision(encoding: int, bits_per_sample: int) -> int:
+def precision(sox_encoding_t encoding, unsigned bits_per_sample) -> int:
     """Given an encoding and bits_per_sample
 
     returns the number of useful bits per sample."""
-    return sox_precision(<sox_encoding_t>encoding, <unsigned>bits_per_sample)
+    return sox_precision(encoding, bits_per_sample)
 
 
 def get_effects_globals():
