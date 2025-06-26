@@ -19,6 +19,9 @@ sdist/
 include/
 lib/
 
+# exclude
+thirdparty/sox/
+
 # Environments
 .env
 .venv
