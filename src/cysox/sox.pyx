@@ -1359,7 +1359,7 @@ cdef class EffectsChain:
             self.ptr = NULL
 
     def __init__(self, in_encoding: EncodingInfo = None,
-                 out_encoding: EncodingInfo = None):
+                       out_encoding: EncodingInfo = None):
         """Initialize an effects chain with optional input and output encodings."""
         self.ptr = sox_create_effects_chain(
             in_encoding.ptr if in_encoding else NULL,
@@ -1752,3 +1752,7 @@ def find_format(name: str, ignore_devices: bool = False) -> FormatHandler:
     if handler == NULL:
         return None
     return FormatHandler.from_ptr(<sox_format_handler_t*>handler)
+
+# def flow_effects(EffectsChain chain):
+#     assert sox_flow_effects(chain.ptr, NULL, NULL) == SOX_SUCCESS
+

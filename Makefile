@@ -10,7 +10,7 @@ gcc -std=c11 -o build/$1 \
 	tests/examples/$1.c
 endef
 
-.PHONY: all build examples wheel delocate clean reset test strip
+.PHONY: all build examples wheel delocate clean reset test test0 strip
 
 all: build
 
@@ -25,15 +25,18 @@ wheel:
 	@python3 setup.py bdist_wheel
 
 clean:
-	@rm -rf build dist sox.*.so src/*.egg-info htmlcov
+	@rm -rf build/lib.* build/temp.* dist sox.*.so src/*.egg-info htmlcov
 	@find . -type d -name __pycache__ -exec rm -rf {} \; -prune
 	@find . -type d -path ".*_cache"  -exec rm -rf {} \; -prune
 
 reset: clean
-	@rm -rf include lib 
+	@rm -rf build include lib
 
 test:
 	@pytest -v
+
+test0:
+	@python3 tests/examples/example0.py tests/data/s00.wav build/out.wav
 
 strip:
 	@strip -x src/cysox/sox.*.so
@@ -45,3 +48,8 @@ examples:
 
 delocate: wheel
 	@cd dist && delocate-wheel cysox-*.whl
+
+
+# debug: $(LIBSOX)
+# 	@build/debug_python/bin/python3 setup.py build_ext --inplace
+# 	@build/debug_python/bin/cygdb . -- --args build/debug_python/bin/python3 example0.py
