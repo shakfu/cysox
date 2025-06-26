@@ -42,71 +42,73 @@ def test_example0_effects_chain(io_files):
 
     # Step 1: Open the input file (with default parameters)
     input_format = sox.Format(str(input_file), mode="r")
-    # self.assertIsNotNone(input_format.ptr, "Failed to open input file")
+    assert input_format, "Failed to open input file"
 
     # Step 2: Open the output file with same signal characteristics as input
     output_format = sox.Format(str(output_file), signal=input_format.signal, mode="w")
-    # self.assertIsNotNone(output_format.ptr, "Failed to open output file")
+    assert output_format, "Failed to open output file"
 
     # Step 3: Create an effects chain
     chain = sox.EffectsChain(
         in_encoding=input_format.encoding, out_encoding=output_format.encoding
     )
-    # self.assertIsNotNone(chain.ptr, "Failed to create effects chain")
+    assert chain, "Failed to create effects chain"
 
     # Step 4: Add input effect (first effect must source samples)
     input_effect_handler = sox.find_effect("input")
     assert input_effect_handler is not None
 
+    print(f"input_file: {input_file}")  
+    print(f"output_file: {output_file}")
+
     input_effect = sox.Effect(input_effect_handler)
     input_effect.set_options([str(input_file)])
 
+    # chain.add_effect(input_effect, input_format.signal, output_format.signal)
 
-#     chain.add_effect(input_effect, input_format.signal, input_format.signal)
+    # # Step 5: Add volume effect with "3dB" parameter
+    # vol_effect_handler = sox.find_effect("vol")
+    # assert vol_effect_handler, "Failed to find vol effect"
 
-#     # Step 5: Add volume effect with "3dB" parameter
-#     vol_effect_handler = sox.find_effect("vol")
-#     self.assertIsNotNone(vol_effect_handler, "Failed to find vol effect")
+    # vol_effect = sox.Effect(vol_effect_handler)
+    # vol_effect.set_options(["3dB"])
 
-#     vol_effect = sox.Effect(vol_effect_handler)
-#     vol_effect.set_options(["3dB"])
+    # chain.add_effect(vol_effect, input_format.signal, output_format.signal)
 
-#     chain.add_effect(vol_effect, input_format.signal, input_format.signal)
+    # # Step 6: Add flanger effect with default parameters
+    # flanger_effect_handler = sox.find_effect("flanger")
+    # assert flanger_effect_handler, "Failed to find flanger effect"
 
-#     # Step 6: Add flanger effect with default parameters
-#     flanger_effect_handler = sox.find_effect("flanger")
-#     self.assertIsNotNone(flanger_effect_handler, "Failed to find flanger effect")
+    # flanger_effect = sox.Effect(flanger_effect_handler)
+    # flanger_effect.set_options([""])  # Default parameters
 
-#     flanger_effect = sox.Effect(flanger_effect_handler)
-#     flanger_effect.set_options([])  # Default parameters
+    # chain.add_effect(flanger_effect, input_format.signal, output_format.signal)
 
-#     chain.add_effect(flanger_effect, input_format.signal, input_format.signal)
+    # # Step 7: Add output effect (last effect must consume samples)
+    # output_effect_handler = sox.find_effect("output")
+    # assert output_effect_handler, "Failed to find output effect"
 
-#     # Step 7: Add output effect (last effect must consume samples)
-#     output_effect_handler = sox.find_effect("output")
-#     self.assertIsNotNone(output_effect_handler, "Failed to find output effect")
+    # output_effect = sox.Effect(output_effect_handler)
+    # output_effect.set_options([str(output_file)])
 
-#     output_effect = sox.Effect(output_effect_handler)
-#     output_effect.set_options([str(self.output_file)])
+    # chain.add_effect(output_effect, input_format.signal, output_format.signal)
 
-#     chain.add_effect(output_effect, input_format.signal, input_format.signal)
+    # # Step 8: Flow samples through the effects processing chain
+    # result = chain.flow_effects()
+    # assert result == sox.SOX_SUCCESS, "Failed to flow effects"
 
-#     # Step 8: Flow samples through the effects processing chain
-#     result = chain.flow_effects()
-#     self.assertEqual(result, sox.SOX_SUCCESS, "Failed to flow effects")
+    # # Step 9: Verify output file was created and has content
+    # assert output_file.exists(), "Output file was not created"
+    # assert output_file.stat().st_size > 0, "Output file is empty"
 
-#     # Step 9: Verify output file was created and has content
-#     self.assertTrue(self.output_file.exists(), "Output file was not created")
-#     self.assertGreater(self.output_file.stat().st_size, 0, "Output file is empty")
+    # # Step 10: Check for any clipping that occurred
+    # clips = chain.get_clips()
+    # print(f"Number of clips: {clips}")
 
-#     # Step 10: Check for any clipping that occurred
-#     clips = chain.get_clips()
-#     print(f"Number of clips: {clips}")
+    # # Step 11: Clean up (handled by tearDown)
+    # input_format.close()
+    # output_format.close()
 
-#     # Step 11: Clean up (handled by tearDown)
-#     input_format.close()
-#     output_format.close()
-#
 
 
 def test_example0_signal_properties(io_files):
