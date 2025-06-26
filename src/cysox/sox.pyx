@@ -1229,19 +1229,14 @@ cdef class Effect:
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
-            sox_delete_effect(self.ptr)
+            free(self.ptr)
             self.ptr = NULL
 
-    def __init__(self, handler: EffectHandler = None):
+    def __init__(self, handler: EffectHandler):
         """Initialize an effect with an optional handler."""
-        if handler is not None:
-            self.ptr = sox_create_effect(handler.ptr)
-            if self.ptr == NULL:
-                raise MemoryError("Failed to create effect")
-        else:
-            self.ptr = <sox_effect_t*>malloc(sizeof(sox_effect_t))
-            if self.ptr == NULL:
-                raise MemoryError("Failed to allocate effect")
+        self.ptr = sox_create_effect(handler.ptr)
+        if self.ptr == NULL:
+            raise MemoryError("Failed to create effect")
         self.owner = True
 
     @staticmethod
@@ -1250,6 +1245,10 @@ cdef class Effect:
         wrapper.ptr = ptr
         wrapper.owner = owner
         return wrapper
+
+    def delete(self):
+        """Shut down and delete an effect."""
+        sox_delete_effect(self.ptr)
 
     def set_options(self, options: list[str]):
         """Applies the command-line options to the effect.

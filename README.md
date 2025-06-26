@@ -59,5 +59,12 @@ make test
 
 ## TODO
 
-- [ ] convert examples to tests
+- [x] convert example0.c to test_example0.py
+- [ ] pass 100% of test_example0.py
+- [ ] convert example1.c to test_example1.py
+- [ ] convert example2.c to test_example2.py
+- [ ] convert example3.c to test_example3.py
+- [ ] convert example4.c to test_example4.py
+- [ ] convert example5.c to test_example5.py
+- [ ] convert example6.c to test_example6.py
 - [ ] test on linux
