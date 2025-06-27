@@ -48,7 +48,7 @@ ENCODINGS = [
     ("OPUS",        "Opus compression"),
 ]
 
-constant = SimpleNamespace({
+constant = SimpleNamespace(**{
     'INT8_MAX': SOX_INT8_MAX,
     'INT16_MAX': SOX_INT16_MAX,
     'INT24_MAX': SOX_INT24_MAX,

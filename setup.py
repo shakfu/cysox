@@ -4,6 +4,13 @@ from pathlib import Path
 from setuptools import setup, Extension
 from Cython.Build import cythonize
 
+def getenv(variable, default=True):
+    return bool(int((os.getenv(variable, default))))
+
+# ----------------------------------------------------------------------------
+# Constants
+
+DEBUG = getenv("DEBUG", default=False)
 PLATFORM = platform.system()
 
 # ----------------------------------------------------------------------------
@@ -22,7 +29,7 @@ EXTRA_COMPILE_ARGS = []
 # Darwin (MacOS)
 
 if PLATFORM == "Darwin":
-    STATIC = bool(int((os.getenv("STATIC", True))))
+    STATIC = getenv("STATIC")
     LIB_DIR = ROOT / "lib"
     LIBRARY_DIRS.append(str(LIB_DIR))
     INCLIDE_DIR = ROOT / "include"
@@ -79,7 +86,7 @@ setup(
             'warn.unused_arg': False,    # default: False
             'warn.unused_result': False, # default: False
         },
-        # gdb_debug=True,
+        gdb_debug=DEBUG,
     ),
     package_dir={"": "src"},
 )

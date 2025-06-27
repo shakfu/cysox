@@ -1,5 +1,16 @@
 LIBSOX := lib/libsox.a
 LIBRARIES := $(wildcard lib/*.a)
+DEBUG=0
+
+ifeq ($(DEBUG),1)
+SUBFOLDER := build/install/python-shared/bin
+PYTHON := $(PWD)/$(SUBFOLDER)/python3
+CYGDB := $(PWD)/$(SUBFOLDER)/cygdb
+PYTEST := $(PWD)/$(SUBFOLDER)/pytest
+else
+PYTHON := python3
+PYTEST := pytest
+endif
 
 define build-example
 gcc -std=c11 -o build/$1 \
@@ -18,11 +29,11 @@ $(LIBSOX):
 	@scripts/setup.sh
 
 build: $(LIBSOX)
-	@python3 setup.py build_ext --inplace
+	@$(PYTHON) setup.py build_ext --inplace
 
 wheel:
 	@rm -rf dist
-	@python3 setup.py bdist_wheel
+	@$(PYTHON) setup.py bdist_wheel
 
 clean:
 	@rm -rf build/lib.* build/temp.* dist sox.*.so src/*.egg-info htmlcov
@@ -33,10 +44,10 @@ reset: clean
 	@rm -rf build include lib
 
 test:
-	@pytest -v
+	@$(PYTEST) -s -vv
 
 eg0:
-	@python3 tests/examples/example0.py tests/data/s00.wav build/out.wav
+	@$(PYTHON) tests/examples/example0.py tests/data/s00.wav build/out.wav
 
 examples:
 	@for i in $(shell seq 0 6); \
@@ -49,7 +60,7 @@ strip:
 delocate: wheel
 	@cd dist && delocate-wheel cysox-*.whl
 
-
-# debug: $(LIBSOX)
-# 	@build/debug_python/bin/python3 setup.py build_ext --inplace
-# 	@build/debug_python/bin/cygdb . -- --args build/debug_python/bin/python3 example0.py
+debug: $(LIBSOX)
+	@$(PYTHON) setup.py build_ext --inplace
+	@$(CYGDB) . -- --args $(PYTHON) tests/examples/example0.py tests/data/s00.wav build/out.wav
+	# set arch aarch64
