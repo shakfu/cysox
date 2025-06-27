@@ -35,6 +35,11 @@ if PLATFORM == "Darwin":
     INCLIDE_DIR = ROOT / "include"
     INCLUDE_DIRS.append(str(INCLIDE_DIR))
     EXTRA_LINK_ARGS.extend(['-framework', 'CoreAudio'])
+    if DEBUG:
+        EXTRA_COMPILE_ARGS.extend([
+            '-fsanitize=address',
+            '-fno-omit-frame-pointer',
+        ])
     if STATIC:
         EXTRA_OBJECTS.extend([str(p) for p in LIB_DIR.glob('*.a')])
     else:

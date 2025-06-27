@@ -1463,7 +1463,7 @@ class PythonBuilder(Builder):
         """install python packages"""
         required_pkgs = " ".join(self.pkgs)
         self.cmd(f"{self.python} -m ensurepip")
-        self.cmd(f"{self.pip} install {required_pkgs}")
+        self.cmd(f"{self.pip} install --upgrade {required_pkgs}")
 
     def make_relocatable(self):
         """fix dylib/exe @rpath shared buildtype in macos"""
@@ -1519,10 +1519,12 @@ class PythonDebugBuilder(PythonBuilder):
         "--without-static-libpython",
         "--with-pydebug",
         # "--with-trace-refs",
+        # "--with-assertions",
         # "--with-valgrind",
         # "--with-address-sanitizer",
         # "--with-memory-sanitizer",
         # "--with-undefined-behavior-sanitizer",
+        # "--with-thread-sanitizer".
     ]
 
     required_packages = []

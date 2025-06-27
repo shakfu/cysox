@@ -1,12 +1,13 @@
 LIBSOX := lib/libsox.a
 LIBRARIES := $(wildcard lib/*.a)
+DEBUGPY_BIN := $(PWD)/build/install/python-shared/bin
+DEBUGPY_EXE := $(DEBUGPY_BIN)/python3
 DEBUG=0
 
 ifeq ($(DEBUG),1)
-SUBFOLDER := build/install/python-shared/bin
-PYTHON := $(PWD)/$(SUBFOLDER)/python3
-CYGDB := $(PWD)/$(SUBFOLDER)/cygdb
-PYTEST := $(PWD)/$(SUBFOLDER)/pytest
+PYTHON := $(DEBUGPY_EXE)
+CYGDB := $(DEBUGPY_BIN)/cygdb
+PYTEST := $(DEBUGPY_BIN)/pytest
 else
 PYTHON := python3
 PYTEST := pytest
@@ -36,7 +37,8 @@ wheel:
 	@$(PYTHON) setup.py bdist_wheel
 
 clean:
-	@rm -rf build/lib.* build/temp.* dist sox.*.so src/*.egg-info htmlcov
+	@rm -rf build/lib.* build/temp.* dist src/*.egg-info htmlcov
+	@rm -rf src/cysox/sox.*.so
 	@find . -type d -name __pycache__ -exec rm -rf {} \; -prune
 	@find . -type d -path ".*_cache"  -exec rm -rf {} \; -prune
 
@@ -59,6 +61,14 @@ strip:
 
 delocate: wheel
 	@cd dist && delocate-wheel cysox-*.whl
+
+$(DEBUGPY_EXE):
+	@./scripts/buildpy.py -d -c shared_max \
+		-a with_assertions \
+		   with_address_sanitizer \
+		-p setuptools cython pytest pip
+
+pydebug: $(DEBUGPY_EXE)
 
 debug: $(LIBSOX)
 	@$(PYTHON) setup.py build_ext --inplace

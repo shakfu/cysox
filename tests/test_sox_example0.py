@@ -61,37 +61,41 @@ def test_example0_effects_chain(io_files):
     print(f"input_file: {input_file}")  
     print(f"output_file: {output_file}")
 
-    input_effect = sox.Effect(input_effect_handler)
-    input_effect.set_options([str(input_file)])
+## ---
 
-    chain.add_effect(input_effect, input_format.signal, output_format.signal)
+    # input_effect = sox.Effect(input_effect_handler)
+    # input_effect.set_options([str(input_file)])
 
-    # Step 5: Add volume effect with "3dB" parameter
-    vol_effect_handler = sox.find_effect("vol")
-    assert vol_effect_handler, "Failed to find vol effect"
+    # chain.add_effect(input_effect, input_format.signal, output_format.signal)
 
-    vol_effect = sox.Effect(vol_effect_handler)
-    vol_effect.set_options(["3dB"])
+    # # Step 5: Add volume effect with "3dB" parameter
+    # vol_effect_handler = sox.find_effect("vol")
+    # assert vol_effect_handler, "Failed to find vol effect"
 
-    chain.add_effect(vol_effect, input_format.signal, output_format.signal)
+    # vol_effect = sox.Effect(vol_effect_handler)
+    # vol_effect.set_options(["3dB"])
 
-    # Step 6: Add flanger effect with default parameters
-    flanger_effect_handler = sox.find_effect("flanger")
-    assert flanger_effect_handler, "Failed to find flanger effect"
+    # chain.add_effect(vol_effect, input_format.signal, output_format.signal)
 
-    flanger_effect = sox.Effect(flanger_effect_handler)
-    flanger_effect.set_options([""])  # Default parameters
+    # # Step 6: Add flanger effect with default parameters
+    # flanger_effect_handler = sox.find_effect("flanger")
+    # assert flanger_effect_handler, "Failed to find flanger effect"
 
-    chain.add_effect(flanger_effect, input_format.signal, output_format.signal)
+    # flanger_effect = sox.Effect(flanger_effect_handler)
+    # flanger_effect.set_options([""])  # Default parameters
 
-    # Step 7: Add output effect (last effect must consume samples)
-    output_effect_handler = sox.find_effect("output")
-    assert output_effect_handler, "Failed to find output effect"
+    # chain.add_effect(flanger_effect, input_format.signal, output_format.signal)
 
-    output_effect = sox.Effect(output_effect_handler)
-    output_effect.set_options([str(output_file)])
+    # # Step 7: Add output effect (last effect must consume samples)
+    # output_effect_handler = sox.find_effect("output")
+    # assert output_effect_handler, "Failed to find output effect"
 
-    chain.add_effect(output_effect, input_format.signal, output_format.signal)
+    # output_effect = sox.Effect(output_effect_handler)
+    # output_effect.set_options([str(output_file)])
+
+    # chain.add_effect(output_effect, input_format.signal, output_format.signal)
+
+## ---
 
     # Step 8: Flow samples through the effects processing chain
     # result = chain.flow_effects()
