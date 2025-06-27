@@ -4,18 +4,24 @@ version = "0.1.0"
 description = "A cython wrapper of sox"
 readme = "README.md"
 authors = [
-    { name = "Shakeeb Alireza", email = "me@example.org" }
+    { name = "Shakeeb Alireza", email = "shakeeb@example.com" }
 ]
-requires-python = ">=3.8"
-# dependencies = ["numpy >= 2"]
-dependencies = []
+requires-python = ">=3.9"
+dependencies = [
+    "cython",
+]
 
-[project.optional-dependencies]
-test = ['pytest']
+[project.scripts]
+cysox = "cysox:__main__"
 
 [build-system]
-requires = ["setuptools >= 61", "cython"]
+requires = ["setuptools>=61", "cython"]
 build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+]
 
 [tool.setuptools]
 include-package-data = false

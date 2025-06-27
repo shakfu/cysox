@@ -1,0 +1,4 @@
+include src/cysox/*.pxd
+include src/cysox/*.pyx
+include src/cysox/*.c
+include include/*.h
