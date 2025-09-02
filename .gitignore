@@ -30,3 +30,7 @@ thirdparty/sox/
 .*_cache/
 *.egg-info
 .ropeproject
+
+# claude
+.claude
+CLAUDE.md
