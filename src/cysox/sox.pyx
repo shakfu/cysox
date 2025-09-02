@@ -16,6 +16,16 @@ ERROR_CODES = {
     'SOX_EINVAL': SOX_EINVAL,
 }
 
+# Expose constants at module level - Python accessible
+py_SOX_SUCCESS = SOX_SUCCESS
+py_SOX_EOF = SOX_EOF
+py_SOX_EHDR = SOX_EHDR
+py_SOX_EFMT = SOX_EFMT
+py_SOX_ENOMEM = SOX_ENOMEM
+py_SOX_EPERM = SOX_EPERM
+py_SOX_ENOTSUP = SOX_ENOTSUP
+py_SOX_EINVAL = SOX_EINVAL
+
 ENCODINGS = [
     ("UNKNOWN",     "encoding has not yet been determined"),
     ("SIGN2",       "signed linear 2's comp: Mac"),
@@ -1250,21 +1260,33 @@ cdef class Effect:
         """Shut down and delete an effect."""
         sox_delete_effect(self.ptr)
 
-    def set_options(self, options: list[str]):
+    def set_options(self, options):
         """Applies the command-line options to the effect.
 
         Returns the number of arguments consumed."""
-        cdef int argc = len(options)
-        cdef char** argv = <char**>malloc(argc * sizeof(char*))
-        if argv == NULL:
+        cdef int argc = len(options) if options else 0
+        cdef char** argv = <char**>malloc(argc * sizeof(char*)) if argc > 0 else NULL
+        if argc > 0 and argv == NULL:
             raise MemoryError("Failed to allocate argument array")
 
+        cdef list byte_strings = []
         try:
             for i in range(argc):
-                argv[i] = <bytes>options[i]
+                option = options[i]
+                if isinstance(option, Format):
+                    # For input/output effects, pass Format pointer cast to char*
+                    argv[i] = <char*>(<Format>option).ptr
+                elif isinstance(option, str):
+                    # Encode string to bytes and keep reference
+                    byte_str = option.encode('utf-8')
+                    byte_strings.append(byte_str)
+                    argv[i] = <char*>byte_str
+                else:
+                    raise TypeError(f"Unsupported option type: {type(option)}")
             return sox_effect_options(self.ptr, argc, argv)
         finally:
-            free(argv)
+            if argv != NULL:
+                free(argv)
 
     def stop(self) -> int:
         """Shuts down an effect (calls stop on each of its flows).

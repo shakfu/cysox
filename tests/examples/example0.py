@@ -66,35 +66,35 @@ def main():
         print("Adding input effect...")
         input_effect_handler = sox.find_effect("input")
         input_effect = sox.Effect(input_effect_handler)
-        input_effect.set_options([input_filename])
-        chain.add_effect(input_effect, input_format.signal, output_format.signal)
+        input_effect.set_options([input_format])
+        chain.add_effect(input_effect, input_format.signal, input_format.signal)
         
         # Step 6: Add volume effect with "3dB" parameter
         print("Adding volume effect (3dB)...")
         vol_effect_handler = sox.find_effect("vol")
         vol_effect = sox.Effect(vol_effect_handler)
         vol_effect.set_options(["3dB"])
-        chain.add_effect(vol_effect, input_format.signal, output_format.signal)
+        chain.add_effect(vol_effect, input_format.signal, input_format.signal)
         
         # Step 7: Add flanger effect with default parameters
         print("Adding flanger effect...")
         flanger_effect_handler = sox.find_effect("flanger")
         flanger_effect = sox.Effect(flanger_effect_handler)
-        flanger_effect.set_options([""])  # Default parameters
-        chain.add_effect(flanger_effect, input_format.signal, output_format.signal)
+        flanger_effect.set_options([])  # Default parameters
+        chain.add_effect(flanger_effect, input_format.signal, input_format.signal)
         
         # Step 8: Add output effect (last effect must consume samples)
         print("Adding output effect...")
         output_effect_handler = sox.find_effect("output")
         output_effect = sox.Effect(output_effect_handler)
-        output_effect.set_options([output_filename])
-        chain.add_effect(output_effect, input_format.signal, output_format.signal)
+        output_effect.set_options([output_format])
+        chain.add_effect(output_effect, input_format.signal, input_format.signal)
         
         # Step 9: Flow samples through the effects processing chain
         print("Processing audio through effects chain...")
         result = chain.flow_effects()
         
-        if result == sox.SOX_SUCCESS:
+        if result == sox.py_SOX_SUCCESS:
             print("Effects processing completed successfully!")
             
             # Check for any clipping that occurred
