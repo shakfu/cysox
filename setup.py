@@ -24,6 +24,7 @@ LIBRARY_DIRS = []
 EXTRA_OBJECTS = []
 EXTRA_LINK_ARGS = []
 EXTRA_COMPILE_ARGS = []
+DEFINE_MACROS = []
 
 # ----------------------------------------------------------------------------
 # Darwin (MacOS)
@@ -34,7 +35,9 @@ if PLATFORM == "Darwin":
     LIBRARY_DIRS.append(str(LIB_DIR))
     INCLIDE_DIR = ROOT / "include"
     INCLUDE_DIRS.append(str(INCLIDE_DIR))
-    EXTRA_LINK_ARGS.extend(['-framework', 'CoreAudio'])
+    EXTRA_LINK_ARGS.extend([
+        '-framework', 'CoreAudio',
+    ])
     if DEBUG:
         EXTRA_COMPILE_ARGS.extend([
             '-fsanitize=address',
@@ -47,6 +50,10 @@ if PLATFORM == "Darwin":
             "sox", "sndfile", "FLAC", "opus", "mp3lame",
             "vorbis", "vorbisfile", "vorbisenc", "png16",
         ])
+    DEFINE_MACROS.extend([
+        ("DEBUG", None),
+        ("DEBUG_EFFECTS_CHAIN", "1"),
+    ])
 
 else:
     raise NotImplemented("other platform variants still pending")
@@ -65,6 +72,7 @@ extensions = [
         extra_objects=EXTRA_OBJECTS,
         extra_link_args=EXTRA_LINK_ARGS,
         extra_compile_args=EXTRA_COMPILE_ARGS,
+        define_macros=DEFINE_MACROS,
     )
 ]
 

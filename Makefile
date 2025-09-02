@@ -22,7 +22,7 @@ gcc -std=c11 -o build/$1 \
 	tests/examples/$1.c
 endef
 
-.PHONY: all build wheel clean reset test eg0 examples strip delocate
+.PHONY: all build wheel clean reset test testpy examples strip delocate
 
 all: build
 
@@ -48,13 +48,14 @@ reset: clean
 test:
 	@$(PYTEST) -s -vv
 
-eg0:
+testpy:
 	@$(PYTHON) tests/examples/example0.py tests/data/s00.wav build/out.wav
 
 examples:
 	@for i in $(shell seq 0 6); \
 		do $(call build-example,example$$i); \
 	done
+	@cp tests/data/s00.wav ./build
 
 strip:
 	@strip -x src/cysox/sox.*.so

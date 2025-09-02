@@ -1377,6 +1377,11 @@ cdef class EffectsChain:
     def add_effect(self, effect: Effect, in_signal: SignalInfo,
                    out_signal: SignalInfo):
         """Adds an effect to the effects chain."""
+
+        assert effect.ptr is not NULL, "effect is NULL"
+        assert in_signal.ptr is not NULL, "in_signal is NULL"
+        assert out_signal.ptr is not NULL, "out_signal is NULL"
+
         cdef int result = sox_add_effect(
             self.ptr, effect.ptr, in_signal.ptr, out_signal.ptr)
         if result != SOX_SUCCESS:

@@ -12,6 +12,7 @@ Usage: python3 example0_python.py <input_file> <output_file>
 import sys
 import os
 from pathlib import Path
+import os
 
 src_dir = Path.cwd() / 'src'
 sys.path.append(str(src_dir))
@@ -89,8 +90,6 @@ def main():
         output_effect.set_options([output_filename])
         chain.add_effect(output_effect, input_format.signal, output_format.signal)
         
-        # from IPython import embed; embed()
-
         # Step 9: Flow samples through the effects processing chain
         print("Processing audio through effects chain...")
         result = chain.flow_effects()
