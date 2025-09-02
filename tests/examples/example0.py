@@ -94,7 +94,7 @@ def main():
         print("Processing audio through effects chain...")
         result = chain.flow_effects()
         
-        if result == sox.py_SOX_SUCCESS:
+        if result == sox.SUCCESS:
             print("Effects processing completed successfully!")
             
             # Check for any clipping that occurred
