@@ -49,27 +49,29 @@ def test_effects_globals_properties():
     assert g.global_info.bufsiz == 8192
 
 
-# # Test Effect class
-# def test_effect_creation():
-#     """Test Effect creation"""
-#     effect = sox.Effect("trim", "0 10")
-#     assert effect is not None
+# Test Effect class
+def test_effect_creation():
+    """Test Effect creation"""
+    handler = sox.find_effect("trim")
+    effect = sox.Effect(handler)
+    assert effect is not None
 
 
-# def test_effect_properties():
-#     """Test Effect properties"""
-#     effect = sox.Effect("trim", "0 10")
+def test_effect_properties():
+    """Test Effect properties"""
+    handler = sox.find_effect("trim")
+    effect = sox.Effect(handler)
 
-#     assert effect.name == "trim"
-#     assert effect.usage == "0 10"
-#     assert isinstance(effect.flags, int)
-#     assert effect.priv_size >= 0
+    assert effect.handler.name == "trim"
+    assert effect.handler.usage
+    assert isinstance(effect.handler.flags, int)
+    assert effect.handler.priv_size >= 0
 
 
-# def test_effect_invalid_name():
-#     """Test Effect creation with invalid name"""
-#     with pytest.raises(MemoryError):
-#         sox.Effect("invalid_effect", "params")
+def test_effect_invalid_name():
+    """Test Effect creation with invalid name"""
+    handler = sox.find_effect("invalid_effect_name")
+    assert handler is None
 
 
 # Test EffectsChain class
@@ -79,56 +81,12 @@ def test_effects_chain_creation():
     assert chain is not None
 
 
-# def test_effects_chain_properties():
-#     """Test EffectsChain properties"""
-#     chain = sox.EffectsChain()
+def test_effects_chain_properties():
+    """Test EffectsChain properties"""
+    chain = sox.EffectsChain()
 
-#     assert isinstance(chain.effects, list)
-#     assert chain.length == 0
-#     assert isinstance(chain.global_info, sox.EffectsGlobals)
-#     assert chain.in_enc is None
-#     assert chain.out_enc is None
-#     assert chain.table_size >= 0
-
-
-# def test_effects_chain_add_effect():
-#     """Test EffectsChain add_effect method"""
-#     chain = sox.EffectsChain()
-#     effect = sox.Effect("trim", "0 10")
-
-#     chain.add_effect(effect)
-#     assert chain.length == 1
-#     assert len(chain.effects) == 1
-
-
-# def test_effects_chain_workflow():
-#     """Test a complete effects chain workflow"""
-#     chain = sox.EffectsChain()
-
-#     # Add a trim effect
-#     trim_effect = sox.Effect("trim", "0 10")
-#     chain.add_effect(trim_effect)
-
-#     assert chain.length == 1
-#     assert len(chain.effects) == 1
-
-
-# def test_multiple_effects():
-#     """Test adding multiple effects to a chain"""
-#     chain = sox.EffectsChain()
-
-#     # Add multiple effects
-#     trim_effect = sox.Effect("trim", "0 10")
-#     vol_effect = sox.Effect("vol", "0.5")
-
-#     chain.add_effect(trim_effect)
-#     chain.add_effect(vol_effect)
-
-#     assert chain.length == 2
-#     assert len(chain.effects) == 2
-
-
-# def test_effect_invalid_effect():
-#     """Test Effect with invalid effect name"""
-#     with pytest.raises(MemoryError):
-#         sox.Effect('invalid_effect_name', 'params')
+    assert isinstance(chain.effects, list)
+    assert chain.length == 0
+    assert isinstance(chain.global_info, sox.EffectsGlobals)
+    # in_enc and out_enc can be None if not specified
+    assert chain.table_size >= 0

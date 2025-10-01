@@ -55,8 +55,85 @@ if PLATFORM == "Darwin":
         ("DEBUG_EFFECTS_CHAIN", "1"),
     ])
 
+# ----------------------------------------------------------------------------
+# Linux
+
+elif PLATFORM == "Linux":
+    import subprocess
+
+    # Try to use pkg-config to find sox
+    try:
+        pkg_config_cflags = subprocess.check_output(
+            ["pkg-config", "--cflags", "sox"],
+            stderr=subprocess.DEVNULL
+        ).decode().strip().split()
+
+        pkg_config_libs = subprocess.check_output(
+            ["pkg-config", "--libs", "sox"],
+            stderr=subprocess.DEVNULL
+        ).decode().strip().split()
+
+        # Parse pkg-config output
+        for flag in pkg_config_cflags:
+            if flag.startswith("-I"):
+                INCLUDE_DIRS.append(flag[2:])
+
+        for flag in pkg_config_libs:
+            if flag.startswith("-L"):
+                LIBRARY_DIRS.append(flag[2:])
+            elif flag.startswith("-l"):
+                LIBRARIES.append(flag[2:])
+
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # Fallback to common system paths if pkg-config fails
+        INCLUDE_DIRS.extend([
+            "/usr/include",
+            "/usr/local/include",
+        ])
+        LIBRARY_DIRS.extend([
+            "/usr/lib",
+            "/usr/local/lib",
+            "/usr/lib/x86_64-linux-gnu",
+            "/usr/lib/aarch64-linux-gnu",
+        ])
+        LIBRARIES.extend([
+            "sox", "sndfile", "FLAC", "opus", "mp3lame",
+            "vorbis", "vorbisfile", "vorbisenc", "png",
+        ])
+
+    if DEBUG:
+        EXTRA_COMPILE_ARGS.extend([
+            '-fsanitize=address',
+            '-fno-omit-frame-pointer',
+        ])
+        EXTRA_LINK_ARGS.extend([
+            '-fsanitize=address',
+        ])
+
+# ----------------------------------------------------------------------------
+# Windows
+
+elif PLATFORM == "Windows":
+    # Windows support not yet implemented
+    # Users should install libsox and set environment variables:
+    # - SOX_INCLUDE_DIR: path to sox headers
+    # - SOX_LIB_DIR: path to sox libraries
+    sox_include = os.getenv("SOX_INCLUDE_DIR")
+    sox_lib = os.getenv("SOX_LIB_DIR")
+
+    if sox_include:
+        INCLUDE_DIRS.append(sox_include)
+    if sox_lib:
+        LIBRARY_DIRS.append(sox_lib)
+
+    LIBRARIES.extend(["sox"])
+
+    if not (sox_include and sox_lib):
+        print("WARNING: Windows build requires SOX_INCLUDE_DIR and SOX_LIB_DIR environment variables")
+        print("Please set them to the paths where libsox is installed")
+
 else:
-    raise NotImplemented("other platform variants still pending")
+    raise NotImplementedError(f"Platform {PLATFORM} is not yet supported. Supported platforms: Darwin (macOS), Linux")
 
 
 
