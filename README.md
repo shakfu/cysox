@@ -174,7 +174,7 @@ def main():
         else:
             print(f"Error: Effects processing failed with result {result}")
             sys.exit(1)
-        
+
         # Step 10: Clean up
         print("Cleaning up...")
         input_format.close()
@@ -189,7 +189,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()
 ```
 
 ## TODO

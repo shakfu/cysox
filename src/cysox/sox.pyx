@@ -2,8 +2,15 @@
 
 from types import SimpleNamespace
 from cpython.buffer cimport PyObject_CheckBuffer, PyObject_GetBuffer, PyBuffer_Release, PyBUF_WRITABLE, PyBUF_C_CONTIGUOUS, Py_buffer
+from cpython.ref cimport PyObject
+from libc.stdint cimport uintptr_t
 
 cimport cysox.sox
+
+
+# Global storage for flow_effects callback
+# We use a dictionary to support multiple concurrent chains (thread-safety handled by GIL)
+_flow_callbacks = {}
 
 
 ERROR_CODES = {
@@ -1632,6 +1639,45 @@ cdef class Effect:
         return None
 
 
+# C callback function for flow_effects
+# This is called by libsox and needs to invoke the Python callback
+cdef int _flow_effects_callback_wrapper(sox_bool all_done, void* client_data) noexcept nogil:
+    """C callback that wraps Python callback for flow_effects.
+
+    This function is called from C code without the GIL, so we need to
+    acquire it before calling Python code.
+    """
+    with gil:
+        try:
+            # client_data is a pointer to the chain's address (as an integer)
+            chain_id = <uintptr_t>client_data
+
+            # Look up the callback in our global dictionary
+            if chain_id not in _flow_callbacks:
+                return SOX_SUCCESS  # No callback registered, continue
+
+            callback, user_data = _flow_callbacks[chain_id]
+
+            # Call the Python callback
+            # all_done is a sox_bool (enum), convert to Python bool
+            result = callback(bool(all_done), user_data)
+
+            # If callback returns None or True, continue; False or int error code aborts
+            if result is None or result is True:
+                return SOX_SUCCESS
+            elif result is False:
+                return -1  # Generic error
+            else:
+                return int(result)  # Assume it's an error code
+
+        except Exception as e:
+            # If callback raises an exception, abort the flow
+            # We can't propagate the exception through C code, so we just return an error
+            import sys
+            sys.stderr.write(f"Error in flow_effects callback: {e}\n")
+            return -1
+
+
 cdef class EffectsChain:
     """Effects chain structure."""
     cdef sox_effects_chain_t* ptr
@@ -1678,13 +1724,55 @@ cdef class EffectsChain:
         return result
 
     def flow_effects(self, callback=None, client_data=None):
-        """Runs the effects chain."""
+        """Runs the effects chain, optionally calling a callback for progress monitoring.
+
+        Args:
+            callback: Optional callable that receives (all_done: bool, user_data) and
+                     returns None/True to continue, False to abort, or an integer error code.
+                     Called periodically during processing (once per buffer).
+            client_data: Optional user data passed to the callback
+
+        Returns:
+            SOX_SUCCESS if successful
+
+        Raises:
+            SoxEffectError: If the effects chain fails to run
+
+        Example:
+            >>> def progress_callback(all_done, user_data):
+            ...     if all_done:
+            ...         print("Processing complete!")
+            ...     else:
+            ...         print("Processing...")
+            ...     return True  # Continue processing
+            >>>
+            >>> chain = sox.EffectsChain()
+            >>> # ... add effects ...
+            >>> chain.flow_effects(callback=progress_callback, client_data={'count': 0})
+        """
         cdef int result
+        cdef uintptr_t chain_id
+
         if callback is not None:
-            # TODO: Implement callback support
-            result = sox_flow_effects(self.ptr, NULL, NULL)
+            # Store the callback in our global dictionary using chain pointer as key
+            chain_id = <uintptr_t>self.ptr
+            _flow_callbacks[chain_id] = (callback, client_data)
+
+            try:
+                # Call sox_flow_effects with our wrapper callback
+                result = sox_flow_effects(
+                    self.ptr,
+                    _flow_effects_callback_wrapper,
+                    <void*>chain_id
+                )
+            finally:
+                # Clean up callback storage
+                if chain_id in _flow_callbacks:
+                    del _flow_callbacks[chain_id]
         else:
+            # No callback, call with NULL
             result = sox_flow_effects(self.ptr, NULL, NULL)
+
         if result != SOX_SUCCESS:
             raise SoxEffectError(f"Failed to flow effects: {strerror(result)}")
         return result
