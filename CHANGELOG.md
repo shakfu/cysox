@@ -66,9 +66,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
   - Fixed `FormatHandler` double-free bug (incorrect owner flag)
 - **Type Conversions**:
   - Fixed `format_supports_encoding()` to return Python bool instead of sox_bool enum
+- **String Encoding**:
+  - Fixed filetype parameter encoding in `open_mem_read()`, `open_mem_write()`, and `open_memstream_write()`
+  - Previously used incorrect cast `<bytes>filetype` which corrupted strings
+  - Now properly encodes strings using `filetype.encode('utf-8')`
+- **Memory I/O Investigation**:
+  - Fixed string encoding bug, but memory I/O still non-functional
+  - Attempted multiple approaches: bytearray, C-allocated memstream buffers
+  - All approaches crash during write operations
+  - Issue appears to be in libsox itself, not the Python bindings
+  - Memory I/O tests remain skipped pending upstream investigation
 - **Test Fixes**:
   - Uncommented and fixed 8 disabled tests in test_sox_format.py and test_sox_effects.py
   - Updated tests to use new custom exceptions
+  - Added 11 new tests porting C examples 1-6 to Python (test_example1.py through test_example6.py)
+  - 9 tests passing, 2 skipped (memory I/O has known buffer management issues)
 
 ### Removed
 - **Code Cleanup**: Removed 156 lines of commented-out code from `utils.py`

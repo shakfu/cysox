@@ -2013,8 +2013,10 @@ def open_mem_read(buffer: bytes, signal: SignalInfo = None, encoding: EncodingIn
     """Opens a decoding session for a memory buffer. Returns a Format object or raises MemoryError."""
     cdef sox_format_t* fmt
     cdef char* filetype_c = NULL
+    cdef bytes filetype_bytes
     if filetype is not None:
-        filetype_c = <bytes>filetype
+        filetype_bytes = filetype.encode('utf-8')
+        filetype_c = filetype_bytes
     fmt = sox_open_mem_read(<void*>buffer, len(buffer),
                             signal.ptr if signal else NULL,
                             encoding.ptr if encoding else NULL,
@@ -2031,8 +2033,10 @@ def open_mem_write(buffer: bytearray, signal: SignalInfo,
     Returns a Format object or raises MemoryError."""
     cdef sox_format_t* fmt
     cdef char* filetype_c = NULL
+    cdef bytes filetype_bytes
     if filetype is not None:
-        filetype_c = <bytes>filetype
+        filetype_bytes = filetype.encode('utf-8')
+        filetype_c = filetype_bytes
     fmt = sox_open_mem_write(<void*>buffer, len(buffer),
                              signal.ptr,
                              encoding.ptr,
@@ -2050,10 +2054,12 @@ def open_memstream_write(signal: SignalInfo, encoding: EncodingInfo,
     Returns (Format, buffer_ptr, buffer_size_ptr) or raises MemoryError."""
     cdef sox_format_t* fmt
     cdef char* filetype_c = NULL
+    cdef bytes filetype_bytes
     cdef char* buffer_ptr = NULL
     cdef size_t buffer_size = 0
     if filetype is not None:
-        filetype_c = <bytes>filetype
+        filetype_bytes = filetype.encode('utf-8')
+        filetype_c = filetype_bytes
     fmt = sox_open_memstream_write(&buffer_ptr, &buffer_size,
                                    signal.ptr,
                                    encoding.ptr,

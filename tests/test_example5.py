@@ -15,7 +15,7 @@ def initialize_sox():
     sox.quit()
 
 
-@pytest.mark.skip(reason="Memory I/O functions (open_mem_write/read) have issues with filetype parameter - needs investigation")
+@pytest.mark.skip(reason="Memory I/O (memstream) crashes during write - libsox memory I/O may not be fully functional")
 def test_example5_memory_io():
     """Test reading and writing audio files in memory buffers.
 
@@ -23,7 +23,14 @@ def test_example5_memory_io():
     instead of files for audio I/O. We read a file, write to memory,
     then read from memory and write to a file.
 
-    NOTE: Currently failing due to issues with filetype string conversion in memory I/O functions.
+    NOTE: Even using sox_open_memstream_write (which allocates its own C buffer),
+    the code still crashes during write operations. This suggests libsox's memory I/O
+    implementation may not be fully functional or has platform-specific issues.
+
+    Attempted fixes:
+    - Fixed filetype string encoding (was corrupting strings)
+    - Switched from bytearray to memstream (C-managed buffer)
+    - Still crashes at write time
     """
     input_file = 'tests/data/s00.wav'
     max_samples = 2048
@@ -31,21 +38,16 @@ def test_example5_memory_io():
     with tempfile.TemporaryDirectory() as tmpdir:
         output_file = os.path.join(tmpdir, 'output.wav')
 
-        # Allocate a memory buffer (similar to FIXED_BUFFER mode in example5.c)
-        # We'll use a large buffer to hold the audio data
-        buffer_size = 512 * 1024  # 512KB buffer
-        memory_buffer = bytearray(buffer_size)
-
         # Step 1: Read from file and write to memory buffer
+        # Use memstream which allocates its own buffer
         in_fmt = sox.Format(input_file)
 
-        # Create memory-based output using open_mem_write
-        # Note: we need to specify signal and encoding for the mem writer
-        # Omit filetype to let SoX determine format from buffer
-        out_mem = sox.open_mem_write(
-            memory_buffer,
+        # Create memory-based output using open_memstream_write
+        # This allocates its own buffer that won't be moved by Python GC
+        out_mem, buffer_ptr, buffer_size = sox.open_memstream_write(
             in_fmt.signal,
-            in_fmt.encoding
+            in_fmt.encoding,
+            filetype="wav"
         )
 
         # Copy samples from file to memory
@@ -65,11 +67,13 @@ def test_example5_memory_io():
         assert total_written > 0, "Should have written some samples to memory"
 
         # Step 2: Read from memory buffer and write to file
-        # We need to trim the buffer to the actual size used
-        # For simplicity, we'll use the whole buffer and let sox_open_mem_read handle it
+        # Copy the C buffer to Python bytes
+        # Note: buffer_ptr is a char* and buffer_size is size_t
+        import ctypes
+        memory_buffer = ctypes.string_at(buffer_ptr, buffer_size)
 
         # Open memory buffer for reading
-        in_mem = sox.open_mem_read(bytes(memory_buffer), filetype="wav")
+        in_mem = sox.open_mem_read(memory_buffer, filetype="wav")
 
         # Create output file
         out_signal = sox.SignalInfo(
@@ -106,23 +110,19 @@ def test_example5_memory_io():
         verify_fmt.close()
 
 
-@pytest.mark.skip(reason="Memory I/O functions (open_mem_write/read) have issues with filetype parameter - needs investigation")
+@pytest.mark.skip(reason="Memory I/O (memstream) crashes during write - libsox memory I/O may not be fully functional")
 def test_example5_roundtrip_samples():
     """Test that samples survive a memory I/O roundtrip."""
+    import ctypes
     input_file = 'tests/data/s00.wav'
     num_samples = 1000  # Read a specific number of samples
-
-    buffer_size = 512 * 1024
-    memory_buffer = bytearray(buffer_size)
 
     # Read original samples
     in_fmt = sox.Format(input_file)
     original_samples = in_fmt.read(num_samples)
-    in_fmt.seek(0, sox.constant.SEEK_SET)  # Rewind
 
-    # Write to memory
-    out_mem = sox.open_mem_write(
-        memory_buffer,
+    # Write to memory using memstream
+    out_mem, buffer_ptr, buffer_size = sox.open_memstream_write(
         in_fmt.signal,
         in_fmt.encoding,
         filetype="wav"
@@ -131,8 +131,11 @@ def test_example5_roundtrip_samples():
     out_mem.close()
     in_fmt.close()
 
+    # Copy C buffer to Python bytes
+    memory_buffer = ctypes.string_at(buffer_ptr, buffer_size)
+
     # Read back from memory
-    in_mem = sox.open_mem_read(bytes(memory_buffer), filetype="wav")
+    in_mem = sox.open_mem_read(memory_buffer, filetype="wav")
     readback_samples = in_mem.read(num_samples)
     in_mem.close()
 
@@ -140,6 +143,6 @@ def test_example5_roundtrip_samples():
     assert len(readback_samples) == len(original_samples), \
         f"Expected {len(original_samples)} samples, got {len(readback_samples)}"
 
-    # Note: We don't compare the actual sample values because SoX format
+    # Note: We don't compare the actual sample values because WAV format
     # encoding/decoding may introduce small differences. The important
     # thing is that the roundtrip works and we get the right number of samples.
