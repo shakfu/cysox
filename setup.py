@@ -33,8 +33,8 @@ if PLATFORM == "Darwin":
     STATIC = getenv("STATIC")
     LIB_DIR = ROOT / "lib"
     LIBRARY_DIRS.append(str(LIB_DIR))
-    INCLIDE_DIR = ROOT / "include"
-    INCLUDE_DIRS.append(str(INCLIDE_DIR))
+    INCLUDE_DIR = ROOT / "include"
+    INCLUDE_DIRS.append(str(INCLUDE_DIR))
     EXTRA_LINK_ARGS.extend([
         '-framework', 'CoreAudio',
     ])
@@ -50,10 +50,11 @@ if PLATFORM == "Darwin":
             "sox", "sndfile", "FLAC", "opus", "mp3lame",
             "vorbis", "vorbisfile", "vorbisenc", "png16",
         ])
-    DEFINE_MACROS.extend([
-        ("DEBUG", None),
-        ("DEBUG_EFFECTS_CHAIN", "1"),
-    ])
+    if DEBUG:
+        DEFINE_MACROS.extend([
+            ("DEBUG", None),
+            ("DEBUG_EFFECTS_CHAIN", "1"),
+        ])
 
 # ----------------------------------------------------------------------------
 # Linux

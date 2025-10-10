@@ -296,6 +296,7 @@ class EncodingsInfo:
 
     @property
     def type(self):
+        """Encoding type as human-readable string (lossless, lossy1, or lossy2)."""
         return {
             0: 'lossless',
             1: 'lossy1',
@@ -575,10 +576,15 @@ cdef class FileInfo:
     def __init__(self, buf: bytes = None, size: int = 0, count: int = 0,
                  pos: int = 0):
         self.ptr = <sox_fileinfo_t*>malloc(sizeof(sox_fileinfo_t))
-        self.buf = buf
-        self.size = size
-        self.count = count
-        self.pos = pos
+        if self.ptr is NULL:
+            raise SoxMemoryError("Failed to allocate FileInfo")
+
+        # Initialize struct members directly (buf property is read-only)
+        # Note: buf parameter is ignored since setting it would be unsafe
+        self.ptr.buf = NULL
+        self.ptr.size = size
+        self.ptr.count = count
+        self.ptr.pos = pos
         self.owner = True
 
     @staticmethod
@@ -590,17 +596,15 @@ cdef class FileInfo:
 
     @property
     def buf(self) -> bytes:
-        """Pointer to data buffer"""
+        """Pointer to data buffer (read-only).
+
+        Note: This property is read-only because the buffer is managed internally
+        by the sox_fileinfo_t structure. Setting it would create a dangling pointer
+        to a temporary Python bytes object.
+        """
         if self.ptr.buf == NULL:
             return None
         return self.ptr.buf[:self.ptr.size]
-
-    @buf.setter
-    def buf(self, bytes value):
-        if value is None:
-            self.ptr.buf = NULL
-        else:
-            self.ptr.buf = value
 
     @property
     def size(self) -> int:
@@ -1222,10 +1226,14 @@ cdef class Format:
 
     def close(self) -> int:
         """Closes an encoding or decoding session."""
+        if self.ptr is NULL:
+            # Already closed, return success
+            return <int>SOX_SUCCESS
+
         cdef int result = sox_close(self.ptr)
+        self.ptr = NULL  # Set to NULL regardless of result to prevent double-free
         if result != SOX_SUCCESS:
             raise SoxIOError(f"Failed to close: {strerror(result)}")
-        self.ptr = NULL
         return result
 
     def __enter__(self):
@@ -1252,26 +1260,39 @@ cdef class Format:
         if self.ptr is not NULL:
             try:
                 self.close()
-            except SoxIOError:
+            except SoxIOError as e:
                 # If close fails during exception handling, log but don't raise
                 if exc_type is None:
                     raise
+                else:
+                    # Log the close error but don't mask the original exception
+                    import sys
+                    import warnings
+                    warnings.warn(
+                        f"Error closing format during exception handling: {e}",
+                        ResourceWarning,
+                        stacklevel=2
+                    )
         return False
 
     @property
     def filename(self) -> str:
+        """Path to the audio file."""
         return self.ptr.filename.decode()
 
     @property
     def signal(self) -> SignalInfo:
+        """Signal information (sample rate, channels, precision, length)."""
         return SignalInfo.from_ptr(&self.ptr.signal)
 
     @property
     def encoding(self) -> EncodingInfo:
+        """Encoding information (format, bits per sample, compression)."""
         return EncodingInfo.from_ptr(&self.ptr.encoding)
 
     @property
     def filetype(self) -> str:
+        """File type identifier (e.g., 'wav', 'mp3', 'flac')."""
         if self.ptr.filetype == NULL:
             return None
         return self.ptr.filetype.decode()
@@ -1352,7 +1373,11 @@ cdef class FormatHandler:
 
     @staticmethod
     def find(name: str, ignore_devices: bool = False) -> FormatHandler:
-        """Finds a format handler by name."""
+        """Finds a format handler by name.
+
+        Note: Prefer using the module-level function `sox.find_format(name)`
+        for better API consistency.
+        """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef const sox_format_handler_t* handler = sox_find_format(
             name_bytes, ignore_devices)
@@ -1414,7 +1439,13 @@ cdef class FormatTab:
 
     def __init__(self, name: str = None):
         self.ptr = <sox_format_tab_t*>malloc(sizeof(sox_format_tab_t))
-        self.name = name
+        if self.ptr is NULL:
+            raise SoxMemoryError("Failed to allocate FormatTab")
+
+        # Initialize struct members directly (name property is read-only)
+        # Note: name parameter is ignored since setting it would be unsafe
+        self.ptr.name = NULL
+        self.ptr.fn = NULL
         self.owner = True
 
     @staticmethod
@@ -1426,19 +1457,14 @@ cdef class FormatTab:
 
     @property
     def name(self) -> str:
-        """Name of format handler"""
+        """Name of format handler (read-only).
+
+        Note: This property is read-only because the name pointer is managed
+        by libsox and should not be modified externally.
+        """
         if self.ptr.name == NULL:
             return None
         return self.ptr.name.decode()
-
-    @name.setter
-    def name(self, str value):
-        if value is None:
-            self.ptr.name = NULL
-        else:
-            # Note: This is a char* in the struct, but we need to be careful about memory management
-            # This setter is provided for completeness but won't actually work safely
-            pass
 
     @property
     def fn(self):
@@ -1470,7 +1496,11 @@ cdef class EffectHandler:
 
     @staticmethod
     def find(name: str) -> Effect:
-        """Finds the effect handler with the given name."""
+        """Finds the effect handler with the given name.
+
+        Note: Prefer using the module-level function `sox.find_effect(name)`
+        for better API consistency.
+        """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef const sox_effect_handler_t* handler = sox_find_effect(name_bytes)
         if handler == NULL:
