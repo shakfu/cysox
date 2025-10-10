@@ -18,6 +18,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 ## [Unreleased]
 
 ### Added
+
+- Missing `test_example0.py` corresponding to `example0.c`
+
 - **Buffer Protocol Support**: Generic buffer protocol implementation for zero-copy operations
   - `Format.read_buffer(length)`: Returns memoryview compatible with NumPy, PyTorch, array.array
   - `Format.read_into(buffer)`: Zero-copy read into pre-allocated buffer
