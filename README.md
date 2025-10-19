@@ -1,6 +1,6 @@
 # cysox
 
-Towards a cython wrapper for [libsox](https://github.com/chirlu/sox)
+cysox is a python library which wraps [libsox](https://github.com/chirlu/sox) using cython.
 
 ## Overview
 
@@ -196,13 +196,13 @@ if __name__ == "__main__":
 
 All C examples from libsox have been successfully ported to Python tests:
 
-- [x] **example0**: Basic effects chain - `tests/test_example0.py`
-- [x] **example1**: Vol & flanger effects - `tests/test_example1.py`
-- [x] **example2**: Waveform display and analysis - `tests/test_example2.py`
-- [x] **example3**: Trim and format conversion - `tests/test_example3.py`
-- [x] **example4**: File concatenation - `tests/test_example4.py`
-- [x] **example5**: Memory-based I/O - `tests/test_example5.py` (2 tests skipped - buffer management issue)
-- [x] **example6**: Explicit format conversion - `tests/test_example6.py`
+- [x] example0: Basic effects chain - `tests/test_example0.py`
+- [x] example1: Vol & flanger effects - `tests/test_example1.py`
+- [x] example2: Waveform display and analysis - `tests/test_example2.py`
+- [x] example3: Trim and format conversion - `tests/test_example3.py`
+- [x] example4: File concatenation - `tests/test_example4.py`
+- [x] example5: Memory-based I/O - `tests/test_example5.py` (2 tests skipped - buffer management issue)
+- [x] example6: Explicit format conversion - `tests/test_example6.py`
 
 **Test Results**: 94 tests passing, 2 skipped (memory I/O)
 
