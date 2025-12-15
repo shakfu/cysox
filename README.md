@@ -40,6 +40,27 @@ run tests:
 make test
 ```
 
+## Documentation
+
+Build the documentation locally:
+
+```sh
+# Install docs dependencies
+pip install sphinx furo myst-parser
+
+# Build HTML docs
+make docs
+
+# Serve locally at http://localhost:8000
+make docs-serve
+```
+
+Documentation includes:
+- Installation guide
+- Quick start tutorial
+- API reference
+- Examples
+
 ## Usage Example
 
 ```python

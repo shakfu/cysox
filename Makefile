@@ -1,19 +1,15 @@
 LIBSOX := lib/libsox.a
 LIBRARIES := $(wildcard lib/*.a)
-DEBUGPY_BIN := $(PWD)/build/install/python-shared/bin
-DEBUGPY_EXE := $(DEBUGPY_BIN)/python3
 DEBUG=0
 
 EXAMPLES := tests/examples
 TEST_WAV := tests/data/s00.wav
 
+# Debug mode uses custom Python build with sanitizers
 ifeq ($(DEBUG),1)
-PYTHON := $(DEBUGPY_EXE)
+DEBUGPY_BIN := $(PWD)/build/install/python-shared/bin
+DEBUGPY_EXE := $(DEBUGPY_BIN)/python3
 CYGDB := $(DEBUGPY_BIN)/cygdb
-PYTEST := $(DEBUGPY_BIN)/pytest
-else
-PYTHON := python3
-PYTEST := pytest
 endif
 
 define build-example
@@ -25,7 +21,7 @@ gcc -std=c11 -o build/$1 \
 	tests/examples/$1.c
 endef
 
-.PHONY: all build wheel clean reset test testpy examples-p examples-c strip delocate
+.PHONY: all build wheel clean reset test testpy examples-p examples-c strip delocate docs docs-clean docs-serve benchmark benchmark-save benchmark-compare pydebug debug
 
 all: build
 
@@ -33,11 +29,10 @@ $(LIBSOX):
 	@scripts/setup.sh
 
 build: $(LIBSOX)
-	@$(PYTHON) setup.py build_ext --inplace
+	@uv sync --reinstall-package cysox
 
-wheel:
-	@rm -rf dist
-	@$(PYTHON) setup.py bdist_wheel
+wheel: build
+	@uv run python -m build --wheel
 
 clean:
 	@rm -rf build/lib.* build/temp.* dist src/*.egg-info htmlcov
@@ -46,30 +41,29 @@ clean:
 	@find . -type d -path ".*_cache"  -exec rm -rf {} \; -prune
 
 reset: clean
-	@rm -rf build include lib
+	@rm -rf build include lib .venv
 
 test:
-	@$(PYTEST) -s -vv
+	@uv run pytest -s -vv
 
 testpy:
-	@$(PYTHON) tests/examples/example0.py tests/data/s00.wav build/out.wav
+	@uv run python tests/examples/example0.py tests/data/s00.wav build/out.wav
 
 examples-p:
 	@echo "example 0 ------------------------------------------------------"
-	$(PYTHON) $(EXAMPLES)/example0.py $(TEST_WAV) build/out0-p.wav
+	@uv run python $(EXAMPLES)/example0.py $(TEST_WAV) build/out0-p.wav
 	@echo "example 1 ------------------------------------------------------"
-	$(PYTHON) $(EXAMPLES)/example1.py $(TEST_WAV) build/out1-p.wav
+	@uv run python $(EXAMPLES)/example1.py $(TEST_WAV) build/out1-p.wav
 	@echo "example 2 ------------------------------------------------------"
-	$(PYTHON) $(EXAMPLES)/example2.py $(TEST_WAV) 2 1
+	@uv run python $(EXAMPLES)/example2.py $(TEST_WAV) 2 1
 	@echo "example 3 ------------------------------------------------------"
-	$(PYTHON) $(EXAMPLES)/example3.py $(TEST_WAV)
+	@uv run python $(EXAMPLES)/example3.py $(TEST_WAV)
 	@echo "example 4 ------------------------------------------------------"
-	$(PYTHON) $(EXAMPLES)/example4.py $(TEST_WAV) $(TEST_WAV) build/out4-p.wav
+	@uv run python $(EXAMPLES)/example4.py $(TEST_WAV) $(TEST_WAV) build/out4-p.wav
 	@echo "example 5 ------------------------------------------------------"
-	$(PYTHON) $(EXAMPLES)/example5.py $(TEST_WAV) build/out5-p.wav
+	@uv run python $(EXAMPLES)/example5.py $(TEST_WAV) build/out5-p.wav
 	@echo "example 6 ------------------------------------------------------"
-	$(PYTHON) $(EXAMPLES)/example6.py $(TEST_WAV) build/out6-p.wav
-
+	@uv run python $(EXAMPLES)/example6.py $(TEST_WAV) build/out6-p.wav
 
 examples-c:
 	@for i in $(shell seq 0 6); \
@@ -91,13 +85,34 @@ examples-c:
 	@echo "example 6 ------------------------------------------------------"
 	./build/example6 $(TEST_WAV) build/out6-c.wav
 
-
 strip:
 	@strip -x src/cysox/sox.*.so
 
 delocate: wheel
-	@cd dist && delocate-wheel cysox-*.whl
+	@uv run delocate-wheel dist/cysox-*.whl
 
+# Documentation
+docs:
+	@uv run sphinx-build -b html docs docs/_build/html
+
+docs-clean:
+	@rm -rf docs/_build
+
+docs-serve: docs
+	@uv run python -m http.server 8000 --directory docs/_build/html
+
+# Benchmarks
+benchmark:
+	@uv run pytest tests/test_benchmarks.py -v --benchmark-only --benchmark-group-by=group
+
+benchmark-save:
+	@uv run pytest tests/test_benchmarks.py -v --benchmark-only --benchmark-save=baseline --benchmark-group-by=group
+
+benchmark-compare:
+	@uv run pytest tests/test_benchmarks.py -v --benchmark-only --benchmark-compare=baseline --benchmark-group-by=group
+
+# Debug mode (requires custom Python build with sanitizers)
+ifeq ($(DEBUG),1)
 $(DEBUGPY_EXE):
 	@./scripts/buildpy.py -d -c shared_max \
 		-a with_assertions \
@@ -106,7 +121,8 @@ $(DEBUGPY_EXE):
 
 pydebug: $(DEBUGPY_EXE)
 
-debug: $(LIBSOX)
-	@$(PYTHON) setup.py build_ext --inplace
-	@$(CYGDB) . -- --args $(PYTHON) tests/examples/example0.py tests/data/s00.wav build/out.wav
+debug: $(LIBSOX) $(DEBUGPY_EXE)
+	@DEBUG=1 $(DEBUGPY_EXE) setup.py build_ext --inplace
+	@$(CYGDB) . -- --args $(DEBUGPY_EXE) tests/examples/example0.py tests/data/s00.wav build/out.wav
 	# set arch aarch64
+endif

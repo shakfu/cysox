@@ -12,6 +12,9 @@ cimport cysox.sox
 # We use a dictionary to support multiple concurrent chains (thread-safety handled by GIL)
 _flow_callbacks = {}
 
+# Storage for the last callback exception (since exceptions can't propagate through C code)
+_last_callback_exception = None
+
 
 ERROR_CODES = {
     'SOX_SUCCESS': SOX_SUCCESS,
@@ -375,46 +378,66 @@ cdef class EncodingInfo:
     @property
     def compression(self) -> float:
         """compression factor (where applicable)"""
+        if self.ptr is NULL:
+            raise RuntimeError("EncodingInfo pointer is NULL")
         return self.ptr.compression
 
     @compression.setter
     def compression(self, double value):
+        if self.ptr is NULL:
+            raise RuntimeError("EncodingInfo pointer is NULL")
         self.ptr.compression = value
 
     @property
     def reverse_bytes(self) -> sox_option_t:
         """Should bytes be reversed?"""
+        if self.ptr is NULL:
+            raise RuntimeError("EncodingInfo pointer is NULL")
         return self.ptr.reverse_bytes
 
     @reverse_bytes.setter
     def reverse_bytes(self, sox_option_t value):
+        if self.ptr is NULL:
+            raise RuntimeError("EncodingInfo pointer is NULL")
         self.ptr.reverse_bytes = value
 
     @property
     def reverse_nibbles(self) -> sox_option_t:
         """Should nibbles be reversed?"""
+        if self.ptr is NULL:
+            raise RuntimeError("EncodingInfo pointer is NULL")
         return self.ptr.reverse_nibbles
 
     @reverse_nibbles.setter
     def reverse_nibbles(self, sox_option_t value):
+        if self.ptr is NULL:
+            raise RuntimeError("EncodingInfo pointer is NULL")
         self.ptr.reverse_nibbles = value
 
     @property
     def reverse_bits(self) -> sox_option_t:
         """Should bits be reversed?"""
+        if self.ptr is NULL:
+            raise RuntimeError("EncodingInfo pointer is NULL")
         return self.ptr.reverse_bits
 
     @reverse_bits.setter
     def reverse_bits(self, sox_option_t value):
+        if self.ptr is NULL:
+            raise RuntimeError("EncodingInfo pointer is NULL")
         self.ptr.reverse_bits = value
 
     @property
     def opposite_endian(self) -> bool:
         """If set to true, the format should reverse its default endianness."""
+        if self.ptr is NULL:
+            raise RuntimeError("EncodingInfo pointer is NULL")
         return self.ptr.opposite_endian
 
     @opposite_endian.setter
     def opposite_endian(self, sox_bool value):
+        if self.ptr is NULL:
+            raise RuntimeError("EncodingInfo pointer is NULL")
         self.ptr.opposite_endian = value
 
 
@@ -450,37 +473,53 @@ cdef class LoopInfo:
     @property
     def start(self) -> sox_uint64_t:
         """first sample"""
+        if self.ptr is NULL:
+            raise RuntimeError("LoopInfo pointer is NULL")
         return self.ptr.start
 
     @start.setter
     def start(self, sox_uint64_t value):
+        if self.ptr is NULL:
+            raise RuntimeError("LoopInfo pointer is NULL")
         self.ptr.start = value
 
     @property
     def length(self) -> sox_uint64_t:
         """length"""
+        if self.ptr is NULL:
+            raise RuntimeError("LoopInfo pointer is NULL")
         return self.ptr.length
 
     @length.setter
     def length(self, sox_uint64_t value):
+        if self.ptr is NULL:
+            raise RuntimeError("LoopInfo pointer is NULL")
         self.ptr.length = value
 
     @property
     def count(self) -> int:
         """number of repeats, 0=forever"""
+        if self.ptr is NULL:
+            raise RuntimeError("LoopInfo pointer is NULL")
         return self.ptr.count
 
     @count.setter
     def count(self, unsigned value):
+        if self.ptr is NULL:
+            raise RuntimeError("LoopInfo pointer is NULL")
         self.ptr.count = value
 
     @property
     def type(self) -> int:
         """0=no, 1=forward, 2=forward/back (see sox_loop_* for valid values)"""
+        if self.ptr is NULL:
+            raise RuntimeError("LoopInfo pointer is NULL")
         return self.ptr.type
 
     @type.setter
     def type(self, unsigned char value):
+        if self.ptr is NULL:
+            raise RuntimeError("LoopInfo pointer is NULL")
         self.ptr.type = value
 
 
@@ -1380,7 +1419,7 @@ cdef class FormatHandler:
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef const sox_format_handler_t* handler = sox_find_format(
-            name_bytes, ignore_devices)
+            name_bytes, <sox_bool>ignore_devices)
         if handler == NULL:
             return None
         return FormatHandler.from_ptr(<sox_format_handler_t*>handler)
@@ -1677,6 +1716,7 @@ cdef int _flow_effects_callback_wrapper(sox_bool all_done, void* client_data) no
     This function is called from C code without the GIL, so we need to
     acquire it before calling Python code.
     """
+    global _last_callback_exception
     with gil:
         try:
             # client_data is a pointer to the chain's address (as an integer)
@@ -1701,11 +1741,35 @@ cdef int _flow_effects_callback_wrapper(sox_bool all_done, void* client_data) no
                 return int(result)  # Assume it's an error code
 
         except Exception as e:
-            # If callback raises an exception, abort the flow
-            # We can't propagate the exception through C code, so we just return an error
+            # Store the exception for later retrieval since we can't propagate through C code
             import sys
+            _last_callback_exception = sys.exc_info()
             sys.stderr.write(f"Error in flow_effects callback: {e}\n")
             return -1
+
+
+def get_last_callback_exception():
+    """Retrieve the last exception that occurred in a flow_effects callback.
+
+    Since exceptions cannot propagate through C code, they are stored for
+    later retrieval. This function returns the exception info tuple
+    (type, value, traceback) or None if no exception occurred.
+
+    After calling this function, the stored exception is cleared.
+
+    Returns:
+        Tuple of (exception_type, exception_value, traceback) or None
+
+    Example:
+        >>> chain.flow_effects(callback=my_callback)
+        >>> exc_info = sox.get_last_callback_exception()
+        >>> if exc_info:
+        ...     raise exc_info[1].with_traceback(exc_info[2])
+    """
+    global _last_callback_exception
+    exc_info = _last_callback_exception
+    _last_callback_exception = None
+    return exc_info
 
 
 cdef class EffectsChain:
@@ -2005,15 +2069,31 @@ def is_playlist(filename: str) -> bool:
 
 
 def basename(filename: str) -> str:
-    """Gets the basename of the specified file."""
-    cdef char base_buffer[256]
+    """Gets the basename of the specified file.
+
+    Args:
+        filename: Path to extract basename from
+
+    Returns:
+        The basename portion of the filename
+    """
     cdef bytes filename_bytes = filename.encode('utf-8')
-    cdef size_t result = sox_basename(base_buffer, 256, filename_bytes)
+    cdef size_t filename_len = len(filename_bytes)
+    # Allocate buffer based on input length (basename can't be longer than full path)
+    # Use at least 256 bytes for short paths, or filename length + 1 for longer paths
+    cdef size_t buffer_size = filename_len + 1 if filename_len >= 256 else 256
+    cdef char* base_buffer = <char*>malloc(buffer_size)
 
-    if result == 0:
-        return ""
+    if base_buffer is NULL:
+        raise SoxMemoryError("Failed to allocate buffer for basename")
 
-    return base_buffer[:result].decode('utf-8')
+    try:
+        result = sox_basename(base_buffer, buffer_size, filename_bytes)
+        if result == 0:
+            return ""
+        return base_buffer[:result].decode('utf-8')
+    finally:
+        free(base_buffer)
 
 
 def precision(sox_encoding_t encoding, unsigned bits_per_sample) -> int:
@@ -2214,7 +2294,7 @@ def find_effect(name: str) -> EffectHandler:
 def find_format(name: str, ignore_devices: bool = False) -> FormatHandler:
     """Finds a format handler by name."""
     cdef bytes name_bytes = name.encode('utf-8')
-    cdef const sox_format_handler_t* handler = sox_find_format(name_bytes, ignore_devices)
+    cdef const sox_format_handler_t* handler = sox_find_format(name_bytes, <sox_bool>ignore_devices)
     if handler == NULL:
         return None
     return FormatHandler.from_ptr(<sox_format_handler_t*>handler)

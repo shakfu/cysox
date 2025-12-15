@@ -1,6 +1,6 @@
 [project]
 name = "cysox"
-version = "0.1.0"
+version = "0.1.1"
 description = "A cython wrapper of sox"
 readme = "README.md"
 authors = [
@@ -21,6 +21,13 @@ build-backend = "setuptools.build_meta"
 [dependency-groups]
 dev = [
     "pytest>=8.4.1",
+    "pytest-benchmark",
+    "memory-profiler",
+]
+docs = [
+    "sphinx>=7.0",
+    "furo",
+    "myst-parser",
 ]
 
 [tool.setuptools]
@@ -31,3 +38,29 @@ pythonpath = ["src"]
 testpaths = ["tests"]
 # addopts = "--cov=cysox --cov-report html"
 # addopts = "-ra -q"
+
+[tool.cibuildwheel]
+# Skip PyPy and Windows
+skip = "pp* *-win*"
+
+# Python versions to build
+build = "cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*"
+
+# Test the wheel with a simple import
+test-requires = "pytest"
+test-command = "python -c \"import cysox; cysox.init(); print(f'cysox {cysox.version()}'); cysox.quit()\""
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64", "aarch64"]
+
+# Install dependencies in manylinux container
+before-all = [
+    "yum install -y epel-release || true",
+    "yum install -y sox sox-devel libsndfile-devel flac-devel libvorbis-devel opus-devel libpng-devel pkgconfig || (apt-get update && apt-get install -y libsox-dev libsndfile1-dev libflac-dev libvorbis-dev libopus-dev libpng-dev pkg-config)",
+]
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "arm64"]
+
+# macOS dependencies installed via Homebrew in workflow before cibuildwheel runs
+before-build = "pip install cython setuptools"
