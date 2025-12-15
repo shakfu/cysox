@@ -231,6 +231,10 @@ All C examples from libsox have been successfully ported to Python tests:
 
 - **Memory I/O Functions**: libsox's memory I/O functions (`open_mem_write`, `open_mem_read`, `open_memstream_write`) have platform-specific issues and are not currently functional. Tests are skipped pending investigation of the underlying libsox issue.
 
+- **Repeated init/quit Cycles**: Calling `sox.init()` and `sox.quit()` multiple times in a single process can cause crashes. Initialize once at startup, quit once at shutdown.
+
+See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for detailed documentation of all known issues and workarounds.
+
 ## Platform Support
 
 -  **macOS**: Full support

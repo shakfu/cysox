@@ -165,7 +165,7 @@ setup(
             'wraparound': True,          # default: True
             'initializedcheck': True,    # default: True
             'nonecheck': False,          # default: False
-            'overflowcheck': False,      # default: False
+            'overflowcheck': DEBUG,      # default: False (enabled in debug mode)
             'overflowcheck.fold': True,  # default: True
             'embedsignature': False,     # default: False
             'cdivision': False,          # default: False

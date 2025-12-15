@@ -40,8 +40,8 @@ testpaths = ["tests"]
 # addopts = "-ra -q"
 
 [tool.cibuildwheel]
-# Skip PyPy and Windows
-skip = "pp* *-win*"
+# Skip PyPy, Windows, and musllinux (Alpine uses apk, sox packaging is problematic)
+skip = "pp* *-win* *-musllinux_*"
 
 # Python versions to build
 build = "cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*"
