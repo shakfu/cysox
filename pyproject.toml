@@ -60,7 +60,12 @@ before-all = [
 ]
 
 [tool.cibuildwheel.macos]
-archs = ["x86_64", "arm64"]
+# Build for native architecture only (arm64 on macos-14, x86_64 on macos-13)
+# Cross-compilation requires matching architecture libraries
+archs = ["native"]
 
 # macOS dependencies installed via Homebrew in workflow before cibuildwheel runs
 before-build = "pip install cython setuptools"
+
+# Use static linking to bundle libsox into the wheel
+environment = { STATIC = "1" }
