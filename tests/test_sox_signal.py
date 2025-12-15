@@ -1,4 +1,4 @@
-import cysox as sox
+from cysox import sox
 
 
 # Test SignalInfo class

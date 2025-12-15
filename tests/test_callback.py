@@ -2,7 +2,7 @@
 import pytest
 import tempfile
 import os
-import cysox as sox
+from cysox import sox
 
 
 @pytest.fixture(autouse=True)

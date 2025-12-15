@@ -4,7 +4,7 @@ Port of tests/examples/example3.c
 import pytest
 import tempfile
 import os
-import cysox as sox
+from cysox import sox
 
 
 @pytest.fixture(autouse=True)

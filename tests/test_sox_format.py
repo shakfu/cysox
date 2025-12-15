@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-import cysox as sox
+from cysox import sox
 
 
 @pytest.mark.skip(reason="format_init() can only be called once - conflicts with sox.init() in other tests")

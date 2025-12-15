@@ -17,6 +17,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+### Added
+
+- **High-Level API**: New Pythonic interface that handles initialization automatically
+  - `cysox.info(path)`: Get audio file metadata as dictionary
+  - `cysox.convert(input, output, effects=[], ...)`: Convert with optional effects and format options
+  - `cysox.stream(path, chunk_size)`: Iterator yielding memoryview chunks for streaming
+  - `cysox.play(path, effects=[])`: Play audio to default device (macOS/Linux)
+  - Auto-initialization via atexit - no manual `init()`/`quit()` needed
+  - High-level API is now the default export from `import cysox`
+  - Low-level API accessible via `from cysox import sox`
+
+- **Typed Effects Module** (`cysox.fx`): 28 effect classes with full parameter validation
+  - Base classes: `Effect`, `CompositeEffect`, `PythonEffect`, `CEffect`
+  - Volume/Gain: `Volume`, `Gain`, `Normalize`
+  - Equalization: `Bass`, `Treble`, `Equalizer`
+  - Filters: `HighPass`, `LowPass`, `BandPass`, `BandReject`
+  - Spatial/Reverb: `Reverb`, `Echo`, `Chorus`, `Flanger`
+  - Time-based: `Trim`, `Pad`, `Speed`, `Tempo`, `Pitch`, `Reverse`, `Fade`, `Repeat`
+  - Conversion: `Rate`, `Channels`, `Remix`, `Dither`
+  - `CompositeEffect` for creating reusable effect combinations
+  - All effects have `__repr__` for debugging
+
+- **High-Level API Tests**: 30 new tests in `test_high_level_api.py`
+
+### Changed
+
+- **Package Exports**: `import cysox` now exports high-level API by default
+  - Use `from cysox import sox` for low-level API access
+  - Updated 25 test files to use new import pattern
+
+- **Idempotent Initialization**: `sox.init()` is now safe to call multiple times
+  - Subsequent calls after first initialization are no-ops
+  - Prevents crashes from accidental double-initialization
+
+- **Safe Quit Behavior**: `sox.quit()` is now a no-op during normal execution
+  - Actual cleanup happens automatically at process exit via atexit
+  - Prevents crashes from init/quit/init cycles (libsox limitation)
+  - Internal `_force_quit()` used by atexit handler for real cleanup
+
 ## [0.1.1]
 
 ### Added

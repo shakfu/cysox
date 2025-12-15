@@ -15,6 +15,10 @@ _flow_callbacks = {}
 # Storage for the last callback exception (since exceptions can't propagate through C code)
 _last_callback_exception = None
 
+# Track initialization state to make init()/quit() idempotent
+# (libsox crashes on repeated init/quit cycles, so we only do it once)
+_sox_initialized = False
+
 
 ERROR_CODES = {
     'SOX_SUCCESS': SOX_SUCCESS,
@@ -2023,6 +2027,9 @@ def init():
     Must be called before using any SoX functionality. This initializes
     the effects system and format handlers.
 
+    This function is idempotent - calling it multiple times is safe.
+    Subsequent calls after the first are no-ops.
+
     Raises:
         SoxInitError: If initialization fails.
 
@@ -2032,27 +2039,49 @@ def init():
         >>> # Use sox functions...
         >>> sox.quit()
     """
+    global _sox_initialized
+    if _sox_initialized:
+        return  # Already initialized, no-op
     cdef int result = sox_init()
     if result != SOX_SUCCESS:
         raise SoxInitError(f"Failed to initialize SoX library: {strerror(result)}")
+    _sox_initialized = True
 
 
 def quit():
     """Close the SoX effects library and unload format handlers.
 
-    Should be called when done using SoX to free resources. After calling
-    quit(), you must call init() again before using any SoX functionality.
+    Note:
+        Due to libsox limitations (crashes on re-initialization after quit),
+        this function is a no-op during normal execution. Actual cleanup
+        happens automatically at process exit via atexit. This ensures the
+        library remains usable throughout the process lifetime.
 
-    Raises:
-        SoxInitError: If cleanup fails.
+        This function is retained for API compatibility but does not
+        actually call sox_quit(). Use _force_quit() for testing if needed.
 
     Example:
         >>> import cysox as sox
         >>> sox.init()
         >>> # Use sox functions...
-        >>> sox.quit()
+        >>> sox.quit()  # No-op; cleanup happens at process exit
     """
+    # No-op: actual cleanup happens via atexit to prevent crashes from
+    # repeated init/quit cycles. See KNOWN_LIMITATIONS.md
+    pass
+
+
+def _force_quit():
+    """Internal: Actually quit sox (called by atexit handler).
+
+    Warning: Do not call this directly - it will crash if sox is used again.
+    This is only for use by the atexit cleanup handler.
+    """
+    global _sox_initialized
+    if not _sox_initialized:
+        return
     cdef int result = sox_quit()
+    _sox_initialized = False
     if result != SOX_SUCCESS:
         raise SoxInitError(f"Failed to cleanup SoX library: {strerror(result)}")
 

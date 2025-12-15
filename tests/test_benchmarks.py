@@ -14,7 +14,7 @@ import array
 import os
 import tempfile
 import pytest
-import cysox as sox
+from cysox import sox
 
 
 # Test data path

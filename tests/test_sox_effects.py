@@ -1,4 +1,4 @@
-import cysox as sox
+from cysox import sox
 
 
 def test_get_effects_globals():

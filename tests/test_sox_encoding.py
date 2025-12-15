@@ -1,6 +1,6 @@
 import math
 
-import cysox as sox
+from cysox import sox
 
 
 def test_get_encodings():

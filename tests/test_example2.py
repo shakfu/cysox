@@ -2,7 +2,7 @@
 Port of tests/examples/example2.c
 """
 import pytest
-import cysox as sox
+from cysox import sox
 
 
 @pytest.fixture(autouse=True)

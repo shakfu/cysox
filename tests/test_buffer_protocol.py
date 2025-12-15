@@ -1,7 +1,7 @@
 """Tests for buffer protocol support in Format class"""
 import pytest
 import array
-import cysox as sox
+from cysox import sox
 
 
 @pytest.fixture(autouse=True)

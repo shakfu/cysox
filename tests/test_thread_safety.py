@@ -9,7 +9,8 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pytest
-import cysox as sox
+import cysox  # Import high-level API to trigger auto-init
+from cysox import sox
 
 
 TEST_WAV = "tests/data/s00.wav"
@@ -17,10 +18,15 @@ TEST_WAV = "tests/data/s00.wav"
 
 @pytest.fixture(scope="module")
 def sox_initialized():
-    """Initialize sox once for all tests."""
-    sox.init()
+    """Ensure sox is initialized (handled automatically by high-level API).
+
+    The high-level API (cysox) auto-initializes sox on first use and
+    registers atexit cleanup. We don't call init/quit here because
+    repeated init/quit cycles crash libsox.
+    """
+    # Trigger auto-init by calling a high-level function
+    _ = cysox.info(TEST_WAV)
     yield
-    sox.quit()
 
 
 class TestConcurrentReads:
