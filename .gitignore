@@ -1,5 +1,8 @@
 .DS_Store
 
+# cython-generated
+src/cysox/sox.c
+
 # editor config
 .clangd
 .vscode
