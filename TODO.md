@@ -1,0 +1,237 @@
+# TODO - cysox
+
+Prioritized task list derived from [PROJECT_REVIEW.md](PROJECT_REVIEW.md).
+
+**Legend:**
+- `[ ]` Not started
+- `[~]` In progress
+- `[x]` Completed
+- `[!]` Blocked
+
+---
+
+## P0 - Critical (Do First)
+
+Issues affecting correctness, security, or build reliability.
+
+### Build
+
+- [x] **Fix version mismatch in pyproject.toml** (Completed 2025-12-15)
+  - Fixed: `version = "0.1.1"`
+  - File: `pyproject.toml`
+
+### Memory Safety
+
+- [x] **Add missing null checks in EncodingInfo property accessors** (Completed 2025-12-15)
+  - File: `src/cysox/sox.pyx`
+  - Added null checks to: `compression`, `reverse_bytes`, `reverse_nibbles`, `reverse_bits`, `opposite_endian` (getters and setters)
+
+- [x] **Add missing null checks in LoopInfo property accessors** (Completed 2025-12-15)
+  - File: `src/cysox/sox.pyx`
+  - Added null checks to: `start`, `length`, `count`, `type` (getters and setters)
+
+### Security
+
+- [x] **Fix potential buffer overflow in basename()** (Completed 2025-12-15)
+  - File: `src/cysox/sox.pyx`
+  - Solution: Dynamic allocation based on input filename length
+  - Added proper memory management with try/finally
+
+---
+
+## P1 - High Priority
+
+Improvements for maintainability, platform support, and developer experience.
+
+### Code Organization
+
+- [ ] **Split sox.pyx into multiple modules**
+  - Current: Single 2,224-line file
+  - Proposed structure:
+    ```
+    src/cysox/
+        _format.pyx      # Format, FormatHandler, FormatTab
+        _effects.pyx     # Effect, EffectHandler, EffectsChain
+        _signal.pyx      # SignalInfo, EncodingInfo
+        _metadata.pyx    # LoopInfo, InstrInfo, OutOfBand
+        _globals.pyx     # Globals, EffectsGlobals, VersionInfo
+        _exceptions.pyx  # Exception classes
+        sox.pyx          # Module-level functions, imports
+    ```
+  - Benefit: Easier navigation, faster incremental builds
+
+### Platform Support
+
+- [ ] **Implement Windows build automation**
+  - Current: Placeholder requiring manual environment variables
+  - Tasks:
+    - [ ] Add vcpkg or conda integration for libsox
+    - [ ] Update setup.py with Windows library paths
+    - [ ] Add Windows to CI matrix
+    - [ ] Document Windows build process
+
+### Documentation
+
+- [x] **Add generated API documentation** (Completed 2025-12-15)
+  - Tool: Sphinx with Furo theme
+  - Created:
+    - [x] docs/ directory structure
+    - [x] conf.py with autodoc, napoleon, myst-parser
+    - [x] index.rst, installation.rst, quickstart.rst, examples.rst
+    - [x] api/modules.rst, api/exceptions.rst
+    - [x] changelog.rst, contributing.rst
+  - Build: `make docs` (output in docs/_build/html)
+  - Serve: `make docs-serve` (localhost:8000)
+
+### Testing
+
+- [x] **Add performance benchmarks** (Completed 2025-12-15)
+  - Tool: pytest-benchmark
+  - Benchmarks implemented:
+    - [x] File read throughput (list vs buffer vs read_into)
+    - [x] File write throughput (list vs array vs memoryview)
+    - [x] Effects chain processing (passthrough, vol, multi-effect, reverb, rate)
+    - [x] Memory usage (open/close cycles, object creation)
+  - Run: `make benchmark`
+  - Compare: `make benchmark-save` then `make benchmark-compare`
+  - Docs: `docs/benchmarks.rst`
+
+### Error Handling
+
+- [x] **Improve callback exception handling** (Completed 2025-12-15)
+  - File: `src/cysox/sox.pyx`
+  - Added `_last_callback_exception` module-level storage
+  - Added `get_last_callback_exception()` function to retrieve stored exceptions
+  - Updated type stubs in `__init__.pyi`
+
+---
+
+## P2 - Medium Priority
+
+Enhancements for robustness and completeness.
+
+### Security Hardening
+
+- [ ] **Enable overflow checking in Cython**
+  - File: `setup.py` line 168
+  - Change: `'overflowcheck': False` to `'overflowcheck': True`
+  - Impact: Catches integer overflow bugs at runtime
+
+- [ ] **Add fuzzing tests for format handlers**
+  - Tool: python-afl or atheris
+  - Target: `sox.Format()` with malformed audio files
+  - Goal: Discover crashes or undefined behavior
+
+### Testing Improvements
+
+- [ ] **Add thread safety tests**
+  - Test concurrent `init()`/`quit()` calls
+  - Test multiple effects chains in parallel threads
+  - Verify GIL handling in callbacks
+
+- [ ] **Add memory leak tests**
+  - Integrate valgrind or ASAN into CI
+  - Test allocation/deallocation cycles
+  - Focus on Format, Effect, EffectsChain lifecycle
+
+- [ ] **Add edge case tests**
+  - Very large files (>4GB)
+  - Corrupt/truncated audio headers
+  - Zero-length audio files
+  - Unusual sample rates and channel counts
+
+### Documentation
+
+- [ ] **Create architecture documentation**
+  - Document class hierarchy and relationships
+  - Explain ownership model and memory management
+  - Add sequence diagrams for common operations
+
+- [ ] **Add performance guide**
+  - When to use `read()` vs `read_buffer()` vs `read_into()`
+  - Memory efficiency tips for large files
+  - Effects chain optimization strategies
+
+- [ ] **Add troubleshooting guide**
+  - Common errors and solutions
+  - Platform-specific issues
+  - Debug mode usage
+
+---
+
+## P3 - Low Priority
+
+Nice-to-have features and long-term improvements.
+
+### Features
+
+- [ ] **Implement playlist parsing**
+  - File: `src/cysox/sox.pyx` lines 2136-2148 (commented out)
+  - Requires: Callback mechanism for playlist entries
+
+- [ ] **Add streaming API**
+  - Current: Must use effects chain for streaming
+  - Proposal: High-level iterator-based API
+    ```python
+    for chunk in sox.stream('input.wav', chunk_size=4096):
+        process(chunk)
+    ```
+
+- [!] **Fix memory I/O functions** (BLOCKED)
+  - Functions: `open_mem_read()`, `open_mem_write()`, `open_memstream_write()`
+  - Status: Blocked by libsox upstream issue
+  - Tracking: Document in Known Issues
+
+### Build System
+
+- [ ] **Add automatic version bumping**
+  - Tool: bump2version or python-semantic-release
+  - Sync: pyproject.toml, __init__.py, CHANGELOG.md
+
+- [ ] **Add release automation**
+  - GitHub Actions workflow for PyPI publishing
+  - Automatic changelog generation
+  - Git tag creation
+
+### Code Quality
+
+- [ ] **Add pre-commit hooks**
+  - flake8 linting
+  - isort import sorting
+  - black formatting (for .py files)
+
+---
+
+## Backlog
+
+Items to consider for future releases.
+
+- [ ] Custom effects support (requires C extension authoring)
+- [ ] Async/await support for effects processing
+- [ ] NumPy-native array returns (optional dependency)
+- [ ] Audio visualization helpers (waveform, spectrogram)
+- [ ] CLI tool wrapping the Python API
+
+---
+
+## Completed
+
+Items completed since this TODO was created.
+
+### 2025-12-15
+
+- **P0: Fix version mismatch in pyproject.toml** - Updated to 0.1.1
+- **P0: Add null checks to EncodingInfo properties** - Added to 5 properties (getters + setters)
+- **P0: Add null checks to LoopInfo properties** - Added to 4 properties (getters + setters)
+- **P0: Fix buffer overflow in basename()** - Dynamic allocation based on input length
+- **P1: Improve callback exception handling** - Added `get_last_callback_exception()` function
+- **P1: Add generated API documentation** - Sphinx docs with Furo theme, 9 pages
+- **P1: Add performance benchmarks** - pytest-benchmark with 20 benchmark tests
+
+---
+
+## References
+
+- [PROJECT_REVIEW.md](PROJECT_REVIEW.md) - Full code review
+- [CHANGELOG.md](CHANGELOG.md) - Version history
+- [libsox documentation](https://sourceforge.net/p/sox/code/ci/master/tree/src/sox.h)

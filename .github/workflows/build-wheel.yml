@@ -1,13 +1,13 @@
 name: Build Wheels
 
-on:
-  push:
-    branches: [main]
-    tags:
-      - 'v*'
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
+on: [workflow_dispatch]
+  # push:
+  #   branches: [main]
+  #   tags:
+  #     - 'v*'
+  # pull_request:
+  #   branches: [main]
+  # workflow_dispatch:
 
 jobs:
   build_wheels:
