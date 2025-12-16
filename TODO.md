@@ -161,13 +161,26 @@ Nice-to-have features and long-term improvements.
   - File: `src/cysox/sox.pyx` lines 2136-2148 (commented out)
   - Requires: Callback mechanism for playlist entries
 
-- [ ] **Add streaming API**
-  - Current: Must use effects chain for streaming
-  - Proposal: High-level iterator-based API
-    ```python
-    for chunk in sox.stream('input.wav', chunk_size=4096):
-        process(chunk)
-    ```
+- [x] **Add streaming API** (Completed 2025-12-16)
+  - Implemented: `cysox.stream(path, chunk_size)` returns `Iterator[memoryview]`
+  - Works with numpy, array.array, and any buffer protocol consumer
+  - File: `src/cysox/audio.py`
+
+- [x] **Add high-level API** (Completed 2025-12-16)
+  - Implemented in `src/cysox/audio.py`:
+    - [x] `cysox.info(path)` - Get audio metadata as dict
+    - [x] `cysox.convert(input, output, effects=[], ...)` - Convert with effects
+    - [x] `cysox.stream(path, chunk_size)` - Stream samples as memoryview
+    - [x] `cysox.play(path, effects=[])` - Play to audio device (macOS/Linux)
+    - [x] `cysox.concat(inputs, output)` - Concatenate audio files
+  - Auto-initialization via atexit (no manual init/quit needed)
+  - Documentation: `docs/dev/high_level_api.md`
+
+- [x] **Add typed effects module** (Completed 2025-12-16)
+  - 28 effect classes in `src/cysox/fx/`
+  - Categories: Volume, EQ, Filters, Reverb/Spatial, Time-based, Conversion
+  - CompositeEffect for reusable effect combinations
+  - Full IDE autocomplete and parameter validation
 
 - [!] **Fix memory I/O functions** (BLOCKED)
   - Functions: `open_mem_read()`, `open_mem_write()`, `open_memstream_write()`
@@ -198,7 +211,7 @@ Nice-to-have features and long-term improvements.
 
 Items to consider for future releases.
 
-- [ ] Custom effects support (requires C extension authoring)
+- [x] Custom effects support - Documented in `docs/dev/high_level_api.md` (CompositeEffect, PythonEffect, C/Cython approaches)
 - [ ] Async/await support for effects processing
 - [ ] NumPy-native array returns (optional dependency)
 - [ ] Audio visualization helpers (waveform, spectrogram)
@@ -212,6 +225,10 @@ Items completed since this TODO was created.
 
 ### 2025-12-16
 
+- **P3: Add high-level API** - `info()`, `convert()`, `stream()`, `play()`, `concat()`
+- **P3: Add typed effects module** - 28 effect classes in `cysox.fx`
+- **P3: Add streaming API** - `cysox.stream()` with memoryview output
+- **Backlog: Custom effects support** - Documented 5 approaches in `docs/dev/high_level_api.md`
 - **P2: Enable overflow checking in Cython** - Conditional on DEBUG mode
 - **P2: Add thread safety tests** - 11 tests covering concurrent operations
 - **P2: Add edge case tests** - 46 tests for boundary conditions and error handling
@@ -232,4 +249,5 @@ Items completed since this TODO was created.
 
 - [PROJECT_REVIEW.md](PROJECT_REVIEW.md) - Full code review
 - [CHANGELOG.md](CHANGELOG.md) - Version history
+- [docs/dev/high_level_api.md](docs/dev/high_level_api.md) - High-level API documentation and extension guide
 - [libsox documentation](https://sourceforge.net/p/sox/code/ci/master/tree/src/sox.h)
