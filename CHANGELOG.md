@@ -17,6 +17,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+## [0.1.3]
+
+### Fixed
+
+- **Fixed redundant dependencies**: `cython` was added as a dependency even though it is already required by the build-system. Also some sphinx-related dependences that weren't used have been removed.
+
 ## [0.1.2]
 
 ### Added
