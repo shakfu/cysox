@@ -43,12 +43,9 @@ from . import fx
 # Low-level API (explicit init/quit required)
 from . import sox
 
-# Version
-try:
-    from .sox import version
-    __version__ = version()
-except Exception:
-    __version__ = "unknown"
+# get libsox version via cysox.sox.version()
+__version__ = "0.1.2"
+
 
 __all__ = [
     # High-level functions

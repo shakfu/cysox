@@ -1,15 +1,57 @@
 [project]
 name = "cysox"
-version = "0.1.1"
-description = "A cython wrapper of sox"
+version = "0.1.2"
+description = "A Pythonic audio processing library wrapping libsox"
 readme = "README.md"
+license = "MIT"
 authors = [
-    { name = "Shakeeb Alireza", email = "sa@example.com" }
+    { name = "Shakeeb Alireza", email = "me@example.com" }
+]
+maintainers = [
+    { name = "Shakeeb Alireza", email = "me@example.com" }
 ]
 requires-python = ">=3.9"
+keywords = [
+    "audio",
+    "sound",
+    "sox",
+    "libsox",
+    "audio-processing",
+    "effects",
+    "cython",
+    "dsp",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Cython",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Multimedia :: Sound/Audio :: Analysis",
+    "Topic :: Multimedia :: Sound/Audio :: Conversion",
+    "Topic :: Multimedia :: Sound/Audio :: Editors",
+    "Topic :: Multimedia :: Sound/Audio :: Sound Synthesis",
+    "Typing :: Typed",
+]
 dependencies = [
     "cython",
 ]
+
+[project.urls]
+Homepage = "https://github.com/shakfu/cysox"
+Repository = "https://github.com/shakfu/cysox"
+Documentation = "https://github.com/shakfu/cysox#readme"
+Issues = "https://github.com/shakfu/cysox/issues"
+Changelog = "https://github.com/shakfu/cysox/releases"
 
 [project.scripts]
 cysox = "cysox:__main__"
@@ -23,6 +65,7 @@ dev = [
     "pytest>=8.4.1",
     "pytest-benchmark",
     "memory-profiler",
+    "sphinx>=7.4.7",
 ]
 docs = [
     "sphinx>=7.0",
