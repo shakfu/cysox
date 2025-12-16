@@ -86,7 +86,7 @@ build = "cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*"
 
 # Test the wheel with a simple import
 test-requires = "pytest"
-test-command = "python -c \"import cysox; cysox.init(); print(f'cysox {cysox.version()}'); cysox.quit()\""
+test-command = "python -c \"import cysox; from cysox import sox; sox.init(); print(f'cysox {cysox.__version__}, libsox {sox.version()}'); sox.quit()\""
 
 [tool.cibuildwheel.linux]
 archs = ["x86_64", "aarch64"]
