@@ -34,6 +34,7 @@ thirdparty/sox/
 .*_cache/
 *.egg-info
 .ropeproject
+.benchmarks
 
 # claude
 .claude
