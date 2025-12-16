@@ -440,3 +440,89 @@ def play(
 
     if result != sox.SUCCESS:
         raise RuntimeError(f"Playback failed with code {result}")
+
+
+def concat(
+    inputs: List[Union[str, Path]],
+    output_path: Union[str, Path],
+    *,
+    chunk_size: int = 8192,
+) -> None:
+    """Concatenate multiple audio files into one.
+
+    All input files must have the same sample rate and number of channels.
+    The output format is determined by the output file extension.
+
+    Args:
+        inputs: List of paths to input audio files (minimum 2).
+        output_path: Path for the concatenated output file.
+        chunk_size: Number of samples to read/write at a time (default: 8192).
+
+    Raises:
+        ValueError: If fewer than 2 input files provided.
+        ValueError: If input files have mismatched sample rates or channels.
+
+    Example:
+        >>> cysox.concat(['intro.wav', 'main.wav', 'outro.wav'], 'full.wav')
+    """
+    _ensure_init()
+
+    if len(inputs) < 2:
+        raise ValueError("concat() requires at least 2 input files")
+
+    inputs = [str(p) for p in inputs]
+    output_path = str(output_path)
+
+    output_fmt = None
+    reference_rate = None
+    reference_channels = None
+
+    try:
+        for i, input_path in enumerate(inputs):
+            input_fmt = sox.Format(input_path)
+
+            if i == 0:
+                # First file: capture reference signal and open output
+                reference_rate = input_fmt.signal.rate
+                reference_channels = input_fmt.signal.channels
+
+                out_signal = sox.SignalInfo(
+                    rate=reference_rate,
+                    channels=reference_channels,
+                    precision=input_fmt.signal.precision,
+                )
+                out_encoding = sox.EncodingInfo(
+                    encoding=int(input_fmt.encoding.encoding),
+                    bits_per_sample=input_fmt.encoding.bits_per_sample,
+                )
+                output_fmt = sox.Format(
+                    output_path, signal=out_signal, encoding=out_encoding, mode='w'
+                )
+            else:
+                # Subsequent files: verify compatibility
+                if input_fmt.signal.rate != reference_rate:
+                    raise ValueError(
+                        f"Sample rate mismatch: {input_path} has {input_fmt.signal.rate}Hz, "
+                        f"expected {reference_rate}Hz"
+                    )
+                if input_fmt.signal.channels != reference_channels:
+                    raise ValueError(
+                        f"Channel count mismatch: {input_path} has {input_fmt.signal.channels} channels, "
+                        f"expected {reference_channels}"
+                    )
+
+            # Copy all samples from this input to output
+            while True:
+                samples = input_fmt.read(chunk_size)
+                if len(samples) == 0:
+                    break
+                output_fmt.write(samples)
+
+            input_fmt.close()
+
+        output_fmt.close()
+
+    except Exception:
+        if output_fmt is not None:
+            output_fmt.close()
+        raise

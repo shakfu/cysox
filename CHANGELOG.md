@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
   - `cysox.convert(input, output, effects=[], ...)`: Convert with optional effects and format options
   - `cysox.stream(path, chunk_size)`: Iterator yielding memoryview chunks for streaming
   - `cysox.play(path, effects=[])`: Play audio to default device (macOS/Linux)
+  - `cysox.concat(inputs, output)`: Concatenate multiple audio files
   - Auto-initialization via atexit - no manual `init()`/`quit()` needed
   - High-level API is now the default export from `import cysox`
   - Low-level API accessible via `from cysox import sox`

@@ -34,6 +34,7 @@ from .audio import (
     convert,
     stream,
     play,
+    concat,
 )
 
 # Effects module

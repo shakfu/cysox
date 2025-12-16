@@ -265,6 +265,49 @@ class TestCompositeEffect:
             c.to_args()
 
 
+class TestConcat:
+    """Tests for cysox.concat()."""
+
+    def test_concat_two_files(self, test_wav_str, output_path):
+        """concat() joins two files."""
+        cysox.concat([test_wav_str, test_wav_str], output_path)
+
+        # Output should exist and have roughly 2x duration
+        input_info = cysox.info(test_wav_str)
+        output_info = cysox.info(str(output_path))
+
+        assert output_info["sample_rate"] == input_info["sample_rate"]
+        assert output_info["channels"] == input_info["channels"]
+        # Allow 10% tolerance for duration
+        expected_duration = input_info["duration"] * 2
+        assert 0.9 <= output_info["duration"] / expected_duration <= 1.1
+
+    def test_concat_three_files(self, test_wav_str, output_path):
+        """concat() joins three files."""
+        cysox.concat([test_wav_str, test_wav_str, test_wav_str], output_path)
+
+        input_info = cysox.info(test_wav_str)
+        output_info = cysox.info(str(output_path))
+
+        expected_duration = input_info["duration"] * 3
+        assert 0.9 <= output_info["duration"] / expected_duration <= 1.1
+
+    def test_concat_single_file_raises(self, test_wav_str, output_path):
+        """concat() raises ValueError for single file."""
+        with pytest.raises(ValueError, match="at least 2"):
+            cysox.concat([test_wav_str], output_path)
+
+    def test_concat_empty_list_raises(self, output_path):
+        """concat() raises ValueError for empty list."""
+        with pytest.raises(ValueError, match="at least 2"):
+            cysox.concat([], output_path)
+
+    def test_concat_nonexistent_file_raises(self, test_wav_str, output_path):
+        """concat() raises exception for nonexistent file."""
+        with pytest.raises(Exception):
+            cysox.concat([test_wav_str, "/nonexistent/file.wav"], output_path)
+
+
 class TestPlay:
     """Tests for cysox.play()."""
 

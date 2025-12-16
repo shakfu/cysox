@@ -104,6 +104,16 @@ cysox.play('audio.wav')
 cysox.play('audio.wav', effects=[fx.Volume(db=-6), fx.Reverb()])
 ```
 
+### `cysox.concat(inputs, output)`
+
+Concatenate multiple audio files:
+
+```python
+cysox.concat(['intro.wav', 'main.wav', 'outro.wav'], 'full.wav')
+```
+
+All input files must have the same sample rate and channel count.
+
 ## Effects Module
 
 The `cysox.fx` module provides 28 typed effect classes:
@@ -246,7 +256,7 @@ make docs-serve  # http://localhost:8000
 
 ## Status
 
-**Test Results**: 267 tests passing, 9 skipped
+**Test Results**: 272 tests passing, 9 skipped
 
 All libsox C examples ported to Python:
 - example0-6: Effects chains, waveform analysis, trim, concatenation, format conversion
