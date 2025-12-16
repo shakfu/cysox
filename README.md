@@ -1,6 +1,10 @@
 # cysox
 
-A Pythonic audio processing library wrapping [libsox](https://github.com/chirlu/sox).
+[![PyPI](https://img.shields.io/pypi/v/cysox)](https://pypi.org/project/cysox/)
+[![Python](https://img.shields.io/pypi/pyversions/cysox)](https://pypi.org/project/cysox/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+A Pythonic audio processing library which uses cython to wrap [libsox](https://github.com/chirlu/sox).
 
 ## Features
 
@@ -11,6 +15,8 @@ A Pythonic audio processing library wrapping [libsox](https://github.com/chirlu/
 - **Cross-Platform**: macOS, Linux (Windows placeholder)
 
 ## Installation
+
+Note that cysox only works on macOS and Linux.
 
 ```sh
 pip install cysox
@@ -233,7 +239,7 @@ sox.quit()
 ### macOS
 
 ```sh
-brew install sox libsndfile mad libpng
+brew install sox libsndfile mad libpng flac lame mpg123 libogg opus opusfile libvorbis
 make
 make test
 ```
@@ -246,33 +252,30 @@ make
 make test
 ```
 
-## Documentation
-
-```sh
-pip install sphinx furo myst-parser
-make docs
-make docs-serve  # http://localhost:8000
-```
-
 ## Status
 
-**Test Results**: 272 tests passing, 9 skipped
-
-All libsox C examples ported to Python:
-- example0-6: Effects chains, waveform analysis, trim, concatenation, format conversion
+Comprehensive test suite covering all functionality. All libsox C examples ported to Python (effects chains, waveform analysis, trim, concatenation, format conversion).
 
 ## Known Issues
 
 - **Memory I/O**: libsox memory I/O functions have platform issues (tests skipped)
 - **Init/Quit Cycles**: Use high-level API to avoid init/quit issues (handled automatically)
 
-See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for details.
+See [KNOWN_LIMITATIONS.md](https://github.com/shakfu/cysox/blob/main/KNOWN_LIMITATIONS.md) for details.
 
 ## Platform Support
 
 - **macOS**: Full support
 - **Linux**: Full support
 - **Windows**: Placeholder (contributions welcome)
+
+## Building Documentation
+
+```sh
+pip install sphinx furo myst-parser
+make docs
+make docs-serve  # http://localhost:8000
+```
 
 ## License
 
