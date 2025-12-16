@@ -21,7 +21,7 @@ gcc -std=c11 -o build/$1 \
 	tests/examples/$1.c
 endef
 
-.PHONY: all build wheel clean reset test testpy examples-p examples-c strip delocate docs docs-clean docs-serve benchmark benchmark-save benchmark-compare pydebug debug
+.PHONY: all build wheel clean reset test testpy examples-p examples-c strip delocate check publish publish-test docs docs-clean docs-serve benchmark benchmark-save benchmark-compare pydebug debug
 
 all: build
 
@@ -90,6 +90,15 @@ strip:
 
 delocate: wheel
 	@uv run delocate-wheel dist/cysox-*.whl
+
+check:
+	@uv run twine check dist/*
+
+publish:
+	@uv run twine upload dist/*
+
+publish-test:
+	@uv run twine upload --repository testpypi dist/*
 
 # Documentation
 docs:
