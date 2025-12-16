@@ -1070,25 +1070,33 @@ cdef class Format:
             self.ptr = NULL
 
     def __init__(self, str filename, SignalInfo signal = None,
-                 EncodingInfo encoding = None, mode: str = 'r'):
+                 EncodingInfo encoding = None, str filetype = None, mode: str = 'r'):
         """Opens a file for reading or writing.
 
         Args:
             filename: Path to the audio file
             signal: Signal information (required for writing)
             encoding: Encoding information (optional)
+            filetype: File format type (e.g., 'wav', 'coreaudio', 'alsa').
+                      If None, format is inferred from filename extension.
             mode: 'r' for reading, 'w' for writing
 
         Raises:
             SoxFormatError: If file cannot be opened
             ValueError: If mode is invalid or signal missing for write mode
         """
+        cdef char* filetype_c = NULL
+        cdef bytes filetype_bytes
+        if filetype is not None:
+            filetype_bytes = filetype.encode('utf-8')
+            filetype_c = filetype_bytes
+
         if mode == 'r':
             self.ptr = sox_open_read(
                 filename.encode(),
                 signal.ptr if signal else NULL,
                 encoding.ptr if encoding else NULL,
-                NULL
+                filetype_c
             )
         elif mode == 'w':
             if signal is None:
@@ -1097,7 +1105,7 @@ cdef class Format:
                 filename.encode(),
                 signal.ptr,
                 encoding.ptr if encoding else NULL,
-                NULL,
+                filetype_c,
                 NULL,
                 NULL  # No overwrite callback for now
             )

@@ -265,6 +265,28 @@ class TestCompositeEffect:
             c.to_args()
 
 
+class TestPlay:
+    """Tests for cysox.play()."""
+
+    @pytest.mark.skip(reason="Requires audio hardware - run manually with: pytest -k test_play --run-audio")
+    def test_play_basic(self, test_wav_str):
+        """play() plays audio to default device."""
+        cysox.play(test_wav_str, effects=[fx.Trim(start=0, duration=0.5)])
+
+    @pytest.mark.skip(reason="Requires audio hardware - run manually with: pytest -k test_play --run-audio")
+    def test_play_with_effects(self, test_wav_str):
+        """play() applies effects during playback."""
+        cysox.play(test_wav_str, effects=[
+            fx.Trim(start=0, duration=0.5),
+            fx.Volume(db=-6),
+        ])
+
+    def test_play_nonexistent_file(self):
+        """play() raises exception for nonexistent file."""
+        with pytest.raises(Exception):
+            cysox.play("/nonexistent/file.wav")
+
+
 class TestAutoInit:
     """Tests for auto-initialization behavior."""
 

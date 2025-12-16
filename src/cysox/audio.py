@@ -200,8 +200,14 @@ def convert(
     # Create effects chain
     chain = sox.EffectsChain(input_fmt.encoding, output_fmt.encoding)
 
-    # Track current signal for effect chain
+    # Save original input properties (before any mutation)
+    original_rate = input_fmt.signal.rate
+
+    # Track current signal - use same object pattern to allow libsox in-place updates
     current_signal = input_fmt.signal
+
+    # Target output rate
+    target_rate = sample_rate or original_rate
 
     # Add input effect
     e = sox.Effect(sox.find_effect("input"))
@@ -226,63 +232,61 @@ def convert(
             e = sox.Effect(handler)
             e.set_options(effect.to_args())
 
-            # Determine output signal for this effect
-            # Some effects change signal properties
+            # Handle effects that explicitly change signal properties
             if effect.name == "rate":
                 new_signal = sox.SignalInfo(
-                    rate=float(effect.to_args()[-1]),  # Last arg is rate
+                    rate=float(effect.to_args()[-1]),
                     channels=current_signal.channels,
                     precision=current_signal.precision,
                 )
+                chain.add_effect(e, current_signal, new_signal)
+                current_signal = new_signal
             elif effect.name == "channels":
                 new_signal = sox.SignalInfo(
                     rate=current_signal.rate,
                     channels=int(effect.to_args()[0]),
                     precision=current_signal.precision,
                 )
+                chain.add_effect(e, current_signal, new_signal)
+                current_signal = new_signal
             else:
-                new_signal = current_signal
+                # For other effects, pass same signal (allows libsox in-place updates)
+                chain.add_effect(e, current_signal, current_signal)
 
-            chain.add_effect(e, current_signal, new_signal)
-            current_signal = new_signal
+                # After add_effect, current_signal may have been mutated
+                # Check if rate changed (pitch, speed, tempo, etc.)
+                # Always create fresh signal for next effect to avoid stale state
+                if e.out_signal.rate > 0 and e.out_signal.rate != original_rate:
+                    current_signal = sox.SignalInfo(
+                        rate=e.out_signal.rate,
+                        channels=e.out_signal.channels,
+                        precision=e.out_signal.precision,
+                    )
 
-    # Add rate conversion if needed and not already applied
-    if sample_rate and sample_rate != input_fmt.signal.rate:
-        needs_rate = True
-        if effects:
-            for eff in _expand_effects(effects):
-                if eff.name == "rate":
-                    needs_rate = False
-                    break
-        if needs_rate:
-            e = sox.Effect(sox.find_effect("rate"))
-            e.set_options([str(sample_rate)])
-            new_signal = sox.SignalInfo(
-                rate=float(sample_rate),
-                channels=current_signal.channels,
-                precision=current_signal.precision,
-            )
-            chain.add_effect(e, current_signal, new_signal)
-            current_signal = new_signal
+    # Add rate conversion if current rate differs from target
+    if current_signal.rate != target_rate:
+        new_signal = sox.SignalInfo(
+            rate=target_rate,
+            channels=current_signal.channels,
+            precision=current_signal.precision,
+        )
+        e = sox.Effect(sox.find_effect("rate"))
+        e.set_options(["-q", str(int(target_rate))])  # -q for quick to avoid FFT issues
+        chain.add_effect(e, current_signal, new_signal)
+        current_signal = new_signal
 
     # Add channel conversion if needed
-    if channels and channels != current_signal.channels:
-        needs_channels = True
-        if effects:
-            for eff in _expand_effects(effects):
-                if eff.name == "channels":
-                    needs_channels = False
-                    break
-        if needs_channels:
-            e = sox.Effect(sox.find_effect("channels"))
-            e.set_options([str(channels)])
-            new_signal = sox.SignalInfo(
-                rate=current_signal.rate,
-                channels=channels,
-                precision=current_signal.precision,
-            )
-            chain.add_effect(e, current_signal, new_signal)
-            current_signal = new_signal
+    target_channels = channels or input_fmt.signal.channels
+    if current_signal.channels != target_channels:
+        new_signal = sox.SignalInfo(
+            rate=current_signal.rate,
+            channels=target_channels,
+            precision=current_signal.precision,
+        )
+        e = sox.Effect(sox.find_effect("channels"))
+        e.set_options([str(target_channels)])
+        chain.add_effect(e, current_signal, new_signal)
+        current_signal = new_signal
 
     # Add output effect
     e = sox.Effect(sox.find_effect("output"))

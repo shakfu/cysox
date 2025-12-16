@@ -19,6 +19,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ### Added
 
+- **Test Output Fixtures**: Test outputs preserved in `build/test_output/` for manual inspection
+  - Output files named after the tests that created them
+  - Benchmark results saved to `build/test_output/benchmarks/` as JSON and text
+
+- **FX Output Tests**: 54 new tests in `test_fx_outputs.py` with audible effect parameters
+  - Tests for all effect types with recognizable audio transformations
+  - Combined effect tests (telephone, underwater, radio, vinyl, etc.)
+
 - **High-Level API**: New Pythonic interface that handles initialization automatically
   - `cysox.info(path)`: Get audio file metadata as dictionary
   - `cysox.convert(input, output, effects=[], ...)`: Convert with optional effects and format options
@@ -55,6 +63,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
   - Actual cleanup happens automatically at process exit via atexit
   - Prevents crashes from init/quit/init cycles (libsox limitation)
   - Internal `_force_quit()` used by atexit handler for real cleanup
+
+- **Benchmark Output**: Disabled by default during normal test runs
+  - Run explicitly with: `pytest --benchmark-enable`
+  - Run only benchmarks with: `pytest --benchmark-only`
+
+### Fixed
+
+- **Rate-Changing Effects**: `Pitch`, `Speed`, and `Tempo` effects now correctly maintain output duration
+  - Sox CLI auto-inserts `rate` effect after these effects; `convert()` now does the same
+  - Fixed bug where `SignalInfo` mutation during `add_effect()` caused rate comparisons to fail
+  - Uses `-q` (quick) rate conversion to avoid libsox FFT assertion bugs
+
+- **Audio Playback**: `cysox.play()` now works correctly
+  - Added `filetype` parameter to `sox.Format()` constructor
+  - Enables audio device output via coreaudio (macOS), alsa/pulseaudio (Linux)
 
 ## [0.1.1]
 

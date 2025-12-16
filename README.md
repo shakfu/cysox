@@ -1,242 +1,269 @@
 # cysox
 
-cysox is a python library which wraps [libsox](https://github.com/chirlu/sox) using cython.
-
-## Overview
-
-**cysox** is a Cython wrapper for [libsox](https://github.com/chirlu/sox), providing Python bindings to the SoX (Sound eXchange) library. SoX is a cross-platform command line utility that can convert various formats of computer audio files in to other formats.
+A Pythonic audio processing library wrapping [libsox](https://github.com/chirlu/sox).
 
 ## Features
 
-- **Audio Processing**: Convert between different audio formats
-- **Signal Manipulation**: Apply various audio effects and filters
-- **Cross-platform**: Works on Windows, macOS, and Linux
-- **High Performance**: Direct C bindings through Cython for optimal performance
-- **Memory Efficient**: Low-level memory management for large audio files
+- **Simple API**: Convert, analyze, and play audio with one-liners
+- **Typed Effects**: 28 effect classes with IDE autocomplete and validation
+- **High Performance**: Direct C bindings through Cython
+- **Zero Configuration**: Auto-initialization, no manual setup required
+- **Cross-Platform**: macOS, Linux (Windows placeholder)
 
-## Building
+## Installation
 
-Currently development and testing is only on MacOS. [Homebrew](https://brew.sh) is used for installing dependencies:
+```sh
+pip install cysox
+```
+
+## Quick Start
+
+```python
+import cysox
+from cysox import fx
+
+# Get audio file info
+info = cysox.info('audio.wav')
+print(f"Duration: {info['duration']:.2f}s, Sample rate: {info['sample_rate']} Hz")
+
+# Convert with effects
+cysox.convert('input.wav', 'output.mp3', effects=[
+    fx.Normalize(),
+    fx.Reverb(reverberance=60),
+    fx.Fade(fade_in=0.5, fade_out=1.0),
+])
+
+# Play audio (macOS/Linux)
+cysox.play('audio.wav')
+
+# Play with effects
+cysox.play('audio.wav', effects=[fx.Volume(db=-6)])
+```
+
+## Core Functions
+
+### `cysox.info(path) -> dict`
+
+Get audio file metadata:
+
+```python
+info = cysox.info('audio.wav')
+# Returns: {
+#     'path': 'audio.wav',
+#     'format': 'wav',
+#     'duration': 11.5,
+#     'sample_rate': 44100,
+#     'channels': 2,
+#     'bits_per_sample': 16,
+#     'samples': 507150,
+#     'encoding': 'signed-integer',
+# }
+```
+
+### `cysox.convert(input, output, effects=[], **options)`
+
+Convert audio files with optional effects and format options:
+
+```python
+# Simple format conversion
+cysox.convert('input.wav', 'output.mp3')
+
+# With effects
+cysox.convert('input.wav', 'output.wav', effects=[
+    fx.Volume(db=3),
+    fx.Bass(gain=5),
+    fx.Reverb(),
+])
+
+# With format options
+cysox.convert('input.wav', 'output.wav',
+    sample_rate=48000,
+    channels=1,
+    bits=24,
+)
+```
+
+### `cysox.stream(path, chunk_size=8192) -> Iterator[memoryview]`
+
+Stream audio samples for processing:
+
+```python
+import numpy as np
+
+for chunk in cysox.stream('large.wav', chunk_size=8192):
+    arr = np.frombuffer(chunk, dtype=np.int32)
+    process(arr)
+```
+
+### `cysox.play(path, effects=[])`
+
+Play audio to the default audio device:
+
+```python
+cysox.play('audio.wav')
+cysox.play('audio.wav', effects=[fx.Volume(db=-6), fx.Reverb()])
+```
+
+## Effects Module
+
+The `cysox.fx` module provides 28 typed effect classes:
+
+### Volume & Dynamics
+```python
+fx.Volume(db=3)                    # Adjust volume in dB
+fx.Gain(db=6)                      # Apply gain
+fx.Normalize(level=-3)             # Normalize to target level
+```
+
+### Equalization
+```python
+fx.Bass(gain=5, frequency=100)     # Boost/cut bass
+fx.Treble(gain=-2, frequency=3000) # Boost/cut treble
+fx.Equalizer(frequency=1000, width=1.0, gain=3)
+```
+
+### Filters
+```python
+fx.HighPass(frequency=200)         # Remove low frequencies
+fx.LowPass(frequency=8000)         # Remove high frequencies
+fx.BandPass(frequency=1000, width=100)
+fx.BandReject(frequency=60, width=10)  # Notch filter
+```
+
+### Spatial & Reverb
+```python
+fx.Reverb(reverberance=50, room_scale=100)
+fx.Echo(gain_in=0.8, gain_out=0.9, delays=[100], decays=[0.5])
+fx.Chorus()
+fx.Flanger()
+```
+
+### Time-Based
+```python
+fx.Trim(start=1.0, end=5.0)        # Extract portion
+fx.Pad(before=0.5, after=1.0)      # Add silence
+fx.Speed(factor=1.5)               # Change speed (affects pitch)
+fx.Tempo(factor=1.5)               # Change tempo (preserves pitch)
+fx.Pitch(cents=100)                # Shift pitch (preserves tempo)
+fx.Reverse()                       # Reverse audio
+fx.Fade(fade_in=0.5, fade_out=1.0) # Fade in/out
+fx.Repeat(count=3)                 # Repeat audio
+```
+
+### Conversion
+```python
+fx.Rate(sample_rate=48000)         # Resample
+fx.Channels(channels=1)            # Change channel count
+fx.Remix(out_spec=[[1, 2]])        # Custom channel mixing
+fx.Dither()                        # Add dither
+```
+
+### Composite Effects
+
+Create reusable effect combinations:
+
+```python
+from cysox.fx import CompositeEffect, HighPass, LowPass, Reverb, Volume
+
+class TelephoneEffect(CompositeEffect):
+    """Simulate telephone audio quality."""
+
+    @property
+    def effects(self):
+        return [
+            HighPass(frequency=300),
+            LowPass(frequency=3400),
+            Volume(db=-3),
+        ]
+
+# Use like any other effect
+cysox.convert('input.wav', 'output.wav', effects=[TelephoneEffect()])
+```
+
+## Low-Level API
+
+For advanced use cases, access the full libsox bindings:
+
+```python
+from cysox import sox
+
+# Manual initialization (high-level API handles this automatically)
+sox.init()
+
+# Open files
+input_fmt = sox.Format('input.wav')
+output_fmt = sox.Format('output.wav', signal=input_fmt.signal, mode='w')
+
+# Build effects chain
+chain = sox.EffectsChain(input_fmt.encoding, output_fmt.encoding)
+
+e = sox.Effect(sox.find_effect("input"))
+e.set_options([input_fmt])
+chain.add_effect(e, input_fmt.signal, input_fmt.signal)
+
+e = sox.Effect(sox.find_effect("vol"))
+e.set_options(["3dB"])
+chain.add_effect(e, input_fmt.signal, input_fmt.signal)
+
+e = sox.Effect(sox.find_effect("output"))
+e.set_options([output_fmt])
+chain.add_effect(e, input_fmt.signal, input_fmt.signal)
+
+# Process
+chain.flow_effects()
+
+# Cleanup
+input_fmt.close()
+output_fmt.close()
+sox.quit()
+```
+
+## Building from Source
+
+### macOS
 
 ```sh
 brew install sox libsndfile mad libpng
-```
-
-then you can build the cython extension:
-
-```sh
 make
+make test
 ```
 
-build the wheel:
+### Linux
 
 ```sh
-make wheel
-```
-
-run tests:
-
-```sh
+apt-get install libsox-dev libsndfile1-dev
+make
 make test
 ```
 
 ## Documentation
 
-Build the documentation locally:
-
 ```sh
-# Install docs dependencies
 pip install sphinx furo myst-parser
-
-# Build HTML docs
 make docs
-
-# Serve locally at http://localhost:8000
-make docs-serve
-```
-
-Documentation includes:
-- Installation guide
-- Quick start tutorial
-- API reference
-- Examples
-
-## Usage Example
-
-```python
->>> import sox
->>> f = sox.Format('tests/s00.wav')
->>> f.filetype
-'wav'
->>> f.signal
-<sox.SignalInfo at 0x105c754a0>
->>> f.signal.length
-502840
->>> f.encoding
-<sox.EncodingInfo at 0x105d4ebe0>
->>> f.encoding.bits_per_sample
-16
-```
-
-## Complete Example
-
-```python
-#!/usr/bin/env python3
-"""
-Python equivalent of tests/examples/example0.c
-
-This script replicates the functionality of the C example:
-- Reads input file, applies vol & flanger effects, stores in output file
-- Uses the Python bindings from src/cysox/sox.pyx
-
-Usage: python3 example0_python.py <input_file> <output_file>
-"""
-
-import sys
-import os
-from pathlib import Path
-import os
-
-src_dir = Path.cwd() / 'src'
-sys.path.append(str(src_dir))
-
-# Import the cysox bindings
-from cysox import sox
-
-
-def main():
-    """Main function replicating example0.c"""
-
-    # Check command line arguments
-    if len(sys.argv) != 3:
-        print("Usage: python3 example0_python.py <input_file> <output_file>")
-        sys.exit(1)
-
-    input_filename = sys.argv[1]
-    output_filename = sys.argv[2]
-
-    # Verify input file exists
-    if not os.path.exists(input_filename):
-        print(f"Error: Input file '{input_filename}' not found")
-        sys.exit(1)
-
-    try:
-        # Step 1: Initialize SoX library
-        print("Initializing SoX library...")
-        sox.init()
-
-        # Step 2: Open the input file (with default parameters)
-        print(f"Opening input file: {input_filename}")
-        input_format = sox.Format(input_filename, mode='r')
-
-        # Step 3: Open the output file with same signal characteristics as input
-        print(f"Opening output file: {output_filename}")
-        output_format = sox.Format(
-            output_filename,
-            signal=input_format.signal,
-            mode='w'
-        )
-
-        # Step 4: Create an effects chain
-        print("Creating effects chain...")
-        chain = sox.EffectsChain(
-            in_encoding=input_format.encoding,
-            out_encoding=output_format.encoding
-        )
-
-        # Step 5: Add input effect (first effect must source samples)
-        print("Adding input effect...")
-        input_effect_handler = sox.find_effect("input")
-        input_effect = sox.Effect(input_effect_handler)
-        input_effect.set_options([input_format])
-        chain.add_effect(input_effect, input_format.signal, input_format.signal)
-
-        # Step 6: Add volume effect with "3dB" parameter
-        print("Adding volume effect (3dB)...")
-        vol_effect_handler = sox.find_effect("vol")
-        vol_effect = sox.Effect(vol_effect_handler)
-        vol_effect.set_options(["3dB"])
-        chain.add_effect(vol_effect, input_format.signal, input_format.signal)
-
-        # Step 7: Add flanger effect with default parameters
-        print("Adding flanger effect...")
-        flanger_effect_handler = sox.find_effect("flanger")
-        flanger_effect = sox.Effect(flanger_effect_handler)
-        flanger_effect.set_options([])  # Default parameters
-        chain.add_effect(flanger_effect, input_format.signal, input_format.signal)
-
-        # Step 8: Add output effect (last effect must consume samples)
-        print("Adding output effect...")
-        output_effect_handler = sox.find_effect("output")
-        output_effect = sox.Effect(output_effect_handler)
-        output_effect.set_options([output_format])
-        chain.add_effect(output_effect, input_format.signal, input_format.signal)
-
-        # Step 9: Flow samples through the effects processing chain
-        print("Processing audio through effects chain...")
-        result = chain.flow_effects()
-
-        if result == sox.SUCCESS:
-            print("Effects processing completed successfully!")
-
-            # Check for any clipping that occurred
-            clips = chain.get_clips()
-            if clips > 0:
-                print(f"Warning: {clips} clips occurred during processing")
-            else:
-                print("No clipping occurred")
-
-            # Verify output file was created
-            if os.path.exists(output_filename):
-                file_size = os.path.getsize(output_filename)
-                print(f"Output file created: {output_filename} ({file_size} bytes)")
-            else:
-                print("Warning: Output file was not created")
-        else:
-            print(f"Error: Effects processing failed with result {result}")
-            sys.exit(1)
-
-        # Step 10: Clean up
-        print("Cleaning up...")
-        input_format.close()
-        output_format.close()
-        sox.quit()
-
-        print("Done!")
-
-    except Exception as e:
-        print(f"Error: {e}")
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
+make docs-serve  # http://localhost:8000
 ```
 
 ## Status
 
-All C examples from libsox have been successfully ported to Python tests:
+**Test Results**: 267 tests passing, 9 skipped
 
-- [x] example0: Basic effects chain - `tests/test_example0.py`
-- [x] example1: Vol & flanger effects - `tests/test_example1.py`
-- [x] example2: Waveform display and analysis - `tests/test_example2.py`
-- [x] example3: Trim and format conversion - `tests/test_example3.py`
-- [x] example4: File concatenation - `tests/test_example4.py`
-- [x] example5: Memory-based I/O - `tests/test_example5.py` (2 tests skipped - buffer management issue)
-- [x] example6: Explicit format conversion - `tests/test_example6.py`
-
-**Test Results**: 94 tests passing, 2 skipped (memory I/O)
+All libsox C examples ported to Python:
+- example0-6: Effects chains, waveform analysis, trim, concatenation, format conversion
 
 ## Known Issues
 
-- **Memory I/O Functions**: libsox's memory I/O functions (`open_mem_write`, `open_mem_read`, `open_memstream_write`) have platform-specific issues and are not currently functional. Tests are skipped pending investigation of the underlying libsox issue.
+- **Memory I/O**: libsox memory I/O functions have platform issues (tests skipped)
+- **Init/Quit Cycles**: Use high-level API to avoid init/quit issues (handled automatically)
 
-- **Repeated init/quit Cycles**: Calling `sox.init()` and `sox.quit()` multiple times in a single process can cause crashes. Initialize once at startup, quit once at shutdown.
-
-See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for detailed documentation of all known issues and workarounds.
+See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for details.
 
 ## Platform Support
 
--  **macOS**: Full support
--  **Linux**: Full support
--  **Windows**: Placeholder support only (contributions welcome)
+- **macOS**: Full support
+- **Linux**: Full support
+- **Windows**: Placeholder (contributions welcome)
+
+## License
+
+MIT

@@ -66,6 +66,7 @@ class Format:
         filename: str,
         signal: Optional[SignalInfo] = None,
         encoding: Optional[EncodingInfo] = None,
+        filetype: Optional[str] = None,
         mode: str = 'r'
     ) -> None: ...
 
