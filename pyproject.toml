@@ -79,8 +79,8 @@ testpaths = ["tests"]
 addopts = "--benchmark-disable"
 
 [tool.cibuildwheel]
-# Skip PyPy, Windows, and musllinux (Alpine uses apk, sox packaging is problematic)
-skip = "pp* *-win* *-musllinux_*"
+# Skip Windows and musllinux (Alpine uses apk, sox packaging is problematic)
+skip = "*-win* *-musllinux_*"
 
 # Python versions to build
 build = "cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*"
