@@ -1,14 +1,14 @@
 [project]
 name = "cysox"
-version = "0.1.3"
+version = "0.1.4"
 description = "A Pythonic audio processing library wrapping libsox"
 readme = "README.md"
 license = "MIT"
 authors = [
-    { name = "Shakeeb Alireza", email = "me@example.com" }
+    { name = "Shakeeb Alireza", email = "shakfu@users.noreply.github.com" }
 ]
 maintainers = [
-    { name = "Shakeeb Alireza", email = "me@example.com" }
+    { name = "Shakeeb Alireza", email = "shakfu@users.noreply.github.com" }
 ]
 requires-python = ">=3.9"
 keywords = [
@@ -52,7 +52,7 @@ Issues = "https://github.com/shakfu/cysox/issues"
 Changelog = "https://github.com/shakfu/cysox/releases"
 
 [project.scripts]
-cysox = "cysox:__main__"
+cysox = "cysox.__main__:main"
 
 [build-system]
 requires = ["setuptools>=61", "cython"]

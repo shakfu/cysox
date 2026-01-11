@@ -22,6 +22,26 @@ Note that cysox only works on macOS and Linux.
 pip install cysox
 ```
 
+## Command Line Interface
+
+```sh
+# Show version
+cysox --version
+
+# Get audio file info
+cysox info audio.wav
+
+# Convert audio files
+cysox convert input.wav output.mp3
+cysox convert input.wav output.wav --rate 48000 --channels 1
+
+# Play audio
+cysox play audio.wav
+
+# Concatenate files
+cysox concat intro.wav main.wav outro.wav -o full.wav
+```
+
 ## Quick Start
 
 ```python

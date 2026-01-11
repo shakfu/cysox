@@ -17,6 +17,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+## [0.1.4]
+
+### Added
+
+- **Command Line Interface**: New CLI exposing core functionality
+  - `cysox --version`: Show cysox and libsox versions
+  - `cysox info <file>`: Display audio file metadata
+  - `cysox convert <input> <output>`: Convert audio files with optional `--rate`, `--channels`, `--bits`
+  - `cysox play <file>`: Play audio to default device
+  - `cysox concat <files...> -o <output>`: Concatenate multiple audio files
+
+### Fixed
+
+- **Broken CLI entry point**: Fixed `cysox:__main__` entry point in pyproject.toml that was declared but never implemented
+
 ## [0.1.3]
 
 ### Fixed
