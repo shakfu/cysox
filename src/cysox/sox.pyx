@@ -197,6 +197,7 @@ cdef class SignalInfo:
         self.ptr = <sox_signalinfo_t*>malloc(sizeof(sox_signalinfo_t))
         if self.ptr is NULL:
             raise SoxMemoryError("Failed to allocate SignalInfo")
+        self.ptr.mult = NULL  # Initialize before setter to avoid freeing garbage
         self.rate = rate
         self.channels = channels
         self.precision = precision
@@ -2000,8 +2001,11 @@ def get_encodings() -> list[EncodingsInfo]:
         return []
 
     result = []
-    cdef int i = 0
-    while encodings[i].name != NULL and encodings[i].flags < 3:
+    cdef int i
+    # Iterate up to SOX_ENCODINGS (the end marker value)
+    for i in range(SOX_ENCODINGS):
+        if encodings[i].name == NULL:
+            break
         result.append(
             EncodingsInfo(
                 flags=encodings[i].flags,
@@ -2009,7 +2013,6 @@ def get_encodings() -> list[EncodingsInfo]:
                 desc=encodings[i].desc.decode() if encodings[i].desc else None
             )
         )
-        i += 1
     return result
 
 

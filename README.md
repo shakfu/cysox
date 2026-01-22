@@ -267,7 +267,7 @@ make test
 ### Linux
 
 ```sh
-apt-get install libsox-dev libsndfile1-dev
+sudo apt-get install libsox-dev libsndfile1-dev pkg-config
 make
 make test
 ```

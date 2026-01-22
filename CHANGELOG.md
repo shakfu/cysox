@@ -17,6 +17,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+## [0.1.5]
+
+### Fixed
+
+- **Cross-Platform Build Script**: Rewrote `scripts/setup.sh` for proper Linux/macOS support
+  - Added missing bash shebang that caused syntax errors on Linux
+  - Linux now uses system libraries via pkg-config instead of Homebrew
+  - macOS continues to use Homebrew with improved error handling
+  - Clear status messages and dependency checking
+
+- **Memory Corruption in SignalInfo**: Fixed uninitialized pointer bug in `SignalInfo.__init__`
+  - After `malloc()`, `ptr.mult` contained garbage data
+  - Setting `mult=0.0` (the default) caused `free()` on the garbage pointer
+  - Now properly initializes `ptr.mult = NULL` before calling the setter
+
+- **Crash in get_encodings()**: Fixed segfault when iterating encoding info array
+  - System libsox doesn't reliably NULL-terminate the encodings array
+  - Now uses `SOX_ENCODINGS` enum value as upper bound instead of checking for NULL
+  - Prevents reading past the end of the array on Linux
+
 ## [0.1.4]
 
 ### Added
