@@ -71,6 +71,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 - **Updated `__init__.pyi`**: Added high-level API function signatures and module re-exports
 
+- **CMake Target Name Conflict on Linux**: Fixed build failure when pkg-config finds libsox
+  - Renamed internal CMake target from `sox` to `_sox` to avoid conflict with system `libsox`
+  - CMake was interpreting `${SOX_LIBRARIES}` as our module target instead of the library
+  - Output file remains `sox.cpython-*.so` via `OUTPUT_NAME` property
+
 ## [0.1.5]
 
 ### Fixed

@@ -133,11 +133,14 @@ if(IS_MACOS)
     endif()
 
 elseif(IS_LINUX)
-    # Linux configuration - use pkg-config
-    find_package(PkgConfig)
+    # Linux configuration - try pkg-config first, then fall back to find_path/find_library
+    set(SOX_FOUND FALSE)
+
+    find_package(PkgConfig QUIET)
     if(PkgConfig_FOUND)
-        pkg_check_modules(SOX sox)
+        pkg_check_modules(SOX QUIET sox)
         if(SOX_FOUND)
+            message(STATUS "Found sox via pkg-config")
             target_include_directories(_sox PRIVATE ${SOX_INCLUDE_DIRS})
             target_link_directories(_sox PRIVATE ${SOX_LIBRARY_DIRS})
             target_link_libraries(_sox PRIVATE ${SOX_LIBRARIES})
@@ -145,21 +148,33 @@ elseif(IS_LINUX)
     endif()
 
     if(NOT SOX_FOUND)
-        # Fallback if pkg-config fails
-        target_include_directories(_sox PRIVATE
-            /usr/include
-            /usr/local/include
+        # Fallback: use find_path and find_library
+        message(STATUS "pkg-config failed, using fallback method")
+
+        find_path(SOX_INCLUDE_DIR sox.h
+            PATHS /usr/include /usr/local/include
+            NO_DEFAULT_PATH
         )
-        target_link_directories(_sox PRIVATE
-            /usr/lib
-            /usr/local/lib
-            /usr/lib/x86_64-linux-gnu
-            /usr/lib/aarch64-linux-gnu
+        if(NOT SOX_INCLUDE_DIR)
+            find_path(SOX_INCLUDE_DIR sox.h)
+        endif()
+
+        find_library(SOX_LIBRARY NAMES sox
+            PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu
+            NO_DEFAULT_PATH
         )
-        target_link_libraries(_sox PRIVATE
-            sox sndfile FLAC opus mp3lame
-            vorbis vorbisfile vorbisenc png z
-        )
+        if(NOT SOX_LIBRARY)
+            find_library(SOX_LIBRARY NAMES sox)
+        endif()
+
+        if(SOX_INCLUDE_DIR AND SOX_LIBRARY)
+            message(STATUS "Found sox: ${SOX_LIBRARY}")
+            message(STATUS "Found sox.h: ${SOX_INCLUDE_DIR}")
+            target_include_directories(_sox PRIVATE ${SOX_INCLUDE_DIR})
+            target_link_libraries(_sox PRIVATE ${SOX_LIBRARY})
+        else()
+            message(FATAL_ERROR "Could not find libsox. Please install libsox-dev.")
+        endif()
     endif()
 
     if(DEBUG)
