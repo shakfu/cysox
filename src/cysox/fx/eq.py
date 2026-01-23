@@ -18,13 +18,7 @@ class Bass(Effect):
         >>> fx.Bass(gain=-3, frequency=80)  # Cut at 80Hz
     """
 
-    def __init__(
-        self,
-        gain: float,
-        *,
-        frequency: float = 100,
-        width: float = 0.5
-    ):
+    def __init__(self, gain: float, *, frequency: float = 100, width: float = 0.5):
         self.gain = gain
         self.frequency = frequency
         self.width = width
@@ -50,13 +44,7 @@ class Treble(Effect):
         >>> fx.Treble(gain=-2, frequency=4000)  # Cut at 4kHz
     """
 
-    def __init__(
-        self,
-        gain: float,
-        *,
-        frequency: float = 3000,
-        width: float = 0.5
-    ):
+    def __init__(self, gain: float, *, frequency: float = 3000, width: float = 0.5):
         self.gain = gain
         self.frequency = frequency
         self.width = width

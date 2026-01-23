@@ -17,6 +17,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+## [0.1.6]
+
+### Changed
+
+- **Build System Migration**: Migrated from setuptools to scikit-build-core with CMake
+  - New `CMakeLists.txt` handles Cython compilation and library linking
+  - Platform-specific configuration (macOS static linking, Linux pkg-config, Windows env vars)
+  - Uses CMake imported libraries to avoid target name conflicts with libsox
+  - Removed `setuptools` dependency from cibuildwheel configuration
+  - Added wheel/sdist include/exclude patterns in `pyproject.toml`
+  - `setup.py` retained for reference but no longer used for builds
+
+- **Makefile Overhaul**: Comprehensive rewrite with all targets restored
+  - Build targets: `all`, `sync`, `build`, `rebuild`
+  - Testing: `test`, `testpy`, `examples-p`, `examples-c`
+  - Benchmarks: `benchmark`, `benchmark-save`, `benchmark-compare`
+  - Code quality: `lint`, `typecheck`, `format`, `qa`
+  - Distribution: `wheel`, `sdist`, `strip`, `delocate`, `check`, `publish`, `publish-test`
+  - Documentation: `docs`, `docs-clean`, `docs-serve`
+  - Cleanup: `clean`, `distclean`, `reset`
+  - Debug mode support with `DEBUG=1`
+  - Dependency on `$(LIBSOX)` ensures `scripts/setup.sh` runs first
+
+- **GitHub Workflows Updated**: Modernized CI/CD for scikit-build-core
+  - Switched from pip to uv for package management
+  - Added `astral-sh/setup-uv@v4` action
+  - Added cmake to Linux system dependencies
+  - Changed linting from flake8 to ruff
+  - Added mypy type checking to lint job
+  - Updated cibuildwheel to version 3.3.1
+
+### Added
+
+- **Type Stubs for Cython Extension**: New `sox.pyi` stub file for mypy support
+  - Complete type hints for all classes: `SignalInfo`, `EncodingInfo`, `Format`, `Effect`, `EffectsChain`, etc.
+  - Function signatures for `init()`, `quit()`, `find_effect()`, `find_format()`, etc.
+  - Accepts `Union[str, Path]` for file paths
+  - Added `_force_quit()` internal function
+
+- **Dev Dependencies**: Added `mypy` and `ruff` to `[dependency-groups] dev`
+
+- **Mypy Configuration**: Added `[tool.mypy]` section to `pyproject.toml`
+
+### Fixed
+
+- **Missing `concat` in `__all__`**: Added `concat` to package exports in `__init__.py`
+
+- **Type Annotations**: Fixed mypy errors in source code
+  - `fx/base.py`: Changed `_handler_ptr: int = None` to `Optional[int]`
+  - `audio.py`: Restructured `info()` to return outside `with` block for type narrowing
+  - `audio.py`: Added assertions for `output_fmt` in `concat()` function
+
+- **Updated `__init__.pyi`**: Added high-level API function signatures and module re-exports
+
 ## [0.1.5]
 
 ### Fixed

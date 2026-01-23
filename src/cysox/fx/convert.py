@@ -105,12 +105,7 @@ class Dither(Effect):
         >>> fx.Dither(type='triangular')     # TPDF dither
     """
 
-    def __init__(
-        self,
-        *,
-        type: str = "shaped",
-        precision: Optional[int] = None
-    ):
+    def __init__(self, *, type: str = "shaped", precision: Optional[int] = None):
         valid_types = ("rectangular", "triangular", "gaussian", "shaped")
         if type not in valid_types:
             raise ValueError(f"type must be one of: {', '.join(valid_types)}")

@@ -76,7 +76,7 @@ class BandPass(Effect):
         width: float,
         *,
         width_type: str = "q",
-        constant_skirt: bool = False
+        constant_skirt: bool = False,
     ):
         if width_type not in ("q", "h", "o"):
             raise ValueError("width_type must be 'q', 'h', or 'o'")
@@ -110,13 +110,7 @@ class BandReject(Effect):
         >>> fx.BandReject(frequency=60, width=10)  # Remove 60Hz hum
     """
 
-    def __init__(
-        self,
-        frequency: float,
-        width: float,
-        *,
-        width_type: str = "q"
-    ):
+    def __init__(self, frequency: float, width: float, *, width_type: str = "q"):
         if width_type not in ("q", "h", "o"):
             raise ValueError("width_type must be 'q', 'h', or 'o'")
         self.frequency = frequency

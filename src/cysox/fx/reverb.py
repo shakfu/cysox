@@ -32,7 +32,7 @@ class Reverb(Effect):
         pre_delay: float = 0,
         wet_gain: float = 0,
         *,
-        wet_only: bool = False
+        wet_only: bool = False,
     ):
         self.reverberance = reverberance
         self.hf_damping = hf_damping
@@ -50,14 +50,16 @@ class Reverb(Effect):
         args = []
         if self.wet_only:
             args.append("-w")
-        args.extend([
-            str(self.reverberance),
-            str(self.hf_damping),
-            str(self.room_scale),
-            str(self.stereo_depth),
-            str(self.pre_delay),
-            str(self.wet_gain),
-        ])
+        args.extend(
+            [
+                str(self.reverberance),
+                str(self.hf_damping),
+                str(self.room_scale),
+                str(self.stereo_depth),
+                str(self.pre_delay),
+                str(self.wet_gain),
+            ]
+        )
         return args
 
 
@@ -81,7 +83,7 @@ class Echo(Effect):
         decays: List[float],
         *,
         gain_in: float = 0.8,
-        gain_out: float = 0.9
+        gain_out: float = 0.9,
     ):
         if len(delays) != len(decays):
             raise ValueError("delays and decays must have same length")
@@ -127,7 +129,7 @@ class Chorus(Effect):
         decay: float = 0.4,
         speed: float = 0.25,
         depth: float = 2,
-        shape: str = "s"
+        shape: str = "s",
     ):
         if shape not in ("s", "t"):
             raise ValueError("shape must be 's' (sine) or 't' (triangle)")
@@ -183,7 +185,7 @@ class Flanger(Effect):
         speed: float = 0.5,
         shape: str = "sine",
         phase: float = 25,
-        interp: str = "linear"
+        interp: str = "linear",
     ):
         if shape not in ("sine", "triangle"):
             raise ValueError("shape must be 'sine' or 'triangle'")

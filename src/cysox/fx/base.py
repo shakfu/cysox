@@ -1,7 +1,7 @@
 """Base classes for typed audio effects."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
     import numpy as np
@@ -30,7 +30,7 @@ class Effect(ABC):
         """Return string representation of arguments for __repr__."""
         args = []
         for key, value in self.__dict__.items():
-            if not key.startswith('_'):
+            if not key.startswith("_"):
                 args.append(f"{key}={value!r}")
         return ", ".join(args)
 
@@ -107,10 +107,7 @@ class PythonEffect(Effect):
 
     @abstractmethod
     def process(
-        self,
-        samples: "np.ndarray",
-        sample_rate: int,
-        channels: int
+        self, samples: "np.ndarray", sample_rate: int, channels: int
     ) -> "np.ndarray":
         """Process audio samples.
 
@@ -137,7 +134,7 @@ class CEffect(Effect):
     2. Call register() once at startup before using the effect
     """
 
-    _handler_ptr: int = None
+    _handler_ptr: Optional[int] = None
 
     @classmethod
     def register(cls) -> None:
@@ -149,7 +146,8 @@ class CEffect(Effect):
             raise ValueError(f"{cls.__name__}._handler_ptr is not set")
 
         from cysox import sox
-        if hasattr(sox, 'register_effect_handler'):
+
+        if hasattr(sox, "register_effect_handler"):
             sox.register_effect_handler(cls._handler_ptr)
         else:
             raise NotImplementedError(

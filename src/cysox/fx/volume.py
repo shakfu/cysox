@@ -53,7 +53,7 @@ class Gain(Effect):
         *,
         normalize: bool = False,
         limiter: bool = False,
-        balance: bool = False
+        balance: bool = False,
     ):
         self.db = db
         self.normalize = normalize

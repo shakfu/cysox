@@ -27,7 +27,7 @@ class Trim(Effect):
         start: float = 0,
         end: Optional[float] = None,
         *,
-        duration: Optional[float] = None
+        duration: Optional[float] = None,
     ):
         if end is not None and duration is not None:
             raise ValueError("Cannot specify both 'end' and 'duration'")
@@ -113,11 +113,7 @@ class Tempo(Effect):
     """
 
     def __init__(
-        self,
-        factor: float,
-        *,
-        audio_type: Optional[str] = None,
-        quick: bool = False
+        self, factor: float, *, audio_type: Optional[str] = None, quick: bool = False
     ):
         if factor <= 0:
             raise ValueError("factor must be positive")
@@ -199,13 +195,7 @@ class Fade(Effect):
         >>> fx.Fade(fade_in=1.0, fade_out=1.0, type='l')  # Log fades
     """
 
-    def __init__(
-        self,
-        fade_in: float = 0,
-        fade_out: float = 0,
-        *,
-        type: str = "t"
-    ):
+    def __init__(self, fade_in: float = 0, fade_out: float = 0, *, type: str = "t"):
         if type not in ("q", "h", "t", "l", "p"):
             raise ValueError("type must be 'q', 'h', 't', 'l', or 'p'")
         self.fade_in = fade_in

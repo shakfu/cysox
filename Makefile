@@ -1,6 +1,12 @@
+# Makefile for cysox - scikit-build-core + uv project
+#
+# This Makefile provides convenient targets for development, testing,
+# and distribution of the cysox package.
+
+# Configuration
 LIBSOX := lib/libsox.a
 LIBRARIES := $(wildcard lib/*.a)
-DEBUG=0
+DEBUG := 0
 
 EXAMPLES := tests/examples
 TEST_WAV := tests/data/s00.wav
@@ -12,6 +18,7 @@ DEBUGPY_EXE := $(DEBUGPY_BIN)/python3
 CYGDB := $(DEBUGPY_BIN)/cygdb
 endif
 
+# Build C examples macro (macOS only)
 define build-example
 gcc -std=c11 -o build/$1 \
 	-I ./include -L ./lib \
@@ -21,35 +28,44 @@ gcc -std=c11 -o build/$1 \
 	tests/examples/$1.c
 endef
 
-.PHONY: all build wheel clean reset test testpy examples-p examples-c strip delocate check publish publish-test docs docs-clean docs-serve benchmark benchmark-save benchmark-compare pydebug debug
+.PHONY: all sync build rebuild test testpy lint typecheck format qa \
+        wheel sdist delocate strip check publish publish-test \
+        examples-p examples-c benchmark benchmark-save benchmark-compare \
+        docs docs-clean docs-serve clean reset distclean help
 
+# Default target
 all: build
 
+# Setup libsox and dependencies (run once)
 $(LIBSOX):
 	@scripts/setup.sh
 
+# Sync environment (initial setup, installs dependencies + package)
+sync:
+	@uv sync
+
+# Build/rebuild the extension after code changes
 build: $(LIBSOX)
 	@uv sync --reinstall-package cysox
 
-wheel: build
-	@uv run python -m build --wheel
+# Alias for build
+rebuild: build
 
-clean:
-	@rm -rf build/lib.* build/temp.* dist src/*.egg-info htmlcov
-	@rm -rf src/cysox/sox.*.so
-	@find . -type d -name __pycache__ -exec rm -rf {} \; -prune
-	@find . -type d -path ".*_cache"  -exec rm -rf {} \; -prune
+# ============================================================================
+# Testing
+# ============================================================================
 
-reset: clean
-	@rm -rf build include lib .venv
-
+# Run all tests
 test:
-	@uv run pytest -s -vv
+	@uv run pytest tests/ -v
 
+# Quick test of a single example
 testpy:
 	@uv run python tests/examples/example0.py tests/data/s00.wav build/out.wav
 
+# Run Python examples
 examples-p:
+	@mkdir -p build
 	@echo "example 0 ------------------------------------------------------"
 	@uv run python $(EXAMPLES)/example0.py $(TEST_WAV) build/out0-p.wav
 	@echo "example 1 ------------------------------------------------------"
@@ -65,9 +81,11 @@ examples-p:
 	@echo "example 6 ------------------------------------------------------"
 	@uv run python $(EXAMPLES)/example6.py $(TEST_WAV) build/out6-p.wav
 
+# Build and run C examples (macOS only)
 examples-c:
-	@for i in $(shell seq 0 6); \
-		do $(call build-example,example$$i); \
+	@mkdir -p build
+	@for i in $$(seq 0 6); do \
+		$(call build-example,example$$i); \
 	done
 	@cp tests/data/s00.wav ./build
 	@echo "example 0 ------------------------------------------------------"
@@ -85,32 +103,10 @@ examples-c:
 	@echo "example 6 ------------------------------------------------------"
 	./build/example6 $(TEST_WAV) build/out6-c.wav
 
-strip:
-	@strip -x src/cysox/sox.*.so
-
-delocate: wheel
-	@uv run delocate-wheel dist/cysox-*.whl
-
-check:
-	@uv run twine check dist/*
-
-publish:
-	@uv run twine upload dist/*
-
-publish-test:
-	@uv run twine upload --repository testpypi dist/*
-
-# Documentation
-docs:
-	@uv run sphinx-build -b html docs docs/_build/html
-
-docs-clean:
-	@rm -rf docs/_build
-
-docs-serve: docs
-	@uv run python -m http.server 8000 --directory docs/_build/html
-
+# ============================================================================
 # Benchmarks
+# ============================================================================
+
 benchmark:
 	@uv run pytest tests/test_benchmarks.py -v --benchmark-only --benchmark-group-by=group
 
@@ -120,7 +116,99 @@ benchmark-save:
 benchmark-compare:
 	@uv run pytest tests/test_benchmarks.py -v --benchmark-only --benchmark-compare=baseline --benchmark-group-by=group
 
-# Debug mode (requires custom Python build with sanitizers)
+# ============================================================================
+# Code Quality
+# ============================================================================
+
+lint:
+	@uv run ruff check --fix src/
+
+typecheck:
+	@uv run mypy src/
+
+format:
+	@uv run ruff format src/
+
+# Run all QA checks (test, lint, typecheck, format)
+qa: test lint
+	@echo "All checks passed!"
+	@uv run mypy src/
+	@uv run ruff format src/
+
+# ============================================================================
+# Distribution
+# ============================================================================
+
+# Build wheel
+wheel:
+	@uv build --wheel
+	@uv run twine check dist/*
+
+# Build source distribution
+sdist:
+	@uv build --sdist
+
+# Strip debug symbols from extension (reduces size)
+strip:
+	@strip -x src/cysox/sox.*.so 2>/dev/null || true
+
+# Delocate wheel (bundle dylibs for macOS distribution)
+delocate: wheel
+	@uv run delocate-wheel dist/cysox-*.whl
+
+# Check distribution files
+check:
+	@uv run twine check dist/*
+
+# Publish to PyPI
+publish:
+	@uv run twine upload dist/*
+
+# Publish to TestPyPI
+publish-test:
+	@uv run twine upload --repository testpypi dist/*
+
+# ============================================================================
+# Documentation
+# ============================================================================
+
+docs:
+	@uv run sphinx-build -b html docs docs/_build/html
+
+docs-clean:
+	@rm -rf docs/_build
+
+docs-serve: docs
+	@uv run python -m http.server 8000 --directory docs/_build/html
+
+# ============================================================================
+# Cleanup
+# ============================================================================
+
+# Clean build artifacts
+clean:
+	@rm -rf build/lib.* build/temp.* dist src/*.egg-info htmlcov
+	@rm -rf src/cysox/sox.*.so
+	@rm -rf *.egg-info/
+	@rm -rf .pytest_cache/
+	@rm -rf .ruff_cache/
+	@rm -rf .mypy_cache/
+	@find . -name "*.so" -path "./src/*" -delete
+	@find . -name "*.pyd" -delete
+	@find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
+# Clean everything including CMake cache
+distclean: clean
+	@rm -rf dist build/
+
+# Full reset (removes lib, include, venv - requires re-running setup.sh)
+reset: distclean
+	@rm -rf include lib .venv
+
+# ============================================================================
+# Debug Mode (requires custom Python build with sanitizers)
+# ============================================================================
+
 ifeq ($(DEBUG),1)
 $(DEBUGPY_EXE):
 	@./scripts/buildpy.py -d -c shared_max \
@@ -131,7 +219,59 @@ $(DEBUGPY_EXE):
 pydebug: $(DEBUGPY_EXE)
 
 debug: $(LIBSOX) $(DEBUGPY_EXE)
-	@DEBUG=1 $(DEBUGPY_EXE) setup.py build_ext --inplace
+	@DEBUG=1 $(DEBUGPY_EXE) -m pip install -e .
 	@$(CYGDB) . -- --args $(DEBUGPY_EXE) tests/examples/example0.py tests/data/s00.wav build/out.wav
-	# set arch aarch64
 endif
+
+# ============================================================================
+# Help
+# ============================================================================
+
+help:
+	@echo "cysox Makefile - available targets:"
+	@echo ""
+	@echo "Build:"
+	@echo "  all           - Build the extension (default)"
+	@echo "  sync          - Sync environment (initial setup)"
+	@echo "  build         - Build/rebuild extension after code changes"
+	@echo "  rebuild       - Alias for build"
+	@echo ""
+	@echo "Testing:"
+	@echo "  test          - Run all tests"
+	@echo "  testpy        - Quick test with example0.py"
+	@echo "  examples-p    - Run all Python examples"
+	@echo "  examples-c    - Build and run C examples (macOS)"
+	@echo ""
+	@echo "Benchmarks:"
+	@echo "  benchmark         - Run benchmarks"
+	@echo "  benchmark-save    - Run and save benchmark baseline"
+	@echo "  benchmark-compare - Compare against saved baseline"
+	@echo ""
+	@echo "Code Quality:"
+	@echo "  lint          - Run ruff linter with auto-fix"
+	@echo "  typecheck     - Run mypy type checker"
+	@echo "  format        - Format code with ruff"
+	@echo "  qa            - Run all QA checks (test, lint, typecheck, format)"
+	@echo ""
+	@echo "Distribution:"
+	@echo "  wheel         - Build wheel distribution"
+	@echo "  sdist         - Build source distribution"
+	@echo "  strip         - Strip debug symbols from extension"
+	@echo "  delocate      - Bundle dylibs into wheel (macOS)"
+	@echo "  check         - Check distribution files with twine"
+	@echo "  publish       - Upload to PyPI"
+	@echo "  publish-test  - Upload to TestPyPI"
+	@echo ""
+	@echo "Documentation:"
+	@echo "  docs          - Build HTML documentation"
+	@echo "  docs-clean    - Remove built documentation"
+	@echo "  docs-serve    - Build and serve docs locally"
+	@echo ""
+	@echo "Cleanup:"
+	@echo "  clean         - Remove build artifacts"
+	@echo "  distclean     - Clean everything including CMake cache"
+	@echo "  reset         - Full reset (removes lib, include, venv)"
+	@echo ""
+	@echo "Debug (DEBUG=1):"
+	@echo "  pydebug       - Build debug Python with sanitizers"
+	@echo "  debug         - Run with cygdb debugger"

@@ -14,7 +14,8 @@ def main():
         description="A Pythonic audio processing library wrapping libsox",
     )
     parser.add_argument(
-        "--version", "-V",
+        "--version",
+        "-V",
         action="store_true",
         help="Show version information",
     )
@@ -35,9 +36,7 @@ def main():
     convert_parser.add_argument(
         "--channels", "-c", type=int, help="Target number of channels"
     )
-    convert_parser.add_argument(
-        "--bits", "-b", type=int, help="Target bits per sample"
-    )
+    convert_parser.add_argument("--bits", "-b", type=int, help="Target bits per sample")
 
     # play command
     play_parser = subparsers.add_parser("play", help="Play audio file")

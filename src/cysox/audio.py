@@ -96,7 +96,7 @@ def info(path: Union[str, Path]) -> Dict:
         else:
             duration = 0.0
 
-        return {
+        result = {
             "path": path,
             "format": f.filetype or "",
             "duration": duration,
@@ -106,6 +106,8 @@ def info(path: Union[str, Path]) -> Dict:
             "samples": signal.length or 0,
             "encoding": _encoding_name(encoding.encoding) if encoding else "",
         }
+
+    return result
 
 
 def _encoding_name(encoding_type: int) -> str:
@@ -195,7 +197,7 @@ def convert(
     )
 
     # Open output
-    output_fmt = sox.Format(output_path, signal=out_signal, mode='w')
+    output_fmt = sox.Format(output_path, signal=out_signal, mode="w")
 
     # Create effects chain
     chain = sox.EffectsChain(input_fmt.encoding, output_fmt.encoding)
@@ -382,20 +384,14 @@ def play(
     # Open audio output
     try:
         output_fmt = sox.Format(
-            "default",
-            signal=input_fmt.signal,
-            filetype=output_type,
-            mode='w'
+            "default", signal=input_fmt.signal, filetype=output_type, mode="w"
         )
     except Exception:
         # Try alsa as fallback on Linux
         if system == "Linux":
             output_type = "alsa"
             output_fmt = sox.Format(
-                "default",
-                signal=input_fmt.signal,
-                filetype=output_type,
-                mode='w'
+                "default", signal=input_fmt.signal, filetype=output_type, mode="w"
             )
         else:
             raise
@@ -414,9 +410,7 @@ def play(
         expanded = _expand_effects(effects)
         for effect in expanded:
             if isinstance(effect, PythonEffect):
-                raise NotImplementedError(
-                    "PythonEffect not supported in play()"
-                )
+                raise NotImplementedError("PythonEffect not supported in play()")
 
             handler = sox.find_effect(effect.name)
             if handler is None:
@@ -496,7 +490,7 @@ def concat(
                     bits_per_sample=input_fmt.encoding.bits_per_sample,
                 )
                 output_fmt = sox.Format(
-                    output_path, signal=out_signal, encoding=out_encoding, mode='w'
+                    output_path, signal=out_signal, encoding=out_encoding, mode="w"
                 )
             else:
                 # Subsequent files: verify compatibility
@@ -512,6 +506,7 @@ def concat(
                     )
 
             # Copy all samples from this input to output
+            assert output_fmt is not None  # Set on first iteration
             while True:
                 samples = input_fmt.read(chunk_size)
                 if len(samples) == 0:
@@ -520,6 +515,7 @@ def concat(
 
             input_fmt.close()
 
+        assert output_fmt is not None  # Loop always runs (len >= 2)
         output_fmt.close()
 
     except Exception:

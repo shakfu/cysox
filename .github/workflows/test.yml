@@ -24,26 +24,21 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+
     - name: Install system dependencies
       run: |
         brew install sox libsndfile mad libpng flac lame mpg123 libogg opus opusfile libvorbis
-
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install cython pytest pytest-mock
 
     - name: Setup build environment
       run: |
         bash scripts/setup.sh
 
-    - name: Build extension
+    - name: Build and test
       run: |
-        make build
-
-    - name: Run tests
-      run: |
-        make test
+        uv sync
+        uv run pytest tests/ -v
 
   test-linux:
     name: Test on Linux
@@ -60,6 +55,9 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+
     - name: Install system dependencies
       run: |
         sudo apt-get update
@@ -75,20 +73,13 @@ jobs:
           libopus-dev \
           libopusfile-dev \
           libvorbis-dev \
-          pkg-config
+          pkg-config \
+          cmake
 
-    - name: Install Python dependencies
+    - name: Build and test
       run: |
-        python -m pip install --upgrade pip
-        pip install cython pytest pytest-mock
-
-    - name: Build extension
-      run: |
-        make build
-
-    - name: Run tests
-      run: |
-        make test
+        uv sync
+        uv run pytest tests/ -v
 
   lint:
     name: Lint code
@@ -102,14 +93,17 @@ jobs:
       with:
         python-version: "3.11"
 
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install cython flake8
+        uv sync --only-group dev
 
-    - name: Lint with flake8
+    - name: Lint with ruff
       run: |
-        # Stop the build if there are Python syntax errors or undefined names
-        flake8 src/cysox --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Exit-zero treats all errors as warnings
-        flake8 src/cysox --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        uv run ruff check src/
+
+    - name: Type check with mypy
+      run: |
+        uv run mypy src/
