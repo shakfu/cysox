@@ -41,11 +41,14 @@ add_custom_command(
     COMMENT "Generating sox.c from sox.pyx"
 )
 
-# Create the extension module
-python_add_library(sox MODULE sox.c WITH_SOABI)
+# Create the extension module (named _sox internally to avoid conflict with libsox)
+python_add_library(_sox MODULE sox.c WITH_SOABI)
+
+# Set the output name to "sox" (the actual module name users import)
+set_target_properties(_sox PROPERTIES OUTPUT_NAME "sox")
 
 # Include directories
-target_include_directories(sox PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(_sox PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 # Platform-specific configuration
 if(IS_MACOS)
@@ -95,7 +98,7 @@ if(IS_MACOS)
         set_target_properties(libpng16_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libpng16.a")
 
         # Link in dependency order
-        target_link_libraries(sox PRIVATE
+        target_link_libraries(_sox PRIVATE
             libsox_static
             libsndfile_static
             libflac_static
@@ -112,21 +115,21 @@ if(IS_MACOS)
         )
     else()
         # Dynamic linking
-        target_link_directories(sox PRIVATE "${LIB_DIR}")
-        target_link_libraries(sox PRIVATE
+        target_link_directories(_sox PRIVATE "${LIB_DIR}")
+        target_link_libraries(_sox PRIVATE
             -lsox -lsndfile -lFLAC -lopus -lmp3lame
             -lvorbis -lvorbisfile -lvorbisenc -lpng16
         )
     endif()
 
     # Always need zlib and CoreAudio framework
-    target_link_libraries(sox PRIVATE -lz)
-    target_link_libraries(sox PRIVATE "-framework CoreAudio")
+    target_link_libraries(_sox PRIVATE -lz)
+    target_link_libraries(_sox PRIVATE "-framework CoreAudio")
 
     if(DEBUG)
-        target_compile_options(sox PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-        target_link_options(sox PRIVATE -fsanitize=address)
-        target_compile_definitions(sox PRIVATE DEBUG DEBUG_EFFECTS_CHAIN=1)
+        target_compile_options(_sox PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+        target_link_options(_sox PRIVATE -fsanitize=address)
+        target_compile_definitions(_sox PRIVATE DEBUG DEBUG_EFFECTS_CHAIN=1)
     endif()
 
 elseif(IS_LINUX)
@@ -135,45 +138,45 @@ elseif(IS_LINUX)
     if(PkgConfig_FOUND)
         pkg_check_modules(SOX sox)
         if(SOX_FOUND)
-            target_include_directories(sox PRIVATE ${SOX_INCLUDE_DIRS})
-            target_link_directories(sox PRIVATE ${SOX_LIBRARY_DIRS})
-            target_link_libraries(sox PRIVATE ${SOX_LIBRARIES})
+            target_include_directories(_sox PRIVATE ${SOX_INCLUDE_DIRS})
+            target_link_directories(_sox PRIVATE ${SOX_LIBRARY_DIRS})
+            target_link_libraries(_sox PRIVATE ${SOX_LIBRARIES})
         endif()
     endif()
 
     if(NOT SOX_FOUND)
         # Fallback if pkg-config fails
-        target_include_directories(sox PRIVATE
+        target_include_directories(_sox PRIVATE
             /usr/include
             /usr/local/include
         )
-        target_link_directories(sox PRIVATE
+        target_link_directories(_sox PRIVATE
             /usr/lib
             /usr/local/lib
             /usr/lib/x86_64-linux-gnu
             /usr/lib/aarch64-linux-gnu
         )
-        target_link_libraries(sox PRIVATE
+        target_link_libraries(_sox PRIVATE
             sox sndfile FLAC opus mp3lame
             vorbis vorbisfile vorbisenc png z
         )
     endif()
 
     if(DEBUG)
-        target_compile_options(sox PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-        target_link_options(sox PRIVATE -fsanitize=address)
+        target_compile_options(_sox PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+        target_link_options(_sox PRIVATE -fsanitize=address)
     endif()
 
 elseif(IS_WINDOWS)
     # Windows configuration
     if(DEFINED ENV{SOX_INCLUDE_DIR})
-        target_include_directories(sox PRIVATE $ENV{SOX_INCLUDE_DIR})
+        target_include_directories(_sox PRIVATE $ENV{SOX_INCLUDE_DIR})
     endif()
     if(DEFINED ENV{SOX_LIB_DIR})
-        target_link_directories(sox PRIVATE $ENV{SOX_LIB_DIR})
+        target_link_directories(_sox PRIVATE $ENV{SOX_LIB_DIR})
     endif()
-    target_link_libraries(sox PRIVATE sox)
+    target_link_libraries(_sox PRIVATE sox)
 endif()
 
 # Install the extension module
-install(TARGETS sox DESTINATION cysox)
+install(TARGETS _sox DESTINATION cysox)
