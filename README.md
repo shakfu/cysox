@@ -60,6 +60,7 @@ cysox slice drums.wav output_dir/ --bpm 120 --beats 1
 cysox slice drums.wav output_dir/ -n 4 -p DrumPunch
 
 # Slice at detected transients (automatic beat detection)
+# -t threshold (e.g. 0.3), -s sensitivity (default 1.5), -m method (default hfc)
 cysox slice drums.wav output_dir/ -t 0.3
 cysox slice drums.wav output_dir/ -t 0.2 -s 1.2 -m flux
 
@@ -433,10 +434,30 @@ onsets = onset.detect('drums.wav',
 ```
 
 **Detection Methods:**
-- `hfc` (default): High-Frequency Content - best for percussive transients
-- `flux`: Spectral flux - good for general onsets including tonal changes
-- `energy`: Simple energy-based - fast, good for drums
-- `complex`: Phase + magnitude - most accurate but slower
+
+- **`hfc`** (default) - High-Frequency Content
+  - Weights frequency bins by their index, emphasizing high frequencies
+  - High frequencies are prominent in transient attacks (the "click" of a drum hit)
+  - Best for: drums, percussion, plucked instruments
+  - Fast and reliable for most percussive material
+
+- **`flux`** - Spectral Flux
+  - Measures the change in spectral energy between consecutive frames
+  - Detects when the frequency content changes significantly
+  - Best for: mixed material, melodic instruments, detecting note changes
+  - Good all-around choice when HFC misses softer onsets
+
+- **`energy`** - Energy-based
+  - Simply measures the RMS energy (loudness) of each frame
+  - Fastest method, minimal computation
+  - Best for: very clean recordings, isolated drums, quick processing
+  - May miss onsets that are spectrally distinct but similar in volume
+
+- **`complex`** - Complex Domain
+  - Analyzes both magnitude AND phase of the spectrum
+  - Detects deviations from expected phase trajectories
+  - Best for: maximum accuracy, subtle onsets, research applications
+  - Slowest method but catches onsets other methods miss
 
 **Understanding threshold vs sensitivity:**
 

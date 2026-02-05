@@ -52,7 +52,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
   - `cysox preset list [category]`: List all presets or filter by category
   - `cysox preset info <name>`: Show detailed info and parameters for a preset
   - `cysox preset apply <name> <input> <output> [--param=value]`: Apply preset with optional parameters
-  - `cysox slice <input> <output_dir> [-n slices] [--bpm] [-p preset]`: Slice audio into segments
+  - `cysox slice <input> <output_dir> [-n slices] [--bpm] [-t threshold] [-s sensitivity] [-m method] [-p preset]`: Slice audio into segments
+    - `-t, --threshold`: Enable onset detection (e.g., 0.3)
+    - `-s, --sensitivity`: Peak picking strictness (default: 1.5)
+    - `-m, --method`: Detection method: hfc, flux, energy, complex (default: hfc)
   - `cysox stutter <input> <output> [-s start] [-d duration] [-r repeats] [-p preset]`: Create stutter effects
 
 - **Onset Detection Module** (`cysox.onset`): C-optimized transient detection for automatic slicing

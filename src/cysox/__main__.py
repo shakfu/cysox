@@ -242,8 +242,8 @@ def main():
         "--beats", type=int, default=1, help="Beats per slice when using --bpm"
     )
     slice_parser.add_argument(
-        "-t", "--threshold", type=float,
-        help="Onset detection threshold 0.0-1.0 (enables automatic transient slicing)"
+        "-t", "--threshold", type=float, default=None,
+        help="Onset detection threshold 0.0-1.0, e.g. 0.3 (enables automatic transient slicing)"
     )
     slice_parser.add_argument(
         "-s", "--sensitivity", type=float, default=1.5,
