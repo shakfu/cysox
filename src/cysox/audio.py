@@ -522,3 +522,282 @@ def concat(
         if output_fmt is not None:
             output_fmt.close()
         raise
+
+
+def slice_loop(
+    path: Union[str, Path],
+    output_dir: Union[str, Path],
+    *,
+    slices: int = 4,
+    beat_duration: Optional[float] = None,
+    bpm: Optional[float] = None,
+    beats_per_slice: int = 1,
+    threshold: Optional[float] = None,
+    sensitivity: float = 1.5,
+    onset_method: str = "hfc",
+    min_onset_spacing: float = 0.05,
+    output_format: str = "wav",
+    effects: Optional[List[Effect]] = None,
+) -> List[str]:
+    """Slice a drum loop or audio file into multiple segments.
+
+    Splits an audio file into segments, useful for chopping drum loops,
+    creating sample packs, or beat slicing. Can slice by count, BPM,
+    or automatically at transients.
+
+    Args:
+        path: Path to input audio file.
+        output_dir: Directory to save slices (created if doesn't exist).
+        slices: Number of slices to create (default: 4). Ignored if bpm
+                or threshold is set.
+        beat_duration: Duration of each slice in seconds. If not set, the file
+                      is divided into equal `slices` parts.
+        bpm: If set, calculate slice duration based on BPM and beats_per_slice.
+             Takes precedence over `slices`.
+        beats_per_slice: Number of beats per slice when using bpm (default: 1).
+        threshold: Onset detection threshold 0.0-1.0 (lower = more sensitive).
+                   If set, enables automatic transient detection for slicing.
+                   Typical values: 0.2-0.4 for drums, 0.3-0.5 for mixed audio.
+                   Takes precedence over bpm and slices.
+        sensitivity: Peak picking sensitivity for onset detection (default: 1.5).
+                     Higher values (2.0-3.0) are stricter, fewer false positives.
+                     Lower values (1.0-1.3) catch more subtle transients.
+        onset_method: Onset detection method (default: "hfc"):
+                      - "hfc": High-Frequency Content, best for drums
+                      - "flux": Spectral flux, good for general onsets
+                      - "energy": Simple energy-based, fast
+                      - "complex": Phase+magnitude, most accurate but slower
+        min_onset_spacing: Minimum time between detected onsets in seconds
+                           (default: 0.05). Prevents double triggers.
+        output_format: Output file format/extension (default: "wav").
+        effects: Optional list of effects to apply to each slice.
+
+    Returns:
+        List of paths to the created slice files.
+
+    Example:
+        >>> # Slice into 8 equal parts
+        >>> slices = cysox.slice_loop('drums.wav', 'slices/', slices=8)
+        >>>
+        >>> # Slice by BPM (one beat per slice at 120 BPM)
+        >>> slices = cysox.slice_loop('drums.wav', 'slices/', bpm=120)
+        >>>
+        >>> # Slice at transients (automatic beat detection)
+        >>> slices = cysox.slice_loop('drums.wav', 'slices/', threshold=0.3)
+        >>>
+        >>> # Slice with high sensitivity for subtle transients
+        >>> slices = cysox.slice_loop('drums.wav', 'slices/',
+        ...     threshold=0.2, sensitivity=1.2)
+        >>>
+        >>> # Slice with effects applied to each slice
+        >>> from cysox import fx
+        >>> slices = cysox.slice_loop('drums.wav', 'slices/',
+        ...     slices=4, effects=[fx.DrumPunch()])
+
+    Note:
+        For stutter effects, use the returned slice paths with
+        convert() and fx.Repeat() in a second pass.
+    """
+    import tempfile
+    import os
+
+    _ensure_init()
+
+    path = str(path)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Get audio info
+    file_info = info(path)
+    duration = file_info["duration"]
+    rate = file_info["sample_rate"]
+    channels = file_info["channels"]
+
+    # Determine slice points
+    slice_times: List[float] = []
+
+    if threshold is not None:
+        # Use onset detection to find slice points
+        from . import onset
+
+        onsets = onset.detect(
+            path,
+            threshold=threshold,
+            sensitivity=sensitivity,
+            min_spacing=min_onset_spacing,
+            method=onset_method,
+        )
+
+        # Slice times are the onset times
+        slice_times = onsets if onsets else [0.0]
+
+    elif bpm is not None:
+        # Calculate based on BPM
+        beat_duration_secs = 60.0 / bpm
+        slice_duration = beat_duration_secs * beats_per_slice
+        num_slices = int(duration / slice_duration)
+        slice_times = [i * slice_duration for i in range(num_slices)]
+
+    elif beat_duration is not None:
+        num_slices = int(duration / beat_duration)
+        slice_times = [i * beat_duration for i in range(num_slices)]
+
+    else:
+        slice_duration = duration / slices
+        slice_times = [i * slice_duration for i in range(slices)]
+
+    if not slice_times:
+        return []
+
+    # Add end time for calculating durations
+    slice_times_with_end = slice_times + [duration]
+
+    # Generate slice files using direct read/write (trim effect has issues)
+    output_paths = []
+    basename = Path(path).stem
+
+    # Open input file
+    input_fmt = sox.Format(path)
+    precision = input_fmt.signal.precision
+
+    # Track current position in samples
+    current_sample = 0
+
+    for i in range(len(slice_times)):
+        slice_name = f"{basename}_slice_{i:03d}.{output_format}"
+        slice_path = output_dir / slice_name
+
+        # Calculate sample range for this slice
+        start_time = slice_times_with_end[i]
+        end_time = slice_times_with_end[i + 1]
+        start_sample = int(start_time * rate * channels)
+        end_sample = int(end_time * rate * channels)
+        samples_to_read = end_sample - start_sample
+
+        if samples_to_read <= 0:
+            continue
+
+        # Skip to start position if needed
+        samples_to_skip = start_sample - current_sample
+        if samples_to_skip > 0:
+            _ = input_fmt.read(samples_to_skip)
+            current_sample += samples_to_skip
+
+        # Read slice samples
+        segment = input_fmt.read(samples_to_read)
+        current_sample += len(segment)
+
+        if len(segment) == 0:
+            break
+
+        # Write slice to temporary file first if we need to apply effects
+        if effects:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                temp_path = os.path.join(tmpdir, "temp.wav")
+
+                # Write raw segment
+                out_signal = sox.SignalInfo(
+                    rate=rate, channels=channels, precision=precision
+                )
+                temp_fmt = sox.Format(temp_path, signal=out_signal, mode="w")
+                temp_fmt.write(segment)
+                temp_fmt.close()
+
+                # Apply effects
+                convert(temp_path, str(slice_path), effects=effects)
+        else:
+            # Write directly without effects
+            out_signal = sox.SignalInfo(
+                rate=rate, channels=channels, precision=precision
+            )
+            output_fmt = sox.Format(str(slice_path), signal=out_signal, mode="w")
+            output_fmt.write(segment)
+            output_fmt.close()
+
+        output_paths.append(str(slice_path))
+
+    input_fmt.close()
+    return output_paths
+
+
+def stutter(
+    path: Union[str, Path],
+    output_path: Union[str, Path],
+    *,
+    segment_start: float = 0,
+    segment_duration: float = 0.125,
+    repeats: int = 8,
+    effects: Optional[List[Effect]] = None,
+) -> None:
+    """Create a stutter effect by extracting and repeating a segment.
+
+    This is a two-step operation (trim then repeat) that cannot be done
+    in a single effects chain due to sox limitations.
+
+    Args:
+        path: Path to input audio file.
+        output_path: Path for output file.
+        segment_start: Start position of segment in seconds (default: 0).
+        segment_duration: Length of segment in seconds (default: 0.125,
+                         which is 1/8 note at 120 BPM).
+        repeats: Total number of times the segment plays (default: 8).
+        effects: Optional effects to apply after stuttering.
+
+    Example:
+        >>> # Create 8x stutter from first 1/8 note
+        >>> cysox.stutter('drums.wav', 'stutter.wav',
+        ...     segment_duration=0.125, repeats=8)
+        >>>
+        >>> # Stutter with effects
+        >>> cysox.stutter('drums.wav', 'stutter.wav',
+        ...     segment_start=0.5, segment_duration=0.25, repeats=4,
+        ...     effects=[fx.DrumPunch()])
+    """
+    import tempfile
+    import os
+
+    _ensure_init()
+
+    from .fx.time import Repeat
+
+    path = str(path)
+    output_path = str(output_path)
+
+    # Get audio info
+    input_fmt = sox.Format(path)
+    rate = input_fmt.signal.rate
+    channels = input_fmt.signal.channels
+    precision = input_fmt.signal.precision
+
+    # Calculate sample positions
+    start_samples = int(segment_start * rate * channels)
+    read_samples = int(segment_duration * rate * channels)
+
+    # Skip to start position
+    if start_samples > 0:
+        _ = input_fmt.read(start_samples)
+
+    # Read segment
+    segment = input_fmt.read(read_samples)
+    input_fmt.close()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Write segment to temp file
+        temp_path = os.path.join(tmpdir, "segment.wav")
+        out_signal = sox.SignalInfo(rate=rate, channels=channels, precision=precision)
+        temp_fmt = sox.Format(temp_path, signal=out_signal, mode="w")
+        temp_fmt.write(segment)
+        temp_fmt.close()
+
+        # Apply repeat and any additional effects
+        repeat_effects: List[Effect] = []
+        if repeats > 1:
+            repeat_effects.append(Repeat(count=repeats - 1))
+        if effects:
+            repeat_effects.extend(_expand_effects(effects))
+
+        if repeat_effects:
+            convert(temp_path, output_path, effects=repeat_effects)
+        else:
+            # Just copy if no repeat or effects
+            convert(temp_path, output_path)

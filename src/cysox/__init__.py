@@ -35,16 +35,21 @@ from .audio import (
     stream,
     play,
     concat,
+    slice_loop,
+    stutter,
 )
 
 # Effects module
 from . import fx
 
+# Onset detection module
+from . import onset
+
 # Low-level API (explicit init/quit required)
 from . import sox
 
 # get libsox version via cysox.sox.version()
-__version__ = "0.1.6"
+__version__ = "0.1.7"
 
 
 __all__ = [
@@ -54,8 +59,11 @@ __all__ = [
     "stream",
     "play",
     "concat",
+    "slice_loop",
+    "stutter",
     # Modules
     "fx",
+    "onset",
     "sox",
     # Version
     "__version__",

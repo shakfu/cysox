@@ -17,6 +17,64 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+## [0.1.7]
+
+### Added
+
+- **Composite Effect Presets Library** (`cysox.fx.presets`): 54 ready-to-use effect presets
+  - Voice Effects: `Chipmunk`, `DeepVoice`, `Robot`, `HauntedVoice`, `VocalClarity`, `Whisper`
+  - Lo-Fi Effects: `Telephone`, `AMRadio`, `Megaphone`, `Underwater`, `VinylWarmth`, `LoFiHipHop`, `Cassette`
+  - Spatial Effects: `SmallRoom`, `LargeHall`, `Cathedral`, `Bathroom`, `Stadium`
+  - Broadcast Effects: `Podcast`, `RadioDJ`, `Voiceover`, `Intercom`, `WalkieTalkie`
+  - Musical Effects: `EightiesChorus`, `DreamyPad`, `SlowedReverb`, `SlapbackEcho`, `DubDelay`, `JetFlanger`, `ShoegazeWash`
+  - Drum Loop Effects: `HalfTime`, `DoubleTime`, `DrumPunch`, `DrumCrisp`, `DrumFat`, `Breakbeat`, `VintageBreak`, `DrumRoom`, `GatedReverb`, `DrumSlice`, `ReverseCymbal`, `LoopReady`
+  - Mastering Effects: `BroadcastLimiter`, `WarmMaster`, `BrightMaster`, `LoudnessMaster`
+  - Cleanup Effects: `RemoveRumble`, `RemoveHiss`, `RemoveHum`, `CleanVoice`, `TapeRestoration`
+  - Transition Effects: `FadeInOut`, `CrossfadeReady`
+
+- **Drum Loop Slicing Utilities**: New functions for beat slicing and stutter effects
+  - `cysox.slice_loop()`: Split audio into multiple segment files
+    - Slice by count, BPM, or beat duration
+    - Optional effects applied to each slice
+    - Returns list of created file paths
+  - `cysox.stutter()`: Create stutter/repeat effects
+    - Extract segment from any position
+    - Repeat with configurable count
+    - Optional effects post-processing
+
+- **Slice Output Tests**: 23 new tests in `test_slice_outputs.py`
+  - Tests for `slice_loop()` with various configurations
+  - Tests for `stutter()` with different segments and effects
+  - Tests for drum presets on full loops
+  - Output preserved in `build/test_output/slice_outputs/` for examination
+
+- **CLI Preset Support**: New commands for working with presets from command line
+  - `cysox preset list [category]`: List all presets or filter by category
+  - `cysox preset info <name>`: Show detailed info and parameters for a preset
+  - `cysox preset apply <name> <input> <output> [--param=value]`: Apply preset with optional parameters
+  - `cysox slice <input> <output_dir> [-n slices] [--bpm] [-p preset]`: Slice audio into segments
+  - `cysox stutter <input> <output> [-s start] [-d duration] [-r repeats] [-p preset]`: Create stutter effects
+
+- **Onset Detection Module** (`cysox.onset`): C-optimized transient detection for automatic slicing
+  - Multiple detection algorithms implemented in Cython for high performance:
+    - `hfc` (High-Frequency Content): Best for percussive transients like drums
+    - `flux` (Spectral Flux): Good for general onsets including tonal changes
+    - `energy`: Simple and fast energy-based detection
+    - `complex`: Phase and magnitude analysis, most accurate but slower
+  - Configurable parameters:
+    - `threshold` (0.0-1.0): Detection sensitivity (lower = more sensitive)
+    - `sensitivity` (1.0-3.0): Peak picking strictness
+    - `min_spacing`: Minimum time between detected onsets
+  - Functions:
+    - `onset.detect(path, ...)`: Detect onsets in an audio file, returns list of times in seconds
+    - `onset.detect_onsets(samples, ...)`: Low-level detection on raw sample data
+
+- **Automatic Transient Slicing**: `slice_loop()` now supports onset-based slicing
+  - New parameters: `threshold`, `sensitivity`, `onset_method`, `min_onset_spacing`
+  - When `threshold` is set, automatically detects transients and slices at each onset
+  - CLI support: `cysox slice <input> <output_dir> -t 0.3` for automatic slicing
+  - Example: `cysox.slice_loop('drums.wav', 'slices/', threshold=0.3)`
+
 ## [0.1.6]
 
 ### Changed

@@ -41,8 +41,22 @@ add_custom_command(
     COMMENT "Generating sox.c from sox.pyx"
 )
 
+# Generate onset.c from onset.pyx using Cython
+add_custom_command(
+    OUTPUT onset.c
+    COMMAND Python::Interpreter -m cython
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/cysox/onset.pyx"
+        --output-file onset.c
+    DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/cysox/onset.pyx"
+    COMMENT "Generating onset.c from onset.pyx"
+)
+
 # Create the extension module (named _sox internally to avoid conflict with libsox)
 python_add_library(_sox MODULE sox.c WITH_SOABI)
+
+# Create the onset module (pure Cython, no external dependencies)
+python_add_library(onset MODULE onset.c WITH_SOABI)
 
 # Set the output name to "sox" (the actual module name users import)
 set_target_properties(_sox PROPERTIES OUTPUT_NAME "sox")
@@ -193,5 +207,5 @@ elseif(IS_WINDOWS)
     target_link_libraries(_sox PRIVATE sox)
 endif()
 
-# Install the extension module
-install(TARGETS _sox DESTINATION cysox)
+# Install the extension modules
+install(TARGETS _sox onset DESTINATION cysox)

@@ -1,6 +1,6 @@
 [project]
 name = "cysox"
-version = "0.1.6"
+version = "0.1.7"
 description = "A Pythonic audio processing library wrapping libsox"
 readme = "README.md"
 license = "MIT"

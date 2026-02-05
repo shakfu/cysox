@@ -72,6 +72,72 @@ from .convert import (
     Dither,
 )
 
+# Composite presets
+from .presets import (
+    # Voice
+    Chipmunk,
+    DeepVoice,
+    Robot,
+    HauntedVoice,
+    VocalClarity,
+    Whisper,
+    # Lo-Fi
+    Telephone,
+    AMRadio,
+    Megaphone,
+    Underwater,
+    VinylWarmth,
+    LoFiHipHop,
+    Cassette,
+    # Spatial
+    SmallRoom,
+    LargeHall,
+    Cathedral,
+    Bathroom,
+    Stadium,
+    # Broadcast
+    Podcast,
+    RadioDJ,
+    Voiceover,
+    Intercom,
+    WalkieTalkie,
+    # Musical
+    EightiesChorus,
+    DreamyPad,
+    SlowedReverb,
+    SlapbackEcho,
+    DubDelay,
+    JetFlanger,
+    ShoegazeWash,
+    # Drum Loops
+    HalfTime,
+    DoubleTime,
+    DrumPunch,
+    DrumCrisp,
+    DrumFat,
+    Breakbeat,
+    VintageBreak,
+    DrumRoom,
+    GatedReverb,
+    DrumSlice,
+    ReverseCymbal,
+    LoopReady,
+    # Mastering
+    BroadcastLimiter,
+    WarmMaster,
+    BrightMaster,
+    LoudnessMaster,
+    # Cleanup
+    RemoveRumble,
+    RemoveHiss,
+    RemoveHum,
+    CleanVoice,
+    TapeRestoration,
+    # Transition
+    FadeInOut,
+    CrossfadeReady,
+)
+
 __all__ = [
     # Base
     "Effect",
@@ -110,4 +176,66 @@ __all__ = [
     "Channels",
     "Remix",
     "Dither",
+    # Presets - Voice
+    "Chipmunk",
+    "DeepVoice",
+    "Robot",
+    "HauntedVoice",
+    "VocalClarity",
+    "Whisper",
+    # Presets - Lo-Fi
+    "Telephone",
+    "AMRadio",
+    "Megaphone",
+    "Underwater",
+    "VinylWarmth",
+    "LoFiHipHop",
+    "Cassette",
+    # Presets - Spatial
+    "SmallRoom",
+    "LargeHall",
+    "Cathedral",
+    "Bathroom",
+    "Stadium",
+    # Presets - Broadcast
+    "Podcast",
+    "RadioDJ",
+    "Voiceover",
+    "Intercom",
+    "WalkieTalkie",
+    # Presets - Musical
+    "EightiesChorus",
+    "DreamyPad",
+    "SlowedReverb",
+    "SlapbackEcho",
+    "DubDelay",
+    "JetFlanger",
+    "ShoegazeWash",
+    # Presets - Drum Loops
+    "HalfTime",
+    "DoubleTime",
+    "DrumPunch",
+    "DrumCrisp",
+    "DrumFat",
+    "Breakbeat",
+    "VintageBreak",
+    "DrumRoom",
+    "GatedReverb",
+    "DrumSlice",
+    "ReverseCymbal",
+    "LoopReady",
+    # Presets - Mastering
+    "BroadcastLimiter",
+    "WarmMaster",
+    "BrightMaster",
+    "LoudnessMaster",
+    # Presets - Cleanup
+    "RemoveRumble",
+    "RemoveHiss",
+    "RemoveHum",
+    "CleanVoice",
+    "TapeRestoration",
+    # Presets - Transition
+    "FadeInOut",
+    "CrossfadeReady",
 ]
