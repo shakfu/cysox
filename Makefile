@@ -28,7 +28,7 @@ gcc -std=c11 -o build/$1 \
 	tests/examples/$1.c
 endef
 
-.PHONY: all sync build rebuild test testpy lint typecheck format qa \
+.PHONY: all sync build rebuild test testpy leaks lint typecheck format qa \
         wheel sdist delocate strip check publish publish-test \
         examples-p examples-c benchmark benchmark-save benchmark-compare \
         docs docs-clean docs-serve clean reset distclean help
@@ -115,6 +115,10 @@ benchmark-save:
 
 benchmark-compare:
 	@uv run pytest tests/test_benchmarks.py -v --benchmark-only --benchmark-compare=baseline --benchmark-group-by=group
+
+# Check for memory leaks using macOS leaks tool
+leaks:
+	@MallocStackLogging=1 uv run leaks --atExit -- python tests/check_leaks.py
 
 # ============================================================================
 # Code Quality
@@ -239,6 +243,7 @@ help:
 	@echo "Testing:"
 	@echo "  test          - Run all tests"
 	@echo "  testpy        - Quick test with example0.py"
+	@echo "  leaks         - Check for memory leaks (macOS)"
 	@echo "  examples-p    - Run all Python examples"
 	@echo "  examples-c    - Build and run C examples (macOS)"
 	@echo ""

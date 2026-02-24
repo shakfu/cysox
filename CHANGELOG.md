@@ -17,6 +17,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+### Added
+
+- **Memory Leak Check** (`make leaks`): macOS `leaks --atExit` integration for C-heap leak detection
+  - New `tests/check_leaks.py` exercises all major object lifecycles:
+    SignalInfo, EncodingInfo, LoopInfo, InstrInfo, OutOfBand,
+    EffectHandler, Format (read/write/buffer), EffectsChain
+  - New Makefile target: `make leaks` (requires macOS)
+
+### Changed
+
+- **TODO.md Cleanup**: Removed all completed items, keeping only open/blocked tasks
+
 ## [0.1.7]
 
 ### Added
