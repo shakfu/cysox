@@ -74,9 +74,20 @@ class CompositeEffect(Effect):
             "Use expand_effects() to get the list of constituent effects."
         )
 
+    def __repr__(self) -> str:
+        args = self._repr_args()
+        effects_repr = ", ".join(repr(e) for e in self.effects)
+        if args:
+            return f"{self.__class__.__name__}({args}) -> [{effects_repr}]"
+        return f"{self.__class__.__name__}() -> [{effects_repr}]"
+
 
 class PythonEffect(Effect):
     """Base class for custom Python-based sample processing.
+
+    .. warning::
+        Experimental. Not yet supported by ``convert()`` or ``play()``.
+        Use ``stream()`` for custom Python sample processing.
 
     Subclasses must implement the `process()` method which receives
     samples as a numpy array and returns processed samples.
@@ -125,6 +136,11 @@ class PythonEffect(Effect):
 
 class CEffect(Effect):
     """Base class for custom C-level effects.
+
+    .. warning::
+        Experimental. Effect registration is not yet implemented in the
+        low-level API. This class defines the intended interface for
+        future C-level effect support.
 
     For advanced users who implement effects in C or Cython and need
     to register them with sox.

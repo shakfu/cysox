@@ -8,10 +8,12 @@ from cysox import fx
 class TestInfo:
     """Tests for cysox.info()."""
 
-    def test_info_returns_dict(self, test_wav_str):
-        """info() returns a dictionary."""
+    def test_info_returns_audio_info(self, test_wav_str):
+        """info() returns an AudioInfo object with dict-style access."""
         info = cysox.info(test_wav_str)
-        assert isinstance(info, dict)
+        assert isinstance(info, cysox.AudioInfo)
+        # Backwards-compatible dict-style access
+        assert info["sample_rate"] == info.sample_rate
 
     def test_info_contains_required_keys(self, test_wav_str):
         """info() returns all required keys."""
@@ -328,6 +330,94 @@ class TestPlay:
         """play() raises exception for nonexistent file."""
         with pytest.raises(Exception):
             cysox.play("/nonexistent/file.wav")
+
+
+class TestProgressCallback:
+    """Tests for progress callbacks and cancellation."""
+
+    def test_convert_progress_callback(self, test_wav_str, output_path):
+        """convert() calls progress callback with increasing values."""
+        progress_values = []
+
+        def on_progress(p):
+            progress_values.append(p)
+            return True
+
+        cysox.convert(test_wav_str, output_path, on_progress=on_progress)
+        assert output_path.exists()
+        assert len(progress_values) > 0
+        assert progress_values[-1] == 1.0
+        # Progress should be monotonically non-decreasing
+        for i in range(1, len(progress_values)):
+            assert progress_values[i] >= progress_values[i - 1]
+
+    def test_convert_cancel(self, test_wav_str, output_path):
+        """convert() raises CancelledError when callback returns False."""
+        with pytest.raises(cysox.CancelledError):
+            cysox.convert(
+                test_wav_str,
+                output_path,
+                on_progress=lambda p: False,
+            )
+
+    def test_convert_cancel_midway(self, test_wav_str, output_path):
+        """convert() can be cancelled partway through."""
+        progress_values = []
+
+        def on_progress(p):
+            progress_values.append(p)
+            return p < 0.5
+
+        with pytest.raises(cysox.CancelledError):
+            cysox.convert(test_wav_str, output_path, on_progress=on_progress)
+        # Should have been called at least once
+        assert len(progress_values) > 0
+
+    def test_concat_progress_callback(self, test_wav_str, output_path):
+        """concat() calls progress callback with increasing values."""
+        progress_values = []
+
+        def on_progress(p):
+            progress_values.append(p)
+            return True
+
+        cysox.concat(
+            [test_wav_str, test_wav_str],
+            output_path,
+            on_progress=on_progress,
+        )
+        assert output_path.exists()
+        assert len(progress_values) > 0
+        assert progress_values[-1] == 1.0
+        for i in range(1, len(progress_values)):
+            assert progress_values[i] >= progress_values[i - 1]
+
+    def test_concat_cancel(self, test_wav_str, output_path):
+        """concat() raises CancelledError when callback returns False."""
+        with pytest.raises(cysox.CancelledError):
+            cysox.concat(
+                [test_wav_str, test_wav_str],
+                output_path,
+                on_progress=lambda p: False,
+            )
+
+    def test_convert_no_progress_still_works(self, test_wav_str, output_path):
+        """convert() works normally without progress callback."""
+        cysox.convert(test_wav_str, output_path)
+        assert output_path.exists()
+
+    def test_progress_callback_receives_floats(self, test_wav_str, output_path):
+        """Progress values are floats between 0.0 and 1.0."""
+        progress_values = []
+
+        def on_progress(p):
+            progress_values.append(p)
+            return True
+
+        cysox.convert(test_wav_str, output_path, on_progress=on_progress)
+        for p in progress_values:
+            assert isinstance(p, float)
+            assert 0.0 <= p <= 1.0
 
 
 class TestAutoInit:

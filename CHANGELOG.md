@@ -29,15 +29,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
   - Apply any preset during conversion: `cysox convert input.wav output.wav -p Telephone`
   - Consistent with `slice` and `stutter` commands
 
+- **`AudioInfo` typed return from `info()`**: `cysox.info()` now returns an `AudioInfo` object
+  - Attribute access: `info.sample_rate`, `info.duration`, etc.
+  - Dict-style access preserved for backwards compatibility: `info['sample_rate']`
+  - `AudioInfo` exported from `cysox` package
+
+- **`CompositeEffect.__repr__`**: Shows constituent effects for debugging
+  - e.g. `Telephone(sample_rate=8000) -> [HighPass(...), LowPass(...), ...]`
+
+- **Onset module type stubs** (`onset.pyi`): IDE autocomplete and type checking for `onset.detect()` and `onset.detect_onsets()`
+
+- **Progress callbacks and cancellation** for `convert()`, `play()`, and `concat()`
+  - New `on_progress` keyword argument: receives progress `0.0`-`1.0`, return `False` to cancel
+  - New `CancelledError` exception raised on cancellation
+  - `convert()`/`play()` use libsox's `flow_effects` callback (no external dependencies)
+  - `concat()` reports exact progress from sample counts
+  - `ProgressCallback` type alias exported for type checking
+
 ### Fixed
 
-- **Resource leak in `convert()` and `play()`**: Wrapped Format objects in try/finally blocks to ensure cleanup on exceptions
+- **Resource leak in `convert()`, `play()`, and `concat()`**: Wrapped Format objects in try/finally blocks to ensure cleanup on exceptions
 - **CI triggers**: Enabled test workflow on push/PR to main/develop (was previously manual-only)
 - **Test fixture scope in `test_error_handling.py`**: Changed from per-test to session scope to avoid repeated init/quit cycles
 - **`read_buffer()` performance**: Replaced Python-level byte-by-byte copy with `memcpy`
 - **`EncodingsInfo.type` crash**: Fixed `KeyError` on unexpected flag values (now returns `'unknown'`)
 - **Trailing whitespace in ENCODINGS**: Stripped from `CL_ADPCM`, `MS_ADPCM`, `IMA_ADPCM`, `OKI_ADPCM`, `DWVW`
 - **Commented-out dead code**: Removed stale code blocks in `sox.pyx`
+- **`concat()` error messages**: Mismatch errors now suggest using `cysox.convert()` to normalize files first
+- **`PythonEffect` and `CEffect` docs**: Marked as experimental with warnings that they are not yet functional
+- **Opaque `SoxFormatError` messages**: Now reports specific cause (file not found, permission denied, unsupported format) instead of generic failure
+- **`stream()` docstring**: Documents int32 sample range and how to convert to float [-1.0, 1.0]
 
 ### Changed
 

@@ -1,8 +1,12 @@
 # Type stubs for cysox
 # This file provides type hints for IDEs and type checkers
 
-from typing import Optional, List, Union, Tuple, Iterator, Dict, Any
+from typing import Callable, Optional, List, Union, Tuple, Iterator, Dict, Any
 import array
+
+ProgressCallback = Callable[[float], bool]
+
+class CancelledError(Exception): ...
 
 # Re-export sox module for type checking
 from . import sox as sox
@@ -219,14 +223,25 @@ def convert(
     input_path: Union[str, Any],
     output_path: Union[str, Any],
     effects: Optional[List[Any]] = None,
+    *,
     rate: Optional[int] = None,
     channels: Optional[int] = None,
     bits: Optional[int] = None,
+    on_progress: Optional[ProgressCallback] = None,
 ) -> None: ...
 def stream(path: Union[str, Any], chunk_size: int = 8192) -> Iterator[memoryview]: ...
-def play(path: Union[str, Any], effects: Optional[List[Any]] = None) -> None: ...
+def play(
+    path: Union[str, Any],
+    effects: Optional[List[Any]] = None,
+    *,
+    on_progress: Optional[ProgressCallback] = None,
+) -> None: ...
 def concat(
-    inputs: List[Union[str, Any]], output_path: Union[str, Any], chunk_size: int = 8192
+    inputs: List[Union[str, Any]],
+    output_path: Union[str, Any],
+    *,
+    chunk_size: int = 8192,
+    on_progress: Optional[ProgressCallback] = None,
 ) -> None: ...
 
 # Version

@@ -1086,7 +1086,24 @@ cdef class Format:
             raise ValueError("Mode must be 'r' or 'w'")
 
         if self.ptr is NULL:
-            raise SoxFormatError(f"Failed to open file {filename} in mode {mode}")
+            import os
+            if mode == 'r' and not os.path.exists(filename):
+                raise SoxFormatError(f"File not found: {filename}")
+            elif mode == 'r' and not os.access(filename, os.R_OK):
+                raise SoxFormatError(f"Permission denied: {filename}")
+            elif mode == 'w':
+                parent = os.path.dirname(filename) or '.'
+                if not os.path.isdir(parent):
+                    raise SoxFormatError(
+                        f"Directory does not exist: {parent}")
+                if not os.access(parent, os.W_OK):
+                    raise SoxFormatError(
+                        f"Permission denied (directory not writable): {parent}")
+            # If none of the above, give a generic message with hint
+            ext = os.path.splitext(filename)[1]
+            raise SoxFormatError(
+                f"Failed to open '{filename}' in mode '{mode}'"
+                + (f" (format '{ext}' may not be supported)" if ext else ""))
 
         self.owner = True
 

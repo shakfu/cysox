@@ -10,7 +10,7 @@ Example:
     >>>
     >>> # Get file info
     >>> info = cysox.info('audio.wav')
-    >>> print(f"Duration: {info['duration']:.2f}s")
+    >>> print(f"Duration: {info.duration:.2f}s")
     >>>
     >>> # Convert with effects
     >>> cysox.convert('input.wav', 'output.mp3', effects=[
@@ -21,10 +21,90 @@ Example:
 
 import atexit
 from pathlib import Path
-from typing import Dict, Iterator, List, Optional, Union
+from typing import Callable, Dict, Iterator, List, Optional, Union
 
 from . import sox
 from .fx.base import Effect, CompositeEffect, PythonEffect
+
+# Type alias for progress callbacks.
+# Receives progress (0.0 to 1.0), returns True to continue or False to cancel.
+ProgressCallback = Callable[[float], bool]
+
+
+class CancelledError(Exception):
+    """Raised when an operation is cancelled via a progress callback."""
+    pass
+
+
+class AudioInfo:
+    """Audio file metadata returned by :func:`info`.
+
+    Supports both attribute access (``info.sample_rate``) and dict-style
+    access (``info['sample_rate']``) for backwards compatibility.
+    """
+
+    __slots__ = (
+        "path", "format", "duration", "sample_rate",
+        "channels", "bits_per_sample", "samples", "encoding",
+    )
+
+    def __init__(
+        self,
+        path: str,
+        format: str,
+        duration: float,
+        sample_rate: int,
+        channels: int,
+        bits_per_sample: int,
+        samples: int,
+        encoding: str,
+    ):
+        self.path = path
+        self.format = format
+        self.duration = duration
+        self.sample_rate = sample_rate
+        self.channels = channels
+        self.bits_per_sample = bits_per_sample
+        self.samples = samples
+        self.encoding = encoding
+
+    def __getitem__(self, key: str):
+        """Dict-style access for backwards compatibility."""
+        try:
+            return getattr(self, key)
+        except AttributeError:
+            raise KeyError(key)
+
+    def __contains__(self, key: str) -> bool:
+        return key in self.__slots__
+
+    def __repr__(self) -> str:
+        return (
+            f"AudioInfo(path={self.path!r}, format={self.format!r}, "
+            f"duration={self.duration:.2f}, sample_rate={self.sample_rate}, "
+            f"channels={self.channels}, bits_per_sample={self.bits_per_sample}, "
+            f"samples={self.samples}, encoding={self.encoding!r})"
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, AudioInfo):
+            return all(
+                getattr(self, k) == getattr(other, k)
+                for k in self.__slots__
+            )
+        return NotImplemented
+
+    def keys(self):
+        """Dict-like keys for compatibility."""
+        return self.__slots__
+
+    def values(self):
+        """Dict-like values for compatibility."""
+        return tuple(getattr(self, k) for k in self.__slots__)
+
+    def items(self):
+        """Dict-like items for compatibility."""
+        return tuple((k, getattr(self, k)) for k in self.__slots__)
 
 # Module state
 _initialized = False
@@ -61,14 +141,46 @@ def _expand_effects(effects: List[Effect]) -> List[Effect]:
     return expanded
 
 
-def info(path: Union[str, Path]) -> Dict:
+_SOX_BUFFER_SIZE = 8192  # libsox's default internal buffer size
+
+
+def _make_flow_callback(total_samples, user_callback):
+    """Create a flow_effects callback that estimates progress.
+
+    Args:
+        total_samples: Total number of samples to process (for estimation).
+        user_callback: User's progress callback (progress: float) -> bool.
+
+    Returns:
+        Tuple of (callback, state_dict) for use with chain.flow_effects().
+    """
+    estimated_buffers = max(1, total_samples // _SOX_BUFFER_SIZE)
+    state = {"count": 0, "cancelled": False}
+
+    def callback(all_done, _user_data):
+        state["count"] += 1
+        if all_done:
+            progress = 1.0
+        else:
+            progress = min(state["count"] / estimated_buffers, 0.99)
+
+        result = user_callback(progress)
+        if result is False:
+            state["cancelled"] = True
+            return False
+        return True
+
+    return callback, state
+
+
+def info(path: Union[str, Path]) -> AudioInfo:
     """Get audio file metadata.
 
     Args:
         path: Path to audio file.
 
     Returns:
-        Dictionary with file information:
+        AudioInfo named tuple with fields:
         - path: Original path
         - format: File format (e.g., 'wav', 'mp3')
         - duration: Duration in seconds
@@ -78,10 +190,13 @@ def info(path: Union[str, Path]) -> Dict:
         - samples: Total number of samples
         - encoding: Encoding type
 
+        Supports both attribute access (``info.sample_rate``) and
+        dict-style access (``info['sample_rate']``).
+
     Example:
         >>> info = cysox.info('audio.wav')
-        >>> print(f"Duration: {info['duration']:.2f}s")
-        >>> print(f"Sample rate: {info['sample_rate']} Hz")
+        >>> print(f"Duration: {info.duration:.2f}s")
+        >>> print(f"Sample rate: {info.sample_rate} Hz")
     """
     _ensure_init()
 
@@ -96,18 +211,16 @@ def info(path: Union[str, Path]) -> Dict:
         else:
             duration = 0.0
 
-        result = {
-            "path": path,
-            "format": f.filetype or "",
-            "duration": duration,
-            "sample_rate": int(signal.rate) if signal.rate else 0,
-            "channels": signal.channels or 0,
-            "bits_per_sample": encoding.bits_per_sample if encoding else 0,
-            "samples": signal.length or 0,
-            "encoding": _encoding_name(encoding.encoding) if encoding else "",
-        }
-
-    return result
+        return AudioInfo(
+            path=path,
+            format=f.filetype or "",
+            duration=duration,
+            sample_rate=int(signal.rate) if signal.rate else 0,
+            channels=signal.channels or 0,
+            bits_per_sample=encoding.bits_per_sample if encoding else 0,
+            samples=signal.length or 0,
+            encoding=_encoding_name(encoding.encoding) if encoding else "",
+        )
 
 
 def _encoding_name(encoding_type: int) -> str:
@@ -159,6 +272,7 @@ def convert(
     sample_rate: Optional[int] = None,
     channels: Optional[int] = None,
     bits: Optional[int] = None,
+    on_progress: Optional[ProgressCallback] = None,
 ) -> None:
     """Convert audio file with optional effects.
 
@@ -169,6 +283,12 @@ def convert(
         sample_rate: Target sample rate in Hz (optional).
         channels: Target number of channels (optional).
         bits: Target bits per sample (optional).
+        on_progress: Optional callback receiving progress (0.0 to 1.0).
+            Return True to continue, False to cancel. Called periodically
+            during processing (approximately once per internal buffer).
+
+    Raises:
+        CancelledError: If the progress callback returns False.
 
     Example:
         >>> # Simple conversion
@@ -184,6 +304,11 @@ def convert(
         >>> cysox.convert('input.wav', 'output.wav',
         ...     sample_rate=48000,
         ...     channels=1,
+        ... )
+        >>>
+        >>> # With progress reporting
+        >>> cysox.convert('input.wav', 'output.wav',
+        ...     on_progress=lambda p: print(f"{p:.0%}") or True,
         ... )
     """
     _ensure_init()
@@ -303,10 +428,24 @@ def convert(
         chain.add_effect(e, current_signal, out_signal)
 
         # Process
-        result = chain.flow_effects()
+        if on_progress is not None:
+            flow_cb, flow_state = _make_flow_callback(
+                input_fmt.signal.length, on_progress
+            )
+            try:
+                result = chain.flow_effects(callback=flow_cb)
+            except Exception:
+                if flow_state["cancelled"]:
+                    raise CancelledError("convert() cancelled by progress callback")
+                exc_info = sox.get_last_callback_exception()
+                if exc_info is not None:
+                    raise exc_info[1].with_traceback(exc_info[2])
+                raise
+        else:
+            result = chain.flow_effects()
 
-        if result != sox.SUCCESS:
-            raise RuntimeError(f"Effects processing failed with code {result}")
+            if result != sox.SUCCESS:
+                raise RuntimeError(f"Effects processing failed with code {result}")
 
     finally:
         input_fmt.close()
@@ -328,13 +467,16 @@ def stream(
         chunk_size: Number of samples per chunk (default: 8192).
 
     Yields:
-        memoryview of samples (int32 format).
+        memoryview of samples as signed 32-bit integers (int32).
+        Sample values are in the range [-2147483648, 2147483647].
+        To convert to float [-1.0, 1.0], divide by 2147483648.0.
 
     Example:
         >>> import numpy as np
         >>> for chunk in cysox.stream('audio.wav'):
         ...     arr = np.frombuffer(chunk, dtype=np.int32)
-        ...     process(arr)
+        ...     # Convert to float [-1.0, 1.0]:
+        ...     floats = arr.astype(np.float64) / 2147483648.0
     """
     _ensure_init()
 
@@ -353,22 +495,28 @@ def stream(
 def play(
     path: Union[str, Path],
     effects: Optional[List[Effect]] = None,
+    *,
+    on_progress: Optional[ProgressCallback] = None,
 ) -> None:
     """Play audio to the default audio device.
 
     Uses libsox's audio output handlers (coreaudio on macOS,
-    alsa/pulseaudio on Linux).
+    alsa/pulseaudio on Linux). Blocks until playback is complete
+    or cancelled via the progress callback.
 
     Args:
         path: Path to audio file.
         effects: Optional list of effects to apply during playback.
+        on_progress: Optional callback receiving progress (0.0 to 1.0).
+            Return True to continue, False to cancel playback.
+
+    Raises:
+        CancelledError: If the progress callback returns False.
 
     Example:
         >>> cysox.play('audio.wav')
         >>> cysox.play('audio.wav', effects=[fx.Volume(db=-6)])
-
-    Note:
-        This function blocks until playback is complete.
+        >>> cysox.play('audio.wav', on_progress=lambda p: p < 0.5)  # stop at 50%
     """
     _ensure_init()
 
@@ -435,11 +583,25 @@ def play(
         e.set_options([output_fmt])
         chain.add_effect(e, current_signal, current_signal)
 
-        # Play (blocks until complete)
-        result = chain.flow_effects()
+        # Play (blocks until complete or cancelled)
+        if on_progress is not None:
+            flow_cb, flow_state = _make_flow_callback(
+                input_fmt.signal.length, on_progress
+            )
+            try:
+                result = chain.flow_effects(callback=flow_cb)
+            except Exception:
+                if flow_state["cancelled"]:
+                    raise CancelledError("play() cancelled by progress callback")
+                exc_info = sox.get_last_callback_exception()
+                if exc_info is not None:
+                    raise exc_info[1].with_traceback(exc_info[2])
+                raise
+        else:
+            result = chain.flow_effects()
 
-        if result != sox.SUCCESS:
-            raise RuntimeError(f"Playback failed with code {result}")
+            if result != sox.SUCCESS:
+                raise RuntimeError(f"Playback failed with code {result}")
 
     finally:
         input_fmt.close()
@@ -452,6 +614,7 @@ def concat(
     output_path: Union[str, Path],
     *,
     chunk_size: int = 8192,
+    on_progress: Optional[ProgressCallback] = None,
 ) -> None:
     """Concatenate multiple audio files into one.
 
@@ -462,10 +625,13 @@ def concat(
         inputs: List of paths to input audio files (minimum 2).
         output_path: Path for the concatenated output file.
         chunk_size: Number of samples to read/write at a time (default: 8192).
+        on_progress: Optional callback receiving progress (0.0 to 1.0).
+            Return True to continue, False to cancel.
 
     Raises:
         ValueError: If fewer than 2 input files provided.
         ValueError: If input files have mismatched sample rates or channels.
+        CancelledError: If the progress callback returns False.
 
     Example:
         >>> cysox.concat(['intro.wav', 'main.wav', 'outro.wav'], 'full.wav')
@@ -478,9 +644,18 @@ def concat(
     inputs = [str(p) for p in inputs]
     output_path = str(output_path)
 
+    # Pre-compute total samples for progress reporting
+    total_samples = 0
+    if on_progress is not None:
+        for p in inputs:
+            file_info = info(p)
+            total_samples += file_info.samples
+
     output_fmt = None
+    input_fmt = None
     reference_rate = None
     reference_channels = None
+    samples_written = 0
 
     try:
         for i, input_path in enumerate(inputs):
@@ -508,12 +683,14 @@ def concat(
                 if input_fmt.signal.rate != reference_rate:
                     raise ValueError(
                         f"Sample rate mismatch: {input_path} has {input_fmt.signal.rate}Hz, "
-                        f"expected {reference_rate}Hz"
+                        f"expected {reference_rate}Hz. "
+                        f"Use cysox.convert() to resample files before concatenating."
                     )
                 if input_fmt.signal.channels != reference_channels:
                     raise ValueError(
                         f"Channel count mismatch: {input_path} has {input_fmt.signal.channels} channels, "
-                        f"expected {reference_channels}"
+                        f"expected {reference_channels}. "
+                        f"Use cysox.convert() to match channel counts before concatenating."
                     )
 
             # Copy all samples from this input to output
@@ -524,15 +701,25 @@ def concat(
                     break
                 output_fmt.write(samples)
 
+                if on_progress is not None:
+                    samples_written += len(samples)
+                    progress = min(samples_written / total_samples, 0.99) if total_samples > 0 else 0.0
+                    if on_progress(progress) is False:
+                        raise CancelledError("concat() cancelled by progress callback")
+
             input_fmt.close()
+            input_fmt = None
 
         assert output_fmt is not None  # Loop always runs (len >= 2)
-        output_fmt.close()
 
-    except Exception:
+        if on_progress is not None:
+            on_progress(1.0)
+
+    finally:
+        if input_fmt is not None:
+            input_fmt.close()
         if output_fmt is not None:
             output_fmt.close()
-        raise
 
 
 def slice_loop(

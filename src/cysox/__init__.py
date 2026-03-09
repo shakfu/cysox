@@ -30,6 +30,9 @@ Low-level API (power users):
 
 # High-level API (auto-initializing)
 from .audio import (
+    AudioInfo,
+    CancelledError,
+    ProgressCallback,
     info,
     convert,
     stream,
@@ -53,6 +56,10 @@ __version__ = "0.1.7"
 
 
 __all__ = [
+    # High-level types
+    "AudioInfo",
+    "CancelledError",
+    "ProgressCallback",
     # High-level functions
     "info",
     "convert",
