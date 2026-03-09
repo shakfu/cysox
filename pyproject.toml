@@ -80,7 +80,7 @@ dev = [
     "pytest>=8.4.1",
     "pytest-benchmark",
     "memory-profiler",
-    "sphinx>=7.4.7",
+    "mkdocs-material",
     "twine>=6.2.0",
     "mypy",
     "ruff",

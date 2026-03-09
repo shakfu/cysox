@@ -649,9 +649,9 @@ See [KNOWN_LIMITATIONS.md](https://github.com/shakfu/cysox/blob/main/KNOWN_LIMIT
 ## Building Documentation
 
 ```sh
-pip install sphinx furo myst-parser
-make docs
-make docs-serve  # http://localhost:8000
+pip install mkdocs-material
+make docs          # Build static site
+make docs-serve    # Live preview at http://localhost:8000
 ```
 
 ## License

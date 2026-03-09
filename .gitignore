@@ -22,6 +22,7 @@ sdist/
 include/
 lib/
 docs/_build/
+site/
 
 # exclude
 thirdparty/sox/

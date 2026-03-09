@@ -1,0 +1,52 @@
+site_name: cysox
+site_description: A Pythonic audio processing library wrapping libsox via Cython
+repo_url: https://github.com/shakfu/cysox
+repo_name: shakfu/cysox
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.expand
+    - toc.follow
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - User Guide:
+    - Installation: installation.md
+    - Quick Start: quickstart.md
+    - Examples: examples.md
+    - Benchmarks: benchmarks.md
+  - API Reference:
+    - Modules: api/modules.md
+    - Exceptions: api/exceptions.md
+  - Development:
+    - High-Level API: dev/high_level_api.md
+    - Known Limitations: dev/known_limitations.md
+    - Contributing: contributing.md
+    - Changelog: changelog.md

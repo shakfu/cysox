@@ -66,6 +66,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
   - Vendored KissFFT source (~750 lines of C) in `vendor/kissfft/`
   - Compiled as static library with double precision (`kiss_fft_scalar=double`)
   - New `kissfft.pxd` Cython declarations for real-valued FFT API
+- **Documentation migrated from Sphinx to MkDocs**: Material theme with dark/light toggle, all `.rst` converted to Markdown, updated Makefile targets and `pyproject.toml` build dependencies
 - **TODO.md Cleanup**: Removed all completed items, keeping only open/blocked tasks
 
 ## [0.1.7]

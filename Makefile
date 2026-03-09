@@ -177,13 +177,13 @@ publish-test:
 # ============================================================================
 
 docs:
-	@uv run sphinx-build -b html docs docs/_build/html
+	@uv run mkdocs build
 
 docs-clean:
-	@rm -rf docs/_build
+	@rm -rf site
 
-docs-serve: docs
-	@uv run python -m http.server 8000 --directory docs/_build/html
+docs-serve:
+	@uv run mkdocs serve
 
 # ============================================================================
 # Cleanup
