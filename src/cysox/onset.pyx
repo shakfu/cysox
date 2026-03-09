@@ -7,6 +7,8 @@
 This module provides C-optimized onset detection for finding transients,
 drum hits, and other audio events. Useful for automatic slicing of loops.
 
+Uses KissFFT (BSD-3-Clause) for O(n log n) spectral analysis.
+
 Algorithms implemented:
 - High-Frequency Content (HFC): Best for percussive transients
 - Spectral Flux: Good for general onsets including tonal changes
@@ -22,6 +24,11 @@ Example:
 from libc.stdlib cimport malloc, free, calloc
 from libc.math cimport sqrt, fabs, log, exp, pow, sin, cos, atan2, M_PI
 from libc.string cimport memset, memcpy
+
+from cysox.kissfft cimport (
+    kiss_fft_scalar, kiss_fft_cpx, kiss_fft_free,
+    kiss_fftr_cfg, kiss_fftr_alloc, kiss_fftr,
+)
 
 import cython
 
@@ -59,29 +66,19 @@ cdef void apply_window(double* samples, double* windowed, int size) noexcept nog
         windowed[i] = samples[i] * hann_window(i, size)
 
 
-cdef void compute_magnitude_spectrum(double* windowed, double* magnitude,
-                                     double* phase, int frame_size) noexcept nogil:
-    """Compute magnitude and phase spectrum using DFT.
-
-    Note: This is a simple O(n^2) DFT for correctness. For production use
-    with very large frame sizes, consider using FFTW via cython bindings.
-    For typical frame sizes (512-2048), this is efficient enough.
-    """
-    cdef int k, n
+cdef void compute_magnitude_spectrum(kiss_fftr_cfg fft_cfg,
+                                     double* windowed, kiss_fft_cpx* fft_out,
+                                     double* magnitude, double* phase,
+                                     int frame_size) noexcept nogil:
+    """Compute magnitude and phase spectrum using KissFFT (O(n log n))."""
+    cdef int k
     cdef int half_size = frame_size // 2 + 1
-    cdef double real_part, imag_part
-    cdef double angle
+
+    kiss_fftr(fft_cfg, windowed, fft_out)
 
     for k in range(half_size):
-        real_part = 0.0
-        imag_part = 0.0
-        for n in range(frame_size):
-            angle = -2.0 * M_PI * k * n / frame_size
-            real_part += windowed[n] * cos(angle)
-            imag_part += windowed[n] * sin(angle)
-
-        magnitude[k] = sqrt(real_part * real_part + imag_part * imag_part)
-        phase[k] = atan2(imag_part, real_part)
+        magnitude[k] = sqrt(fft_out[k].r * fft_out[k].r + fft_out[k].i * fft_out[k].i)
+        phase[k] = atan2(fft_out[k].i, fft_out[k].r)
 
 
 cdef double compute_hfc(double* magnitude, int half_size) noexcept nogil:
@@ -312,10 +309,18 @@ def detect_onsets(samples, int sample_rate, int channels,
     cdef double* threshold_curve = <double*>calloc(num_frames, sizeof(double))
     cdef int* peaks = <int*>malloc(num_frames * sizeof(int))
 
+    # Allocate KissFFT config for real-valued FFT (frame_size must be even)
+    cdef kiss_fftr_cfg fft_cfg = NULL
+    cdef kiss_fft_cpx* fft_out = NULL
+    if method_id != METHOD_ENERGY:
+        fft_cfg = kiss_fftr_alloc(frame_size, 0, NULL, NULL)
+        fft_out = <kiss_fft_cpx*>malloc(half_size * sizeof(kiss_fft_cpx))
+
     if (mono_buffer == NULL or frame_buffer == NULL or windowed == NULL or
         magnitude == NULL or phase == NULL or prev_magnitude == NULL or
         prev_phase == NULL or prev_prev_phase == NULL or odf == NULL or
-        threshold_curve == NULL or peaks == NULL):
+        threshold_curve == NULL or peaks == NULL or
+        (method_id != METHOD_ENERGY and (fft_cfg == NULL or fft_out == NULL))):
         # Cleanup and raise
         free(mono_buffer)
         free(frame_buffer)
@@ -328,6 +333,9 @@ def detect_onsets(samples, int sample_rate, int channels,
         free(odf)
         free(threshold_curve)
         free(peaks)
+        if fft_cfg != NULL:
+            kiss_fft_free(fft_cfg)
+        free(fft_out)
         raise MemoryError("Failed to allocate onset detection buffers")
 
     cdef int i, j, frame_idx
@@ -369,8 +377,9 @@ def detect_onsets(samples, int sample_rate, int channels,
                 # Store previous magnitude
                 memcpy(prev_magnitude, magnitude, half_size * sizeof(double))
 
-                # Compute new spectrum
-                compute_magnitude_spectrum(windowed, magnitude, phase, frame_size)
+                # Compute new spectrum using KissFFT
+                compute_magnitude_spectrum(fft_cfg, windowed, fft_out,
+                                           magnitude, phase, frame_size)
 
             # Compute detection function value
             if method_id == METHOD_HFC:
@@ -433,6 +442,9 @@ def detect_onsets(samples, int sample_rate, int channels,
         free(odf)
         free(threshold_curve)
         free(peaks)
+        if fft_cfg != NULL:
+            kiss_fft_free(fft_cfg)
+        free(fft_out)
 
 
 def detect(path, double threshold=0.3, double sensitivity=1.5,

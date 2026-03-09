@@ -62,6 +62,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ### Changed
 
+- **Onset detection uses KissFFT**: Replaced O(n^2) DFT with KissFFT (BSD-3-Clause) for ~100x speedup at typical frame sizes (1024)
+  - Vendored KissFFT source (~750 lines of C) in `vendor/kissfft/`
+  - Compiled as static library with double precision (`kiss_fft_scalar=double`)
+  - New `kissfft.pxd` Cython declarations for real-valued FFT API
 - **TODO.md Cleanup**: Removed all completed items, keeping only open/blocked tasks
 
 ## [0.1.7]

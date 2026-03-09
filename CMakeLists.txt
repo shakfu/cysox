@@ -49,14 +49,28 @@ add_custom_command(
         --output-file onset.c
     DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/src/cysox/onset.pyx"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/cysox/kissfft.pxd"
     COMMENT "Generating onset.c from onset.pyx"
 )
 
 # Create the extension module (named _sox internally to avoid conflict with libsox)
 python_add_library(_sox MODULE sox.c WITH_SOABI)
 
-# Create the onset module (pure Cython, no external dependencies)
+# Build KissFFT as a static library (used by onset module for O(n log n) FFT)
+add_library(kissfft STATIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/vendor/kissfft/kiss_fft.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/vendor/kissfft/kiss_fftr.c"
+)
+target_include_directories(kissfft PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/vendor/kissfft")
+# Use double precision to match onset.pyx's double buffers
+target_compile_definitions(kissfft PUBLIC kiss_fft_scalar=double)
+set_target_properties(kissfft PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+# Create the onset module (uses KissFFT for spectral analysis)
 python_add_library(onset MODULE onset.c WITH_SOABI)
+target_include_directories(onset PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/vendor/kissfft")
+target_compile_definitions(onset PRIVATE kiss_fft_scalar=double)
+target_link_libraries(onset PRIVATE kissfft)
 
 # Set the output name to "sox" (the actual module name users import)
 set_target_properties(_sox PROPERTIES OUTPUT_NAME "sox")

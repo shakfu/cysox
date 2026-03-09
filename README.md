@@ -12,7 +12,7 @@ A Pythonic audio processing library which uses cython to wrap [libsox](https://g
 - **Typed Effects**: 28 base effect classes with IDE autocomplete and validation
 - **54 Effect Presets**: Ready-to-use composite effects for voice, lo-fi, drums, mastering, and more
 - **Drum Loop Tools**: Slice loops by BPM, create stutter effects, apply beat-synced processing
-- **High Performance**: Direct C bindings through Cython
+- **High Performance**: Direct C bindings through Cython, KissFFT-accelerated onset detection
 - **Zero Configuration**: Auto-initialization, no manual setup required
 - **Cross-Platform**: macOS, Linux (Windows placeholder)
 
@@ -657,3 +657,5 @@ make docs-serve  # http://localhost:8000
 ## License
 
 MIT
+
+KissFFT (vendored in `vendor/kissfft/`) is BSD-3-Clause licensed. See `vendor/kissfft/COPYING`.
