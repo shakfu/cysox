@@ -1164,6 +1164,10 @@ cdef class Format:
 
         samples_read = sox_read(self.ptr, buffer, length)
 
+        if samples_read == 0:
+            free(buffer)
+            return memoryview(bytearray(0))
+
         # Copy data from C buffer to Python bytearray, then free
         cdef size_t byte_count = samples_read * sizeof(sox_sample_t)
         result = bytearray(byte_count)

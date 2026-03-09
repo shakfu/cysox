@@ -31,7 +31,7 @@ endef
 .PHONY: all sync build rebuild test testpy leaks lint typecheck format qa \
         wheel sdist delocate strip check publish publish-test \
         examples-p examples-c benchmark benchmark-save benchmark-compare \
-        docs docs-clean docs-serve clean reset distclean help
+        docs docs-clean docs-serve docs-deploy clean reset distclean help
 
 # Default target
 all: build
@@ -185,6 +185,9 @@ docs-clean:
 docs-serve:
 	@uv run mkdocs serve
 
+docs-deploy:
+	@uv run mkdocs gh-deploy
+
 # ============================================================================
 # Cleanup
 # ============================================================================
@@ -194,9 +197,7 @@ clean:
 	@rm -rf build/lib.* build/temp.* dist src/*.egg-info htmlcov
 	@rm -rf src/cysox/sox.*.so
 	@rm -rf *.egg-info/
-	@rm -rf .pytest_cache/
-	@rm -rf .ruff_cache/
-	@rm -rf .mypy_cache/
+	@rm -rf .*_cache/
 	@find . -name "*.so" -path "./src/*" -delete
 	@find . -name "*.pyd" -delete
 	@find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
@@ -271,6 +272,7 @@ help:
 	@echo "  docs          - Build HTML documentation"
 	@echo "  docs-clean    - Remove built documentation"
 	@echo "  docs-serve    - Build and serve docs locally"
+	@echo "  docs-deploy   - Deploy docs to github pages"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  clean         - Remove build artifacts"

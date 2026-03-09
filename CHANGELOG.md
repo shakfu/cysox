@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+## [0.1.8]
+
 ### Added
 
 - **Memory Leak Check** (`make leaks`): macOS `leaks --atExit` integration for C-heap leak detection
@@ -39,6 +41,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 - **Onset module type stubs** (`onset.pyi`): IDE autocomplete and type checking for `onset.detect()` and `onset.detect_onsets()`
 
+- **CLI tests** (`test_cli.py`): 30 tests covering every subcommand (info, convert, concat, play, preset list/info/apply, slice, stutter) with valid inputs, invalid inputs, and error paths
+
+- **Format diversity tests** (`test_formats.py`): 19 tests exercising MP3, FLAC, mono 22kHz WAV, and amen break across info, convert, stream, concat, and onset detection
+
 - **Progress callbacks and cancellation** for `convert()`, `play()`, and `concat()`
   - New `on_progress` keyword argument: receives progress `0.0`-`1.0`, return `False` to cancel
   - New `CancelledError` exception raised on cancellation
@@ -59,6 +65,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 - **`PythonEffect` and `CEffect` docs**: Marked as experimental with warnings that they are not yet functional
 - **Opaque `SoxFormatError` messages**: Now reports specific cause (file not found, permission denied, unsupported format) instead of generic failure
 - **`stream()` docstring**: Documents int32 sample range and how to convert to float [-1.0, 1.0]
+- **`read_buffer()` crash at EOF**: `memcpy` on empty buffer caused `IndexError` when `sox_read` returned 0 samples
+- **`stream()` failed on MP3 files**: Relied on `signal.length` which is inaccurate for MP3; simplified to read until EOF
 
 ### Changed
 

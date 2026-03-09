@@ -52,7 +52,7 @@ from . import onset
 from . import sox
 
 # get libsox version via cysox.sox.version()
-__version__ = "0.1.7"
+__version__ = "0.1.8"
 
 
 __all__ = [

@@ -482,13 +482,10 @@ def stream(
 
     path = str(path)
     with sox.Format(path) as f:
-        remaining = f.signal.length
-        while remaining > 0:
-            to_read = min(chunk_size, remaining)
-            buf = f.read_buffer(to_read)
+        while True:
+            buf = f.read_buffer(chunk_size)
             if len(buf) == 0:
                 break
-            remaining -= len(buf)
             yield memoryview(buf)
 
 
