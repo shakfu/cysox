@@ -190,6 +190,9 @@ def main():
         "--channels", "-c", type=int, help="Target number of channels"
     )
     convert_parser.add_argument("--bits", "-b", type=int, help="Target bits per sample")
+    convert_parser.add_argument(
+        "-p", "--preset", help="Apply preset effect during conversion"
+    )
 
     # play command
     play_parser = subparsers.add_parser("play", help="Play audio file")
@@ -304,9 +307,18 @@ def main():
         return 0
 
     if args.command == "convert":
+        effects = None
+        if args.preset:
+            preset_class = get_preset_class(args.preset)
+            if not preset_class:
+                print(f"Unknown preset: {args.preset}", file=sys.stderr)
+                return 1
+            effects = [preset_class()]
+
         cysox.convert(
             args.input,
             args.output,
+            effects=effects,
             sample_rate=args.rate,
             channels=args.channels,
             bits=args.bits,

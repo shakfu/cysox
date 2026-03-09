@@ -252,4 +252,4 @@ While cysox supports concurrent operations on separate `Format` objects and effe
 
 - [libsox source code](https://sourceforge.net/p/sox/code/ci/master/tree/)
 - [SoX documentation](http://sox.sourceforge.net/libsox.html)
-- [cysox issue tracker](https://github.com/your-repo/cysox/issues)
+- [cysox issue tracker](https://github.com/shakfu/cysox/issues)

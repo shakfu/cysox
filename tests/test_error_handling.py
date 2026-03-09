@@ -5,9 +5,14 @@ import os
 from cysox import sox
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="session")
 def initialize_sox():
-    """Initialize SoX before each test."""
+    """Initialize SoX once for the entire test session.
+
+    Uses session scope to avoid repeated init/quit cycles, which can
+    cause crashes due to a known libsox limitation (see
+    docs/dev/known_limitations.md).
+    """
     sox.init()
     yield
     sox.quit()

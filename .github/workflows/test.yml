@@ -1,12 +1,11 @@
 name: Tests
 
-on: [workflow_dispatch]
-
-# on:
-#   push:
-#     branches: [ main, develop ]
-#   pull_request:
-#     branches: [ main, develop ]
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
 
 jobs:
   test-macos:

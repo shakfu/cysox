@@ -36,6 +36,7 @@ cysox info audio.wav
 # Convert audio files
 cysox convert input.wav output.mp3
 cysox convert input.wav output.wav --rate 48000 --channels 1
+cysox convert input.wav output.wav -p Telephone
 
 # Play audio
 cysox play audio.wav

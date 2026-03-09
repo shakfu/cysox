@@ -188,122 +188,125 @@ def convert(
 
     # Open input
     input_fmt = sox.Format(input_path)
+    output_fmt = None
 
-    # Build output signal info
-    out_signal = sox.SignalInfo(
-        rate=sample_rate or input_fmt.signal.rate,
-        channels=channels or input_fmt.signal.channels,
-        precision=bits or input_fmt.signal.precision,
-    )
+    try:
+        # Build output signal info
+        out_signal = sox.SignalInfo(
+            rate=sample_rate or input_fmt.signal.rate,
+            channels=channels or input_fmt.signal.channels,
+            precision=bits or input_fmt.signal.precision,
+        )
 
-    # Open output
-    output_fmt = sox.Format(output_path, signal=out_signal, mode="w")
+        # Open output
+        output_fmt = sox.Format(output_path, signal=out_signal, mode="w")
 
-    # Create effects chain
-    chain = sox.EffectsChain(input_fmt.encoding, output_fmt.encoding)
+        # Create effects chain
+        chain = sox.EffectsChain(input_fmt.encoding, output_fmt.encoding)
 
-    # Save original input properties (before any mutation)
-    original_rate = input_fmt.signal.rate
+        # Save original input properties (before any mutation)
+        original_rate = input_fmt.signal.rate
 
-    # Track current signal - use same object pattern to allow libsox in-place updates
-    current_signal = input_fmt.signal
+        # Track current signal - use same object pattern to allow libsox in-place updates
+        current_signal = input_fmt.signal
 
-    # Target output rate
-    target_rate = sample_rate or original_rate
+        # Target output rate
+        target_rate = sample_rate or original_rate
 
-    # Add input effect
-    e = sox.Effect(sox.find_effect("input"))
-    e.set_options([input_fmt])
-    chain.add_effect(e, current_signal, current_signal)
+        # Add input effect
+        e = sox.Effect(sox.find_effect("input"))
+        e.set_options([input_fmt])
+        chain.add_effect(e, current_signal, current_signal)
 
-    # Process effects
-    if effects:
-        expanded = _expand_effects(effects)
+        # Process effects
+        if effects:
+            expanded = _expand_effects(effects)
 
-        for effect in expanded:
-            if isinstance(effect, PythonEffect):
-                raise NotImplementedError(
-                    "PythonEffect not yet supported in convert(). "
-                    "Use stream() for custom Python processing."
-                )
-
-            handler = sox.find_effect(effect.name)
-            if handler is None:
-                raise ValueError(f"Unknown effect: {effect.name}")
-
-            e = sox.Effect(handler)
-            e.set_options(effect.to_args())
-
-            # Handle effects that explicitly change signal properties
-            if effect.name == "rate":
-                new_signal = sox.SignalInfo(
-                    rate=float(effect.to_args()[-1]),
-                    channels=current_signal.channels,
-                    precision=current_signal.precision,
-                )
-                chain.add_effect(e, current_signal, new_signal)
-                current_signal = new_signal
-            elif effect.name == "channels":
-                new_signal = sox.SignalInfo(
-                    rate=current_signal.rate,
-                    channels=int(effect.to_args()[0]),
-                    precision=current_signal.precision,
-                )
-                chain.add_effect(e, current_signal, new_signal)
-                current_signal = new_signal
-            else:
-                # For other effects, pass same signal (allows libsox in-place updates)
-                chain.add_effect(e, current_signal, current_signal)
-
-                # After add_effect, current_signal may have been mutated
-                # Check if rate changed (pitch, speed, tempo, etc.)
-                # Always create fresh signal for next effect to avoid stale state
-                if e.out_signal.rate > 0 and e.out_signal.rate != original_rate:
-                    current_signal = sox.SignalInfo(
-                        rate=e.out_signal.rate,
-                        channels=e.out_signal.channels,
-                        precision=e.out_signal.precision,
+            for effect in expanded:
+                if isinstance(effect, PythonEffect):
+                    raise NotImplementedError(
+                        "PythonEffect not yet supported in convert(). "
+                        "Use stream() for custom Python processing."
                     )
 
-    # Add rate conversion if current rate differs from target
-    if current_signal.rate != target_rate:
-        new_signal = sox.SignalInfo(
-            rate=target_rate,
-            channels=current_signal.channels,
-            precision=current_signal.precision,
-        )
-        e = sox.Effect(sox.find_effect("rate"))
-        e.set_options(["-q", str(int(target_rate))])  # -q for quick to avoid FFT issues
-        chain.add_effect(e, current_signal, new_signal)
-        current_signal = new_signal
+                handler = sox.find_effect(effect.name)
+                if handler is None:
+                    raise ValueError(f"Unknown effect: {effect.name}")
 
-    # Add channel conversion if needed
-    target_channels = channels or input_fmt.signal.channels
-    if current_signal.channels != target_channels:
-        new_signal = sox.SignalInfo(
-            rate=current_signal.rate,
-            channels=target_channels,
-            precision=current_signal.precision,
-        )
-        e = sox.Effect(sox.find_effect("channels"))
-        e.set_options([str(target_channels)])
-        chain.add_effect(e, current_signal, new_signal)
-        current_signal = new_signal
+                e = sox.Effect(handler)
+                e.set_options(effect.to_args())
 
-    # Add output effect
-    e = sox.Effect(sox.find_effect("output"))
-    e.set_options([output_fmt])
-    chain.add_effect(e, current_signal, out_signal)
+                # Handle effects that explicitly change signal properties
+                if effect.name == "rate":
+                    new_signal = sox.SignalInfo(
+                        rate=float(effect.to_args()[-1]),
+                        channels=current_signal.channels,
+                        precision=current_signal.precision,
+                    )
+                    chain.add_effect(e, current_signal, new_signal)
+                    current_signal = new_signal
+                elif effect.name == "channels":
+                    new_signal = sox.SignalInfo(
+                        rate=current_signal.rate,
+                        channels=int(effect.to_args()[0]),
+                        precision=current_signal.precision,
+                    )
+                    chain.add_effect(e, current_signal, new_signal)
+                    current_signal = new_signal
+                else:
+                    # For other effects, pass same signal (allows libsox in-place updates)
+                    chain.add_effect(e, current_signal, current_signal)
 
-    # Process
-    result = chain.flow_effects()
+                    # After add_effect, current_signal may have been mutated
+                    # Check if rate changed (pitch, speed, tempo, etc.)
+                    # Always create fresh signal for next effect to avoid stale state
+                    if e.out_signal.rate > 0 and e.out_signal.rate != original_rate:
+                        current_signal = sox.SignalInfo(
+                            rate=e.out_signal.rate,
+                            channels=e.out_signal.channels,
+                            precision=e.out_signal.precision,
+                        )
 
-    # Cleanup
-    input_fmt.close()
-    output_fmt.close()
+        # Add rate conversion if current rate differs from target
+        if current_signal.rate != target_rate:
+            new_signal = sox.SignalInfo(
+                rate=target_rate,
+                channels=current_signal.channels,
+                precision=current_signal.precision,
+            )
+            e = sox.Effect(sox.find_effect("rate"))
+            e.set_options(["-q", str(int(target_rate))])  # -q for quick to avoid FFT issues
+            chain.add_effect(e, current_signal, new_signal)
+            current_signal = new_signal
 
-    if result != sox.SUCCESS:
-        raise RuntimeError(f"Effects processing failed with code {result}")
+        # Add channel conversion if needed
+        target_channels = channels or input_fmt.signal.channels
+        if current_signal.channels != target_channels:
+            new_signal = sox.SignalInfo(
+                rate=current_signal.rate,
+                channels=target_channels,
+                precision=current_signal.precision,
+            )
+            e = sox.Effect(sox.find_effect("channels"))
+            e.set_options([str(target_channels)])
+            chain.add_effect(e, current_signal, new_signal)
+            current_signal = new_signal
+
+        # Add output effect
+        e = sox.Effect(sox.find_effect("output"))
+        e.set_options([output_fmt])
+        chain.add_effect(e, current_signal, out_signal)
+
+        # Process
+        result = chain.flow_effects()
+
+        if result != sox.SUCCESS:
+            raise RuntimeError(f"Effects processing failed with code {result}")
+
+    finally:
+        input_fmt.close()
+        if output_fmt is not None:
+            output_fmt.close()
 
 
 def stream(
@@ -380,60 +383,63 @@ def play(
 
     # Open input
     input_fmt = sox.Format(path)
+    output_fmt = None
 
-    # Open audio output
     try:
-        output_fmt = sox.Format(
-            "default", signal=input_fmt.signal, filetype=output_type, mode="w"
-        )
-    except Exception:
-        # Try alsa as fallback on Linux
-        if system == "Linux":
-            output_type = "alsa"
+        # Open audio output
+        try:
             output_fmt = sox.Format(
                 "default", signal=input_fmt.signal, filetype=output_type, mode="w"
             )
-        else:
-            raise
+        except Exception:
+            # Try alsa as fallback on Linux
+            if system == "Linux":
+                output_type = "alsa"
+                output_fmt = sox.Format(
+                    "default", signal=input_fmt.signal, filetype=output_type, mode="w"
+                )
+            else:
+                raise
 
-    # Create effects chain
-    chain = sox.EffectsChain(input_fmt.encoding, output_fmt.encoding)
-    current_signal = input_fmt.signal
+        # Create effects chain
+        chain = sox.EffectsChain(input_fmt.encoding, output_fmt.encoding)
+        current_signal = input_fmt.signal
 
-    # Add input effect
-    e = sox.Effect(sox.find_effect("input"))
-    e.set_options([input_fmt])
-    chain.add_effect(e, current_signal, current_signal)
+        # Add input effect
+        e = sox.Effect(sox.find_effect("input"))
+        e.set_options([input_fmt])
+        chain.add_effect(e, current_signal, current_signal)
 
-    # Add user effects
-    if effects:
-        expanded = _expand_effects(effects)
-        for effect in expanded:
-            if isinstance(effect, PythonEffect):
-                raise NotImplementedError("PythonEffect not supported in play()")
+        # Add user effects
+        if effects:
+            expanded = _expand_effects(effects)
+            for effect in expanded:
+                if isinstance(effect, PythonEffect):
+                    raise NotImplementedError("PythonEffect not supported in play()")
 
-            handler = sox.find_effect(effect.name)
-            if handler is None:
-                raise ValueError(f"Unknown effect: {effect.name}")
+                handler = sox.find_effect(effect.name)
+                if handler is None:
+                    raise ValueError(f"Unknown effect: {effect.name}")
 
-            e = sox.Effect(handler)
-            e.set_options(effect.to_args())
-            chain.add_effect(e, current_signal, current_signal)
+                e = sox.Effect(handler)
+                e.set_options(effect.to_args())
+                chain.add_effect(e, current_signal, current_signal)
 
-    # Add output effect
-    e = sox.Effect(sox.find_effect("output"))
-    e.set_options([output_fmt])
-    chain.add_effect(e, current_signal, current_signal)
+        # Add output effect
+        e = sox.Effect(sox.find_effect("output"))
+        e.set_options([output_fmt])
+        chain.add_effect(e, current_signal, current_signal)
 
-    # Play (blocks until complete)
-    result = chain.flow_effects()
+        # Play (blocks until complete)
+        result = chain.flow_effects()
 
-    # Cleanup
-    input_fmt.close()
-    output_fmt.close()
+        if result != sox.SUCCESS:
+            raise RuntimeError(f"Playback failed with code {result}")
 
-    if result != sox.SUCCESS:
-        raise RuntimeError(f"Playback failed with code {result}")
+    finally:
+        input_fmt.close()
+        if output_fmt is not None:
+            output_fmt.close()
 
 
 def concat(

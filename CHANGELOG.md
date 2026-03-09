@@ -25,6 +25,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
     EffectHandler, Format (read/write/buffer), EffectsChain
   - New Makefile target: `make leaks` (requires macOS)
 
+- **CLI Preset Support for Convert**: `cysox convert` now accepts `-p`/`--preset` flag
+  - Apply any preset during conversion: `cysox convert input.wav output.wav -p Telephone`
+  - Consistent with `slice` and `stutter` commands
+
+### Fixed
+
+- **Resource leak in `convert()` and `play()`**: Wrapped Format objects in try/finally blocks to ensure cleanup on exceptions
+- **CI triggers**: Enabled test workflow on push/PR to main/develop (was previously manual-only)
+- **Test fixture scope in `test_error_handling.py`**: Changed from per-test to session scope to avoid repeated init/quit cycles
+
 ### Changed
 
 - **TODO.md Cleanup**: Removed all completed items, keeping only open/blocked tasks
