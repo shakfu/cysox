@@ -56,13 +56,13 @@ ENCODINGS = [
     ("ALAW",        "A-law signed logs: non-US telephony, Psion"),
     ("G721",        "G.721 4-bit ADPCM"),
     ("G723",        "G.723 3 or 5 bit ADPCM"),
-    ("CL_ADPCM  ",  "Creative Labs 8 --> 2,3,4 bit Compressed PCM"),
+    ("CL_ADPCM",    "Creative Labs 8 --> 2,3,4 bit Compressed PCM"),
     ("CL_ADPCM16",  "Creative Labs 16 --> 4 bit Compressed PCM"),
-    ("MS_ADPCM  ",  "Microsoft Compressed PCM"),
-    ("IMA_ADPCM ",  "IMA Compressed PCM"),
-    ("OKI_ADPCM ",  "Dialogic/OKI Compressed PCM"),
+    ("MS_ADPCM",    "Microsoft Compressed PCM"),
+    ("IMA_ADPCM",   "IMA Compressed PCM"),
+    ("OKI_ADPCM",   "Dialogic/OKI Compressed PCM"),
     ("DPCM",        "Differential PCM: Fasttracker 2 (xi)"),
-    ("DWVW ",       "Delta Width Variable Word"),
+    ("DWVW",        "Delta Width Variable Word"),
     ("DWVWN",       "Delta Width Variable Word N-bit"),
     ("GSM",         "GSM 6.10 33byte frame lossy compression"),
     ("MP3",         "MP3 compression"),
@@ -309,7 +309,7 @@ class EncodingsInfo:
             0: 'lossless',
             1: 'lossy1',
             2: 'lossy2',
-        }[self.flags]
+        }.get(self.flags, 'unknown')
 
 
 cdef class EncodingInfo:
@@ -340,12 +340,6 @@ cdef class EncodingInfo:
         self.reverse_bits = reverse_bits
         self.opposite_endian = opposite_endian
         self.owner = True
-
-    # def __init__(self):
-    #     """Fills in an encodinginfo with default values."""
-    #     self.ptr = <sox_encodinginfo_t*>malloc(sizeof(sox_encodinginfo_t))
-    #     self.owner = True
-    #     sox_init_encodinginfo(self.ptr)
 
     @staticmethod
     cdef EncodingInfo from_ptr(const sox_encodinginfo_t* ptr, bint owner=False):
@@ -735,28 +729,6 @@ cdef class OutOfBand:
         for i in range(n):
             _comments.append(self.ptr.comments[i].decode())
         return _comments
-
-    # FIXME: use list[str]
-    # @comments.setter
-    # def comments(self, sox_comments_t value):
-    #     self.ptr.comments = value
-
-    # cdef char** create_char_array(list python_strings):
-    #     cdef int num_strings = len(python_strings)
-    #     cdef char** c_array = <char**> malloc(num_strings * sizeof(char*))
-    #     if not c_array:
-    #         # Handle allocation error
-    #         pass
-
-    #     for i in range(num_strings):
-    #         # Convert Python string to C string and store pointer
-    #         c_array[i] = python_strings[i].encode('utf-8')  # Or other encoding
-    #     return c_array
-
-    # cdef void free_char_array(char** c_array, int num_strings):
-    #     for i in range(num_strings):
-    #         free(c_array[i]) # Free individual strings if they were allocated
-    #     free(c_array)
 
     @property
     def instr(self) -> InstrInfo:
@@ -1175,14 +1147,11 @@ cdef class Format:
 
         samples_read = sox_read(self.ptr, buffer, length)
 
-        # Create a memory view from the C buffer
-        # We need to copy the data because we're freeing the buffer
-        cdef sox_sample_t[::1] view = <sox_sample_t[:samples_read]>buffer
-        result = bytearray(samples_read * sizeof(sox_sample_t))
+        # Copy data from C buffer to Python bytearray, then free
+        cdef size_t byte_count = samples_read * sizeof(sox_sample_t)
+        result = bytearray(byte_count)
         cdef unsigned char[::1] result_view = result
-        cdef size_t i
-        for i in range(samples_read * sizeof(sox_sample_t)):
-            result_view[i] = (<unsigned char*>buffer)[i]
+        memcpy(&result_view[0], buffer, byte_count)
 
         free(buffer)
         return memoryview(result).cast('i', shape=[samples_read])

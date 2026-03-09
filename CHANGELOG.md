@@ -34,6 +34,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 - **Resource leak in `convert()` and `play()`**: Wrapped Format objects in try/finally blocks to ensure cleanup on exceptions
 - **CI triggers**: Enabled test workflow on push/PR to main/develop (was previously manual-only)
 - **Test fixture scope in `test_error_handling.py`**: Changed from per-test to session scope to avoid repeated init/quit cycles
+- **`read_buffer()` performance**: Replaced Python-level byte-by-byte copy with `memcpy`
+- **`EncodingsInfo.type` crash**: Fixed `KeyError` on unexpected flag values (now returns `'unknown'`)
+- **Trailing whitespace in ENCODINGS**: Stripped from `CL_ADPCM`, `MS_ADPCM`, `IMA_ADPCM`, `OKI_ADPCM`, `DWVW`
+- **Commented-out dead code**: Removed stale code blocks in `sox.pyx`
 
 ### Changed
 

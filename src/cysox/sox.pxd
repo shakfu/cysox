@@ -1,4 +1,5 @@
 from libc.stdlib cimport malloc, calloc, realloc, free
+from libc.string cimport memcpy
 
 cdef extern from "<stdarg.h>":
     ctypedef struct va_list: pass

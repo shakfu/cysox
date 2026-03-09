@@ -111,39 +111,44 @@ def info(path: Union[str, Path]) -> Dict:
 
 
 def _encoding_name(encoding_type: int) -> str:
-    """Convert encoding type constant to string."""
-    encoding_names = {
-        0: "unknown",
-        1: "signed-integer",
-        2: "unsigned-integer",
-        3: "float",
-        4: "float-text",
-        5: "flac",
-        6: "hcom",
-        7: "wavpack",
-        8: "wavpackf",
-        9: "ulaw",
-        10: "alaw",
-        11: "g721",
-        12: "g723",
-        13: "cl-adpcm",
-        14: "cl-adpcm16",
-        15: "ms-adpcm",
-        16: "ima-adpcm",
-        17: "oki-adpcm",
-        18: "dpcm",
-        19: "dwvw",
-        20: "dwvwn",
-        21: "gsm",
-        22: "mp3",
-        23: "vorbis",
-        24: "amr-wb",
-        25: "amr-nb",
-        26: "cvsd",
-        27: "lpc10",
-        28: "opus",
+    """Convert encoding type constant to string.
+
+    Maps libsox encoding enum values (indices into sox.ENCODINGS) to
+    human-readable names.
+    """
+    # Indices correspond to sox.ENCODINGS order (sox_encoding_t enum)
+    _ENCODING_NAMES = {
+        0: "unknown",       # UNKNOWN
+        1: "signed-integer", # SIGN2
+        2: "unsigned-integer", # UNSIGNED
+        3: "float",         # FLOAT
+        4: "float-text",    # FLOAT_TEXT
+        5: "flac",          # FLAC
+        6: "hcom",          # HCOM
+        7: "wavpack",       # WAVPACK
+        8: "wavpackf",      # WAVPACKF
+        9: "ulaw",          # ULAW
+        10: "alaw",         # ALAW
+        11: "g721",         # G721
+        12: "g723",         # G723
+        13: "cl-adpcm",     # CL_ADPCM
+        14: "cl-adpcm16",   # CL_ADPCM16
+        15: "ms-adpcm",     # MS_ADPCM
+        16: "ima-adpcm",    # IMA_ADPCM
+        17: "oki-adpcm",    # OKI_ADPCM
+        18: "dpcm",         # DPCM
+        19: "dwvw",         # DWVW
+        20: "dwvwn",        # DWVWN
+        21: "gsm",          # GSM
+        22: "mp3",          # MP3
+        23: "vorbis",       # VORBIS
+        24: "amr-wb",       # AMR_WB
+        25: "amr-nb",       # AMR_NB
+        26: "cvsd",         # CVSD
+        27: "lpc10",        # LPC10
+        28: "opus",         # OPUS
     }
-    return encoding_names.get(encoding_type, "unknown")
+    return _ENCODING_NAMES.get(encoding_type, "unknown")
 
 
 def convert(

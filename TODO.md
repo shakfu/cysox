@@ -82,6 +82,19 @@ Nice-to-have features and long-term improvements.
   - Automatic changelog generation
   - Git tag creation
 
+### Architecture
+
+- [ ] **Consolidate init state into a SoxRuntime singleton**
+  - Currently `audio.py` (`_initialized`) and `sox.pyx` (`_sox_initialized`) independently track init state
+  - Both paths converge correctly today (`sox.init()` is idempotent), but the dual tracking is unnecessary indirection
+  - A `SoxRuntime` singleton would:
+    - Own initialization/cleanup lifecycle in one place
+    - Provide a natural place for a lock (needed for free-threaded Python / PEP 703)
+    - Hold runtime configuration (verbosity, buffer sizes, etc.)
+  - Also address: `_ensure_init()` race under free-threading (two threads can both enter the `if not _initialized` branch)
+  - Also address: `_flow_callbacks` global dict relies on GIL for thread safety
+  - Scope: consider for 1.0 release, not urgent given current correctness
+
 ### Code Quality
 
 - [ ] **Add pre-commit hooks**
