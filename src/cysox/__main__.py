@@ -3,6 +3,7 @@
 import argparse
 import inspect
 import sys
+from typing import Any, Optional
 
 import cysox
 from cysox import fx, sox
@@ -10,36 +11,56 @@ from cysox import fx, sox
 # All available presets organized by category
 PRESET_CATEGORIES = {
     "voice": [
-        "Chipmunk", "DeepVoice", "Robot", "HauntedVoice", "VocalClarity", "Whisper"
+        "Chipmunk",
+        "DeepVoice",
+        "Robot",
+        "HauntedVoice",
+        "VocalClarity",
+        "Whisper",
     ],
     "lofi": [
-        "Telephone", "AMRadio", "Megaphone", "Underwater", "VinylWarmth",
-        "LoFiHipHop", "Cassette"
+        "Telephone",
+        "AMRadio",
+        "Megaphone",
+        "Underwater",
+        "VinylWarmth",
+        "LoFiHipHop",
+        "Cassette",
     ],
-    "spatial": [
-        "SmallRoom", "LargeHall", "Cathedral", "Bathroom", "Stadium"
-    ],
-    "broadcast": [
-        "Podcast", "RadioDJ", "Voiceover", "Intercom", "WalkieTalkie"
-    ],
+    "spatial": ["SmallRoom", "LargeHall", "Cathedral", "Bathroom", "Stadium"],
+    "broadcast": ["Podcast", "RadioDJ", "Voiceover", "Intercom", "WalkieTalkie"],
     "musical": [
-        "EightiesChorus", "DreamyPad", "SlowedReverb", "SlapbackEcho",
-        "DubDelay", "JetFlanger", "ShoegazeWash"
+        "EightiesChorus",
+        "DreamyPad",
+        "SlowedReverb",
+        "SlapbackEcho",
+        "DubDelay",
+        "JetFlanger",
+        "ShoegazeWash",
     ],
     "drums": [
-        "HalfTime", "DoubleTime", "DrumPunch", "DrumCrisp", "DrumFat",
-        "Breakbeat", "VintageBreak", "DrumRoom", "GatedReverb", "DrumSlice",
-        "ReverseCymbal", "LoopReady"
+        "HalfTime",
+        "DoubleTime",
+        "DrumPunch",
+        "DrumCrisp",
+        "DrumFat",
+        "Breakbeat",
+        "VintageBreak",
+        "DrumRoom",
+        "GatedReverb",
+        "DrumSlice",
+        "ReverseCymbal",
+        "LoopReady",
     ],
-    "mastering": [
-        "BroadcastLimiter", "WarmMaster", "BrightMaster", "LoudnessMaster"
-    ],
+    "mastering": ["BroadcastLimiter", "WarmMaster", "BrightMaster", "LoudnessMaster"],
     "cleanup": [
-        "RemoveRumble", "RemoveHiss", "RemoveHum", "CleanVoice", "TapeRestoration"
+        "RemoveRumble",
+        "RemoveHiss",
+        "RemoveHum",
+        "CleanVoice",
+        "TapeRestoration",
     ],
-    "transition": [
-        "FadeInOut", "CrossfadeReady"
-    ],
+    "transition": ["FadeInOut", "CrossfadeReady"],
 }
 
 # Flat list of all presets
@@ -68,7 +89,10 @@ def get_preset_params(preset_class) -> dict:
     for param_name, param in sig.parameters.items():
         if param_name in ("self", "args", "kwargs"):
             continue
-        if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+        if param.kind in (
+            inspect.Parameter.VAR_POSITIONAL,
+            inspect.Parameter.VAR_KEYWORD,
+        ):
             continue
         if param.default is not inspect.Parameter.empty:
             params[param_name] = param.default
@@ -77,7 +101,7 @@ def get_preset_params(preset_class) -> dict:
     return params
 
 
-def list_presets(category: str = None):
+def list_presets(category: Optional[str] = None):
     """List available presets."""
     if category:
         category = category.lower()
@@ -137,7 +161,7 @@ def apply_preset(name: str, input_file: str, output_file: str, params: dict):
 
     # Filter params to only those accepted by the preset
     valid_params = get_preset_params(preset_class)
-    filtered_params = {}
+    filtered_params: dict[str, Any] = {}
     for key, value in params.items():
         if key in valid_params:
             # Convert string values to appropriate types
@@ -245,24 +269,33 @@ def main():
         "--beats", type=int, default=1, help="Beats per slice when using --bpm"
     )
     slice_parser.add_argument(
-        "-t", "--threshold", type=float, default=None,
-        help="Onset detection threshold 0.0-1.0, e.g. 0.3 (enables automatic transient slicing)"
+        "-t",
+        "--threshold",
+        type=float,
+        default=None,
+        help="Onset detection threshold 0.0-1.0, e.g. 0.3 (enables automatic transient slicing)",
     )
     slice_parser.add_argument(
-        "-s", "--sensitivity", type=float, default=1.5,
-        help="Onset detection sensitivity 1.0-3.0 (default: 1.5)"
+        "-s",
+        "--sensitivity",
+        type=float,
+        default=1.5,
+        help="Onset detection sensitivity 1.0-3.0 (default: 1.5)",
     )
     slice_parser.add_argument(
-        "-m", "--method", choices=["hfc", "flux", "energy", "complex"],
-        default="hfc", help="Onset detection method (default: hfc)"
+        "-m",
+        "--method",
+        choices=["hfc", "flux", "energy", "complex"],
+        default="hfc",
+        help="Onset detection method (default: hfc)",
     )
     slice_parser.add_argument(
-        "--min-spacing", type=float, default=0.05,
-        help="Minimum time between onsets in seconds (default: 0.05)"
+        "--min-spacing",
+        type=float,
+        default=0.05,
+        help="Minimum time between onsets in seconds (default: 0.05)",
     )
-    slice_parser.add_argument(
-        "-p", "--preset", help="Apply preset to each slice"
-    )
+    slice_parser.add_argument("-p", "--preset", help="Apply preset to each slice")
 
     # stutter command
     stutter_parser = subparsers.add_parser("stutter", help="Create stutter effect")
@@ -272,14 +305,16 @@ def main():
         "-s", "--start", type=float, default=0, help="Segment start in seconds"
     )
     stutter_parser.add_argument(
-        "-d", "--duration", type=float, default=0.125, help="Segment duration in seconds"
+        "-d",
+        "--duration",
+        type=float,
+        default=0.125,
+        help="Segment duration in seconds",
     )
     stutter_parser.add_argument(
         "-r", "--repeats", type=int, default=8, help="Number of repeats"
     )
-    stutter_parser.add_argument(
-        "-p", "--preset", help="Apply preset after stuttering"
-    )
+    stutter_parser.add_argument("-p", "--preset", help="Apply preset after stuttering")
 
     # Parse known args to allow --param=value for presets
     args, unknown = parser.parse_known_args()

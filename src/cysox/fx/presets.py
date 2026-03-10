@@ -27,7 +27,7 @@ from .eq import Bass, Treble, Equalizer
 from .filter import HighPass, LowPass, BandReject
 from .reverb import Reverb, Echo, Chorus, Flanger
 from .volume import Volume, Normalize, Gain
-from .time import Speed, Pitch, Fade, Reverse, Tempo, Trim, Repeat
+from .time import Speed, Pitch, Fade, Reverse, Tempo, Trim
 from .convert import Rate
 
 
@@ -304,7 +304,9 @@ class Cassette(CompositeEffect):
             LowPass(frequency=12000),
             Bass(gain=2),
             Treble(gain=-3, frequency=10000),
-            Chorus(gain_in=0.95, gain_out=0.95, delay=25, decay=0.1, speed=0.3, depth=0.5),
+            Chorus(
+                gain_in=0.95, gain_out=0.95, delay=25, decay=0.1, speed=0.3, depth=0.5
+            ),
         ]
 
 
@@ -510,7 +512,14 @@ class EightiesChorus(CompositeEffect):
     @property
     def effects(self) -> List[Effect]:
         return [
-            Chorus(gain_in=0.5, gain_out=0.6, delay=30, decay=0.4, speed=1.5, depth=self.depth),
+            Chorus(
+                gain_in=0.5,
+                gain_out=0.6,
+                delay=30,
+                decay=0.4,
+                speed=1.5,
+                depth=self.depth,
+            ),
             Reverb(reverberance=20),
         ]
 
@@ -1097,16 +1106,18 @@ class FadeInOut(CompositeEffect):
 
     @property
     def effects(self) -> List[Effect]:
-        effects = []
+        effects: List[Effect] = []
         if self.fade_in_secs > 0:
             effects.append(Fade(fade_in=self.fade_in_secs))
         if self.fade_out_secs > 0:
             # Workaround: reverse, fade_in (which becomes fade_out), reverse back
-            effects.extend([
-                Reverse(),
-                Fade(fade_in=self.fade_out_secs),
-                Reverse(),
-            ])
+            effects.extend(
+                [
+                    Reverse(),
+                    Fade(fade_in=self.fade_out_secs),
+                    Reverse(),
+                ]
+            )
         return effects if effects else [Fade(fade_in=0.3)]
 
 

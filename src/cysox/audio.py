@@ -21,7 +21,8 @@ Example:
 
 import atexit
 from pathlib import Path
-from typing import Callable, Dict, Iterator, List, Optional, Union
+from types import TracebackType
+from typing import Callable, Iterator, List, Optional, Union
 
 from . import sox
 from .fx.base import Effect, CompositeEffect, PythonEffect
@@ -33,6 +34,7 @@ ProgressCallback = Callable[[float], bool]
 
 class CancelledError(Exception):
     """Raised when an operation is cancelled via a progress callback."""
+
     pass
 
 
@@ -44,8 +46,14 @@ class AudioInfo:
     """
 
     __slots__ = (
-        "path", "format", "duration", "sample_rate",
-        "channels", "bits_per_sample", "samples", "encoding",
+        "path",
+        "format",
+        "duration",
+        "sample_rate",
+        "channels",
+        "bits_per_sample",
+        "samples",
+        "encoding",
     )
 
     def __init__(
@@ -88,10 +96,7 @@ class AudioInfo:
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, AudioInfo):
-            return all(
-                getattr(self, k) == getattr(other, k)
-                for k in self.__slots__
-            )
+            return all(getattr(self, k) == getattr(other, k) for k in self.__slots__)
         return NotImplemented
 
     def keys(self):
@@ -105,6 +110,7 @@ class AudioInfo:
     def items(self):
         """Dict-like items for compatibility."""
         return tuple((k, getattr(self, k)) for k in self.__slots__)
+
 
 # Module state
 _initialized = False
@@ -221,6 +227,7 @@ def info(path: Union[str, Path]) -> AudioInfo:
             samples=signal.length or 0,
             encoding=_encoding_name(encoding.encoding) if encoding else "",
         )
+    raise AssertionError("unreachable")
 
 
 def _encoding_name(encoding_type: int) -> str:
@@ -231,35 +238,35 @@ def _encoding_name(encoding_type: int) -> str:
     """
     # Indices correspond to sox.ENCODINGS order (sox_encoding_t enum)
     _ENCODING_NAMES = {
-        0: "unknown",       # UNKNOWN
-        1: "signed-integer", # SIGN2
-        2: "unsigned-integer", # UNSIGNED
-        3: "float",         # FLOAT
-        4: "float-text",    # FLOAT_TEXT
-        5: "flac",          # FLAC
-        6: "hcom",          # HCOM
-        7: "wavpack",       # WAVPACK
-        8: "wavpackf",      # WAVPACKF
-        9: "ulaw",          # ULAW
-        10: "alaw",         # ALAW
-        11: "g721",         # G721
-        12: "g723",         # G723
-        13: "cl-adpcm",     # CL_ADPCM
-        14: "cl-adpcm16",   # CL_ADPCM16
-        15: "ms-adpcm",     # MS_ADPCM
-        16: "ima-adpcm",    # IMA_ADPCM
-        17: "oki-adpcm",    # OKI_ADPCM
-        18: "dpcm",         # DPCM
-        19: "dwvw",         # DWVW
-        20: "dwvwn",        # DWVWN
-        21: "gsm",          # GSM
-        22: "mp3",          # MP3
-        23: "vorbis",       # VORBIS
-        24: "amr-wb",       # AMR_WB
-        25: "amr-nb",       # AMR_NB
-        26: "cvsd",         # CVSD
-        27: "lpc10",        # LPC10
-        28: "opus",         # OPUS
+        0: "unknown",  # UNKNOWN
+        1: "signed-integer",  # SIGN2
+        2: "unsigned-integer",  # UNSIGNED
+        3: "float",  # FLOAT
+        4: "float-text",  # FLOAT_TEXT
+        5: "flac",  # FLAC
+        6: "hcom",  # HCOM
+        7: "wavpack",  # WAVPACK
+        8: "wavpackf",  # WAVPACKF
+        9: "ulaw",  # ULAW
+        10: "alaw",  # ALAW
+        11: "g721",  # G721
+        12: "g723",  # G723
+        13: "cl-adpcm",  # CL_ADPCM
+        14: "cl-adpcm16",  # CL_ADPCM16
+        15: "ms-adpcm",  # MS_ADPCM
+        16: "ima-adpcm",  # IMA_ADPCM
+        17: "oki-adpcm",  # OKI_ADPCM
+        18: "dpcm",  # DPCM
+        19: "dwvw",  # DWVW
+        20: "dwvwn",  # DWVWN
+        21: "gsm",  # GSM
+        22: "mp3",  # MP3
+        23: "vorbis",  # VORBIS
+        24: "amr-wb",  # AMR_WB
+        25: "amr-nb",  # AMR_NB
+        26: "cvsd",  # CVSD
+        27: "lpc10",  # LPC10
+        28: "opus",  # OPUS
     }
     return _ENCODING_NAMES.get(encoding_type, "unknown")
 
@@ -405,7 +412,9 @@ def convert(
                 precision=current_signal.precision,
             )
             e = sox.Effect(sox.find_effect("rate"))
-            e.set_options(["-q", str(int(target_rate))])  # -q for quick to avoid FFT issues
+            e.set_options(
+                ["-q", str(int(target_rate))]
+            )  # -q for quick to avoid FFT issues
             chain.add_effect(e, current_signal, new_signal)
             current_signal = new_signal
 
@@ -439,7 +448,8 @@ def convert(
                     raise CancelledError("convert() cancelled by progress callback")
                 exc_info = sox.get_last_callback_exception()
                 if exc_info is not None:
-                    raise exc_info[1].with_traceback(exc_info[2])
+                    tb = exc_info[2] if isinstance(exc_info[2], TracebackType) else None
+                    raise exc_info[1].with_traceback(tb)
                 raise
         else:
             result = chain.flow_effects()
@@ -592,7 +602,8 @@ def play(
                     raise CancelledError("play() cancelled by progress callback")
                 exc_info = sox.get_last_callback_exception()
                 if exc_info is not None:
-                    raise exc_info[1].with_traceback(exc_info[2])
+                    tb = exc_info[2] if isinstance(exc_info[2], TracebackType) else None
+                    raise exc_info[1].with_traceback(tb)
                 raise
         else:
             result = chain.flow_effects()
@@ -700,7 +711,11 @@ def concat(
 
                 if on_progress is not None:
                     samples_written += len(samples)
-                    progress = min(samples_written / total_samples, 0.99) if total_samples > 0 else 0.0
+                    progress = (
+                        min(samples_written / total_samples, 0.99)
+                        if total_samples > 0
+                        else 0.0
+                    )
                     if on_progress(progress) is False:
                         raise CancelledError("concat() cancelled by progress callback")
 

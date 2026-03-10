@@ -4,13 +4,13 @@
 from typing import Callable, Optional, List, Union, Tuple, Iterator, Dict, Any
 import array
 
-ProgressCallback = Callable[[float], bool]
-
-class CancelledError(Exception): ...
-
 # Re-export sox module for type checking
 from . import sox as sox
 from . import fx as fx
+
+ProgressCallback = Callable[[float], bool]
+
+class CancelledError(Exception): ...
 
 # Exception classes
 class SoxError(Exception): ...
