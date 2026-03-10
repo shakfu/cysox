@@ -104,8 +104,11 @@ if(IS_MACOS)
         add_library(libmp3lame_static STATIC IMPORTED)
         set_target_properties(libmp3lame_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libmp3lame.a")
 
-        add_library(libmad_static STATIC IMPORTED)
-        set_target_properties(libmad_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libmad.a")
+        # libmad is optional (mpg123 provides the same MP3 decoding)
+        if(EXISTS "${LIB_DIR}/libmad.a")
+            add_library(libmad_static STATIC IMPORTED)
+            set_target_properties(libmad_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libmad.a")
+        endif()
 
         add_library(libmpg123_static STATIC IMPORTED)
         set_target_properties(libmpg123_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libmpg123.a")
@@ -126,14 +129,13 @@ if(IS_MACOS)
         set_target_properties(libpng16_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libpng16.a")
 
         # Link in dependency order
-        target_link_libraries(_sox PRIVATE
+        set(_SOX_LINK_LIBS
             libsox_static
             libsndfile_static
             libflac_static
             libopus_static
             libopusfile_static
             libmp3lame_static
-            libmad_static
             libmpg123_static
             libvorbis_static
             libvorbisfile_static
@@ -141,6 +143,10 @@ if(IS_MACOS)
             libogg_static
             libpng16_static
         )
+        if(TARGET libmad_static)
+            list(INSERT _SOX_LINK_LIBS 6 libmad_static)
+        endif()
+        target_link_libraries(_sox PRIVATE ${_SOX_LINK_LIBS})
     else()
         # Dynamic linking
         target_link_directories(_sox PRIVATE "${LIB_DIR}")
