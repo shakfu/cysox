@@ -55,6 +55,30 @@ case "$(uname -s)" in
             copy_lib "$dep"
         done
 
+        # Build libmad from source if static library not available
+        # (Homebrew's mad package only ships dynamic libraries)
+        # Build libmad from source if static library not available
+        # (Homebrew's mad package only ships dynamic libraries)
+        if [ ! -f "$LIB_DIR/libmad.a" ]; then
+            echo "libmad.a not found - building from source..."
+            MAD_VERSION="0.16.4"
+            MAD_BUILD_DIR=$(mktemp -d)
+            curl -sL "https://codeberg.org/tenacityteam/libmad/archive/${MAD_VERSION}.tar.gz" \
+                | tar xz -C "$MAD_BUILD_DIR"
+            pushd "$MAD_BUILD_DIR/libmad" > /dev/null
+            cmake -B build \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_OSX_ARCHITECTURES="$(uname -m)" \
+                -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+                -DBUILD_SHARED_LIBS=OFF
+            cmake --build build
+            popd > /dev/null
+            cp "$MAD_BUILD_DIR/libmad/build/libmad.a" "$LIB_DIR/"
+            [ ! -f "$INCLUDE_DIR/mad.h" ] && cp "$MAD_BUILD_DIR/libmad/build/mad.h" "$INCLUDE_DIR/"
+            rm -rf "$MAD_BUILD_DIR"
+            echo "libmad.a built successfully"
+        fi
+
         # Remove unnecessary libraries
         rm -f \
             "$LIB_DIR/libpng.a" \
