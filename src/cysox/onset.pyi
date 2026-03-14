@@ -14,6 +14,11 @@ def detect_onsets(
     method: str = "hfc",
     frame_size: int = 1024,
     hop_size: int = 256,
+    n_mels: int = 138,
+    fmin: float = 27.5,
+    fmax: float = 16000.0,
+    max_size: int = 3,
+    lag: int = 2,
 ) -> List[float]:
     """Detect onsets (transients) in audio samples.
 
@@ -29,9 +34,14 @@ def detect_onsets(
         min_spacing: Minimum time between onsets in seconds.
                      Default 0.05 (50ms) prevents double triggers.
         method: Detection method - 'hfc' (default, best for drums),
-                'flux' (spectral flux), 'energy', or 'complex'.
+                'flux' (spectral flux), 'energy', 'complex', or 'superflux'.
         frame_size: Analysis frame size (default 1024).
         hop_size: Hop size between frames (default 256).
+        n_mels: Number of mel bands (superflux only, default 138).
+        fmin: Min frequency in Hz (superflux only, default 27.5).
+        fmax: Max frequency in Hz (superflux only, default 16000).
+        max_size: Max-filter width (superflux only, default 3).
+        lag: Frame lag for reference comparison (superflux only, default 2).
 
     Returns:
         List of onset times in seconds.
@@ -46,6 +56,11 @@ def detect(
     method: str = "hfc",
     frame_size: int = 1024,
     hop_size: int = 256,
+    n_mels: int = 138,
+    fmin: float = 27.5,
+    fmax: float = 16000.0,
+    max_size: int = 3,
+    lag: int = 2,
 ) -> List[float]:
     """Detect onsets in an audio file.
 
@@ -56,9 +71,15 @@ def detect(
         threshold: Detection threshold 0.0-1.0 (lower = more sensitive).
         sensitivity: Peak picking sensitivity 1.0-3.0.
         min_spacing: Minimum time between onsets in seconds.
-        method: Detection method - 'hfc', 'flux', 'energy', or 'complex'.
+        method: Detection method - 'hfc', 'flux', 'energy', 'complex',
+                or 'superflux'.
         frame_size: Analysis frame size.
         hop_size: Hop size between frames.
+        n_mels: Number of mel bands (superflux only, default 138).
+        fmin: Min frequency in Hz (superflux only, default 27.5).
+        fmax: Max frequency in Hz (superflux only, default 16000).
+        max_size: Max-filter width (superflux only, default 3).
+        lag: Frame lag for reference comparison (superflux only, default 2).
 
     Returns:
         List of onset times in seconds.

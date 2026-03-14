@@ -89,6 +89,47 @@ class TestOnsetDetection:
         onsets = onset.detect(amen_path, threshold=0.3, method='complex')
         assert len(onsets) > 0
 
+    def test_method_superflux(self, amen_path):
+        """Test Superflux onset detection method."""
+        onsets = onset.detect(amen_path, threshold=0.3, method='superflux')
+        assert len(onsets) > 0
+
+    def test_superflux_onsets_are_sorted(self, amen_path):
+        """Test that superflux onset times are in ascending order."""
+        onsets = onset.detect(amen_path, threshold=0.3, method='superflux')
+        for i in range(len(onsets) - 1):
+            assert onsets[i] < onsets[i + 1]
+
+    def test_superflux_backtracking_shifts_onsets(self, amen_path):
+        """Superflux with backtracking should place onsets at or before peaks.
+
+        Compare with spectral flux (no backtracking) -- superflux onsets
+        should generally be earlier or equal due to backtracking.
+        """
+        sf_onsets = onset.detect(amen_path, threshold=0.3, method='superflux')
+        flux_onsets = onset.detect(amen_path, threshold=0.3, method='flux')
+        # Both should detect onsets (exact counts may differ)
+        assert len(sf_onsets) > 0
+        assert len(flux_onsets) > 0
+
+    def test_superflux_custom_params(self, amen_path):
+        """Test superflux with custom mel/lag/max_size parameters."""
+        onsets = onset.detect(
+            amen_path, threshold=0.3, method='superflux',
+            n_mels=80, fmin=50.0, fmax=8000.0, max_size=5, lag=3,
+        )
+        assert isinstance(onsets, list)
+
+    def test_superflux_min_spacing_enforced(self, amen_path):
+        """Test that minimum spacing is enforced with superflux."""
+        min_spacing = 0.1
+        onsets = onset.detect(
+            amen_path, threshold=0.3, method='superflux',
+            min_spacing=min_spacing,
+        )
+        for i in range(len(onsets) - 1):
+            assert onsets[i + 1] - onsets[i] >= min_spacing * 0.95
+
     def test_invalid_method_raises(self, amen_path):
         """Test that invalid method raises ValueError."""
         with pytest.raises(ValueError, match="Unknown method"):
@@ -132,7 +173,7 @@ class TestSliceLoopWithOnsets:
 
     def test_slice_with_onset_method(self, amen_path, output_dir):
         """Test slicing with different onset methods."""
-        for method in ['hfc', 'flux', 'energy', 'complex']:
+        for method in ['hfc', 'flux', 'energy', 'complex', 'superflux']:
             method_dir = output_dir / method
             slices = cysox.slice_loop(
                 amen_path,

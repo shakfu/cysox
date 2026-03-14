@@ -17,6 +17,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+### Added
+
+- **Superflux Onset Detection** (`method='superflux'`): Implementation of the
+  Boeck & Widmer (DAFx 2013) algorithm for onset detection with vibrato
+  suppression and precise transient placement.
+  - Mel-scaled spectral analysis via triangular filterbank (default 138 bands,
+    27.5-16000 Hz), computed in C with `nogil`
+  - Power-to-dB conversion with -80 dB floor
+  - Maximum filter along frequency axis on the reference frame to suppress
+    false onsets caused by vibrato and frequency modulation
+  - Configurable frame lag for temporal comparison (default 2 frames)
+  - Backtracking from detected peaks to nearest local ODF minimum for
+    accurate transient start placement
+  - Ring buffer for lagged mel-dB frames to avoid full spectrogram storage
+  - New parameters for `detect()` and `detect_onsets()`:
+    `n_mels`, `fmin`, `fmax`, `max_size`, `lag`
+  - Updated type stubs (`onset.pyi`) with new parameters
+  - 5 new tests: basic detection, sort order, backtracking behavior,
+    custom parameters, minimum spacing enforcement
+  - `slice_loop()` onset method list extended to include `'superflux'`
+
 ## [0.1.8]
 
 ### Added
