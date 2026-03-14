@@ -9,8 +9,9 @@ A Pythonic audio processing library which uses cython to wrap [libsox](https://g
 ## Features
 
 - **Simple API**: Convert, analyze, and play audio with one-liners
-- **Typed Effects**: 28 base effect classes with IDE autocomplete and validation
+- **Typed Effects**: 29 base effect classes with IDE autocomplete and validation
 - **54 Effect Presets**: Ready-to-use composite effects for voice, lo-fi, drums, mastering, and more
+- **Sample Processing**: Auto-trim silence, split recordings into one-shots, generate chromatic pitch scales, batch process directories
 - **Drum Loop Tools**: Slice loops by BPM, create stutter effects, apply beat-synced processing
 - **High Performance**: Direct C bindings through Cython, KissFFT-accelerated onset detection
 - **Zero Configuration**: Auto-initialization, no manual setup required
@@ -68,6 +69,24 @@ cysox slice drums.wav output_dir/ -t 0.2 -s 1.2 -m flux
 # Create stutter effects
 cysox stutter drums.wav stutter.wav -d 0.125 -r 8
 cysox stutter drums.wav stutter.wav -s 0.5 -d 0.25 -r 4 -p GatedReverb
+
+# Trim silence from beginning and end of audio
+cysox auto-trim raw.wav trimmed.wav
+cysox auto-trim raw.wav trimmed.wav --thresh -36 --fadein 10 --fadeout 50
+cysox auto-trim raw.wav trimmed.wav --speedup 2
+
+# Split continuous recording into one-shots at silence gaps
+cysox split recording.wav one_shots/
+cysox split recording.wav one_shots/ --thresh -36 --min-silence 0.5
+
+# Generate pitch-shifted copies (chromatic scale)
+cysox pitch-scale sample.wav scale/                    # 12 semitones (1 octave)
+cysox pitch-scale sample.wav scale/ --range 24 --offset -12
+
+# Batch process all audio files in a directory
+cysox batch raw_samples/ processed/ -p Normalize
+cysox batch raw_samples/ processed/ --rate 44100 --channels 1 --format wav
+cysox batch raw_samples/ processed/ --no-recursive -p DrumPunch
 ```
 
 ## Quick Start
@@ -96,22 +115,17 @@ cysox.play('audio.wav', effects=[fx.Volume(db=-6)])
 
 ## Core Functions
 
-### `cysox.info(path) -> dict`
+### `cysox.info(path) -> AudioInfo`
 
-Get audio file metadata:
+Get audio file metadata. Returns an `AudioInfo` object supporting both attribute
+access and dict-style access:
 
 ```python
 info = cysox.info('audio.wav')
-# Returns: {
-#     'path': 'audio.wav',
-#     'format': 'wav',
-#     'duration': 11.5,
-#     'sample_rate': 44100,
-#     'channels': 2,
-#     'bits_per_sample': 16,
-#     'samples': 507150,
-#     'encoding': 'signed-integer',
-# }
+print(info.duration)         # Attribute access
+print(info['sample_rate'])   # Dict-style access (backwards compatible)
+# Fields: path, format, duration, sample_rate, channels,
+#         bits_per_sample, samples, encoding
 ```
 
 ### `cysox.convert(input, output, effects=[], **options)`
@@ -170,9 +184,10 @@ All input files must have the same sample rate and channel count.
 
 ## Effects Module
 
-The `cysox.fx` module provides 28 base effect classes and 54 composite presets:
+The `cysox.fx` module provides 29 base effect classes and 54 composite presets:
 
 ### Volume & Dynamics
+
 ```python
 fx.Volume(db=3)                    # Adjust volume in dB
 fx.Gain(db=6)                      # Apply gain
@@ -180,6 +195,7 @@ fx.Normalize(level=-3)             # Normalize to target level
 ```
 
 ### Equalization
+
 ```python
 fx.Bass(gain=5, frequency=100)     # Boost/cut bass
 fx.Treble(gain=-2, frequency=3000) # Boost/cut treble
@@ -187,6 +203,7 @@ fx.Equalizer(frequency=1000, width=1.0, gain=3)
 ```
 
 ### Filters
+
 ```python
 fx.HighPass(frequency=200)         # Remove low frequencies
 fx.LowPass(frequency=8000)         # Remove high frequencies
@@ -195,6 +212,7 @@ fx.BandReject(frequency=60, width=10)  # Notch filter
 ```
 
 ### Spatial & Reverb
+
 ```python
 fx.Reverb(reverberance=50, room_scale=100)
 fx.Echo(gain_in=0.8, gain_out=0.9, delays=[100], decays=[0.5])
@@ -203,6 +221,7 @@ fx.Flanger()
 ```
 
 ### Time-Based
+
 ```python
 fx.Trim(start=1.0, end=5.0)        # Extract portion
 fx.Pad(before=0.5, after=1.0)      # Add silence
@@ -212,9 +231,11 @@ fx.Pitch(cents=100)                # Shift pitch (preserves tempo)
 fx.Reverse()                       # Reverse audio
 fx.Fade(fade_in=0.5, fade_out=1.0) # Fade in/out
 fx.Repeat(count=3)                 # Repeat audio
+fx.Silence(threshold=-48)          # Remove silence by amplitude
 ```
 
 ### Conversion
+
 ```python
 fx.Rate(sample_rate=48000)         # Resample
 fx.Channels(channels=1)            # Change channel count
@@ -249,6 +270,7 @@ cysox.convert('input.wav', 'output.wav', effects=[TelephoneEffect()])
 The library includes 54 ready-to-use composite effect presets organized by category:
 
 ### Voice Effects
+
 ```python
 fx.Chipmunk(intensity=1.8)         # High-pitched voice
 fx.DeepVoice(intensity=0.6)        # Low, slowed voice
@@ -259,6 +281,7 @@ fx.Whisper()                       # Intimate whisper effect
 ```
 
 ### Lo-Fi Effects
+
 ```python
 fx.Telephone(sample_rate=8000)     # Classic telephone sound
 fx.AMRadio()                       # AM radio broadcast
@@ -270,6 +293,7 @@ fx.Cassette()                      # Cassette tape degradation
 ```
 
 ### Spatial Effects
+
 ```python
 fx.SmallRoom(wetness=30)           # Intimate room reverb
 fx.LargeHall(size=100, decay=70)   # Concert hall ambience
@@ -279,6 +303,7 @@ fx.Stadium()                       # Arena with echo
 ```
 
 ### Broadcast Effects
+
 ```python
 fx.Podcast()                       # Voice cleanup + presence
 fx.RadioDJ(presence=4)             # Punchy broadcast voice
@@ -288,6 +313,7 @@ fx.WalkieTalkie()                  # Two-way radio
 ```
 
 ### Musical Effects
+
 ```python
 fx.EightiesChorus(depth=4)         # Classic 80s chorus
 fx.DreamyPad()                     # Ethereal ambient texture
@@ -299,6 +325,7 @@ fx.ShoegazeWash()                  # Heavy reverb/chorus wash
 ```
 
 ### Drum Loop Effects
+
 ```python
 fx.HalfTime(preserve_pitch=True)   # Slow to half speed
 fx.DoubleTime(preserve_pitch=True) # Speed up to double
@@ -315,6 +342,7 @@ fx.LoopReady()                     # Prepare for seamless looping
 ```
 
 ### Mastering Effects
+
 ```python
 fx.BroadcastLimiter(target_level=-1)  # Broadcast-ready limiting
 fx.WarmMaster(warmth=1.5)             # Warm mastering preset
@@ -323,6 +351,7 @@ fx.LoudnessMaster(target_level=-0.3)  # Maximum loudness
 ```
 
 ### Cleanup Effects
+
 ```python
 fx.RemoveRumble(cutoff=60)         # High-pass for rumble
 fx.RemoveHiss(cutoff=12000)        # Low-pass for tape hiss
@@ -332,6 +361,7 @@ fx.TapeRestoration()               # Restore tape recordings
 ```
 
 ### Transition Effects
+
 ```python
 fx.FadeInOut(fade_in_secs=0.3, fade_out_secs=0.3)
 fx.CrossfadeReady(fade_duration=0.3)
@@ -377,6 +407,7 @@ slices = cysox.slice_loop('drums.wav', 'output_dir/',
 ```
 
 **Parameters:**
+
 - `path`: Input audio file
 - `output_dir`: Directory for slice files (created if needed)
 - `slices`: Number of equal slices (default: 4)
@@ -385,7 +416,7 @@ slices = cysox.slice_loop('drums.wav', 'output_dir/',
 - `beat_duration`: Explicit duration per slice in seconds
 - `threshold`: Onset detection threshold 0.0-1.0 (enables automatic transient slicing)
 - `sensitivity`: Onset detection sensitivity 1.0-3.0 (default: 1.5)
-- `onset_method`: Detection method - 'hfc', 'flux', 'energy', or 'complex'
+- `onset_method`: Detection method - 'hfc', 'flux', 'energy', 'complex', or 'superflux'
 - `output_format`: Output format (default: "wav")
 - `effects`: Effects to apply to each slice
 
@@ -430,7 +461,7 @@ onsets = onset.detect('drums.wav',
     threshold=0.3,      # Detection threshold (0.0-1.0)
     sensitivity=1.5,    # Peak picking sensitivity (1.0-3.0)
     min_spacing=0.05,   # Min time between onsets (seconds)
-    method='hfc'        # 'hfc', 'flux', 'energy', or 'complex'
+    method='hfc'        # 'hfc', 'flux', 'energy', 'complex', or 'superflux'
 )
 ```
 
@@ -460,6 +491,12 @@ onsets = onset.detect('drums.wav',
   - Best for: maximum accuracy, subtle onsets, research applications
   - Slowest method but catches onsets other methods miss
 
+- **`superflux`** - Superflux (Boeck & Widmer, DAFx 2013)
+  - Mel-scaled spectral flux with vibrato suppression
+  - Maximum filter along frequency axis to reject false onsets from frequency modulation
+  - Backtracking from peaks to nearest local minimum for precise transient placement
+  - Best for: polyphonic material, vibrato-heavy sources, maximum precision
+
 **Understanding threshold vs sensitivity:**
 
 `threshold` (0.0-1.0) and `sensitivity` (1.0-3.0) control different stages:
@@ -479,6 +516,7 @@ onsets = onset.detect('drums.wav',
   - Think of it as: "how much must a peak stand out from neighbors"
 
 **Typical combinations:**
+
 - Drums with clear hits: `threshold=0.3, sensitivity=1.5` (defaults)
 - Subtle transients: `threshold=0.2, sensitivity=1.2`
 - Only loud hits: `threshold=0.5, sensitivity=2.0`
@@ -510,6 +548,7 @@ cysox.stutter('drums.wav', 'stutter_punchy.wav',
 ```
 
 **Parameters:**
+
 - `path`: Input audio file
 - `output_path`: Output file path
 - `segment_start`: Start position in seconds (default: 0)
@@ -572,6 +611,150 @@ cysox.convert('drums.wav', 'processed.wav', effects=[
     fx.DrumRoom(room_size=30, wetness=20),
     fx.BroadcastLimiter(),
 ])
+```
+
+## Sample Processing
+
+cysox includes sample processing utilities ported from
+[AudioHit](https://github.com/icaroferre/AudioHit) for preparing audio samples
+for software and hardware samplers.
+
+### `cysox.auto_trim()` - Trim Silence
+
+Detect and remove silence from the beginning and end of audio based on
+amplitude threshold:
+
+```python
+# Basic silence trimming
+cysox.auto_trim('raw.wav', 'trimmed.wav')
+
+# Custom threshold (less sensitive)
+cysox.auto_trim('raw.wav', 'trimmed.wav', threshold_db=-36)
+
+# With fade in/out (milliseconds)
+cysox.auto_trim('raw.wav', 'trimmed.wav', fade_in=10, fade_out=50)
+
+# Speed up after trimming
+cysox.auto_trim('raw.wav', 'trimmed.wav', speed_factor=2.0)
+
+# With additional effects
+cysox.auto_trim('raw.wav', 'trimmed.wav', effects=[fx.Normalize()])
+```
+
+**Parameters:**
+
+- `path`: Input audio file
+- `output_path`: Output audio file
+- `threshold_db`: Amplitude threshold in dB (default: -48dB)
+- `min_silence`: Minimum non-silence duration in seconds (default: 0.1)
+- `fade_in`: Fade-in duration in milliseconds (default: 0)
+- `fade_out`: Fade-out duration in milliseconds (default: 0)
+- `speed_factor`: Playback speed multiplier (default: None)
+- `effects`: Additional effects to apply after trimming
+
+### `cysox.split_by_silence()` - Split at Silence Gaps
+
+Split a continuous recording into separate one-shot samples at silence
+boundaries:
+
+```python
+# Split at default threshold
+segments = cysox.split_by_silence('recording.wav', 'one_shots/')
+
+# Custom detection parameters
+segments = cysox.split_by_silence('recording.wav', 'one_shots/',
+    threshold_db=-36,     # Less sensitive
+    min_silence=0.5,      # Require 500ms of silence to split
+    min_segment=0.25,     # Discard segments shorter than 250ms
+)
+
+# With fades and effects on each segment
+segments = cysox.split_by_silence('recording.wav', 'one_shots/',
+    fade_in=5, fade_out=20,
+    effects=[fx.Normalize()],
+)
+```
+
+**Parameters:**
+
+- `path`: Input audio file
+- `output_dir`: Directory for segment files (created if needed)
+- `threshold_db`: Amplitude threshold in dB (default: -48dB)
+- `min_silence`: Minimum silence duration to trigger split, in seconds (default: 0.25)
+- `min_segment`: Minimum segment duration, in seconds (default: 0.25)
+- `fade_in`: Fade-in per segment in milliseconds (default: 0)
+- `fade_out`: Fade-out per segment in milliseconds (default: 0)
+- `speed_factor`: Playback speed multiplier (default: None)
+- `output_format`: Output format (default: "wav")
+- `effects`: Effects to apply to each segment
+
+**Returns:** List of created file paths
+
+### `cysox.pitch_scale()` - Generate Chromatic Pitch Variants
+
+Create multiple pitch-shifted copies of a sample at semitone intervals,
+useful for building playable melodic sample libraries:
+
+```python
+# Generate one octave (12 semitones) of chromatic variations
+files = cysox.pitch_scale('c3_piano.wav', 'scale/')
+# Creates: scale/c3_piano_pitch_+0.wav through scale/c3_piano_pitch_+11.wav
+
+# Two octaves starting from one octave below
+files = cysox.pitch_scale('sample.wav', 'scale/',
+    semitones=24, offset=-12)
+
+# With effects on each copy
+files = cysox.pitch_scale('sample.wav', 'scale/',
+    semitones=12, effects=[fx.Normalize()])
+```
+
+**Parameters:**
+
+- `path`: Input audio file
+- `output_dir`: Directory for pitch-shifted files (created if needed)
+- `semitones`: Number of copies to generate (default: 12)
+- `offset`: Starting semitone offset (default: 0)
+- `output_format`: Output format (default: "wav")
+- `effects`: Effects to apply to each copy after pitch shifting
+
+**Returns:** List of created file paths
+
+### `cysox.batch()` - Batch Process Directories
+
+Process all audio files in a directory tree:
+
+```python
+# Convert a folder to mono 22050Hz
+processed = cysox.batch('samples/', 'processed/',
+    sample_rate=22050, channels=1)
+
+# Apply effects to all files
+processed = cysox.batch('raw/', 'ready/',
+    effects=[fx.Normalize(), fx.Fade(fade_in=0.01)])
+
+# Convert format, non-recursive
+processed = cysox.batch('input/', 'output/',
+    output_format='flac', recursive=False)
+
+# With progress callback
+cysox.batch('raw/', 'done/',
+    on_file=lambda i, o: print(f"  {i} -> {o}"))
+```
+
+**Parameters:**
+
+- `input_dir`: Directory containing audio files
+- `output_dir`: Directory for processed files (created if needed)
+- `effects`: Effects to apply to each file
+- `sample_rate`: Target sample rate in Hz
+- `channels`: Target number of channels
+- `bits`: Target bits per sample
+- `recursive`: Process subdirectories (default: True)
+- `output_format`: Output format (None keeps original)
+- `on_file`: Callback called after each file `(input_path, output_path)`
+
+**Returns:** List of processed output file paths
 
 ## Low-Level API
 

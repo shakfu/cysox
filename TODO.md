@@ -1,8 +1,7 @@
-# TODO - cysox
-
-Prioritized task list derived from [PROJECT_REVIEW.md](PROJECT_REVIEW.md).
+# TODO
 
 **Legend:**
+
 - `[ ]` Not started
 - `[~]` In progress
 - `[!]` Blocked
@@ -93,7 +92,7 @@ Nice-to-have features and long-term improvements.
 
 - [ ] **Add automatic version bumping**
   - Tool: bump2version or python-semantic-release
-  - Sync: pyproject.toml, __init__.py, CHANGELOG.md
+  - Sync: pyproject.toml, **init**.py, CHANGELOG.md
 
 - [ ] **Add release automation**
   - GitHub Actions workflow for PyPI publishing

@@ -236,3 +236,70 @@ class Repeat(Effect):
 
     def to_args(self) -> List[str]:
         return [str(self.count)]
+
+
+class Silence(Effect):
+    """Remove silence from audio using amplitude threshold detection.
+
+    Wraps sox's ``silence`` effect. Detects periods of audio above/below
+    a given threshold to strip silence from the beginning, end, or both.
+
+    Args:
+        above_periods: Number of non-silence periods to keep from the start.
+            Use 1 to remove leading silence (default: 1).
+        duration: Minimum duration in seconds that audio must stay above
+            the threshold to be considered non-silence (default: 0.1).
+        threshold: Amplitude threshold in dB below which audio is
+            considered silence (default: -48).
+        below_periods: If set, also detect trailing silence. Use 1 to
+            remove silence after the last non-silent period.
+        below_duration: Minimum silence duration for trailing detection.
+            Defaults to the same value as ``duration``.
+        below_threshold: Threshold for trailing silence detection in dB.
+            Defaults to the same value as ``threshold``.
+
+    Example:
+        >>> fx.Silence()                          # Remove leading silence
+        >>> fx.Silence(threshold=-36)             # Less sensitive
+        >>> fx.Silence(below_periods=1)           # Remove leading + trailing
+    """
+
+    def __init__(
+        self,
+        above_periods: int = 1,
+        duration: float = 0.1,
+        threshold: float = -48,
+        below_periods: int = 0,
+        below_duration: Optional[float] = None,
+        below_threshold: Optional[float] = None,
+    ):
+        if above_periods < 0:
+            raise ValueError("above_periods must be non-negative")
+        if duration < 0:
+            raise ValueError("duration must be non-negative")
+        self.above_periods = above_periods
+        self.duration = duration
+        self.threshold = threshold
+        self.below_periods = below_periods
+        self.below_duration = below_duration
+        self.below_threshold = below_threshold
+
+    @property
+    def name(self) -> str:
+        return "silence"
+
+    def to_args(self) -> List[str]:
+        args = [
+            str(self.above_periods),
+            str(self.duration),
+            f"{self.threshold}d",
+        ]
+        if self.below_periods > 0:
+            bd = self.below_duration if self.below_duration is not None else self.duration
+            bt = self.below_threshold if self.below_threshold is not None else self.threshold
+            args.extend([
+                str(self.below_periods),
+                str(bd),
+                f"{bt}d",
+            ])
+        return args

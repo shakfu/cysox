@@ -36,8 +36,8 @@ Windows support is experimental. You need to:
 
 1. Install libsox (e.g., via vcpkg or manual build)
 2. Set environment variables:
-    - `SOX_INCLUDE_DIR`: Path to sox headers
-    - `SOX_LIB_DIR`: Path to sox libraries
+   - `SOX_INCLUDE_DIR`: Path to sox headers
+   - `SOX_LIB_DIR`: Path to sox libraries
 
 ## Installing cysox
 

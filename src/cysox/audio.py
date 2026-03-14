@@ -20,6 +20,8 @@ Example:
 """
 
 import atexit
+import os
+import tempfile
 from pathlib import Path
 from types import TracebackType
 from typing import Callable, Iterator, List, Optional, Union
@@ -1011,3 +1013,454 @@ def stutter(
         else:
             # Just copy if no repeat or effects
             convert(temp_path, output_path)
+
+
+# Supported audio file extensions for batch processing
+_AUDIO_EXTENSIONS = {
+    ".wav", ".mp3", ".flac", ".ogg", ".aiff", ".aif", ".au",
+    ".opus", ".wv", ".caf", ".raw", ".amr",
+}
+
+
+def auto_trim(
+    path: Union[str, Path],
+    output_path: Union[str, Path],
+    *,
+    threshold_db: float = -48,
+    min_silence: float = 0.1,
+    fade_in: float = 0,
+    fade_out: float = 0,
+    speed_factor: Optional[float] = None,
+    effects: Optional[List[Effect]] = None,
+) -> None:
+    """Trim silence from the beginning and end of an audio file.
+
+    Detects the start and end points of the main audio content based on
+    amplitude and removes the surrounding silence. Optionally applies
+    fade in/out and speed change.
+
+    Ported from AudioHit's trim mode.
+
+    Args:
+        path: Path to input audio file.
+        output_path: Path for output audio file.
+        threshold_db: Amplitude threshold in decibels (default: -48dB).
+            Audio below this level is considered silence.
+        min_silence: Minimum duration in seconds that non-silent audio must
+            persist before it is considered the start of content (default: 0.1).
+        fade_in: Fade-in duration in milliseconds (default: 0, no fade).
+        fade_out: Fade-out duration in milliseconds (default: 0, no fade).
+        speed_factor: If set, change playback speed by this factor.
+            Values > 1.0 speed up, < 1.0 slow down. Affects pitch.
+        effects: Optional additional effects to apply after trimming.
+
+    Example:
+        >>> cysox.auto_trim('raw.wav', 'trimmed.wav')
+        >>> cysox.auto_trim('raw.wav', 'trimmed.wav', threshold_db=-36,
+        ...     fade_in=10, fade_out=50)
+    """
+    from .fx.time import Silence, Fade, Reverse, Speed
+
+    _ensure_init()
+
+    fx_chain: List[Effect] = []
+
+    # Remove leading silence
+    fx_chain.append(
+        Silence(above_periods=1, duration=min_silence, threshold=threshold_db)
+    )
+
+    # Remove trailing silence: reverse -> strip leading -> reverse back
+    fx_chain.append(Reverse())
+    fx_chain.append(
+        Silence(above_periods=1, duration=min_silence, threshold=threshold_db)
+    )
+    fx_chain.append(Reverse())
+
+    # Apply speed change
+    if speed_factor is not None and speed_factor != 1.0:
+        fx_chain.append(Speed(factor=speed_factor))
+
+    # Apply fades
+    fade_in_secs = fade_in / 1000.0 if fade_in > 0 else 0
+    fade_out_secs = fade_out / 1000.0 if fade_out > 0 else 0
+
+    if fade_in_secs > 0 or fade_out_secs > 0:
+        if fade_out_secs > 0:
+            # Use reverse trick for reliable fade-out
+            fx_chain.append(Fade(fade_in=fade_in_secs))
+            fx_chain.append(Reverse())
+            fx_chain.append(Fade(fade_in=fade_out_secs))
+            fx_chain.append(Reverse())
+        else:
+            fx_chain.append(Fade(fade_in=fade_in_secs))
+
+    # Apply any additional user effects
+    if effects:
+        fx_chain.extend(_expand_effects(effects))
+
+    convert(str(path), str(output_path), effects=fx_chain)
+
+
+def split_by_silence(
+    path: Union[str, Path],
+    output_dir: Union[str, Path],
+    *,
+    threshold_db: float = -48,
+    min_silence: float = 0.25,
+    min_segment: float = 0.25,
+    fade_in: float = 0,
+    fade_out: float = 0,
+    speed_factor: Optional[float] = None,
+    output_format: str = "wav",
+    effects: Optional[List[Effect]] = None,
+) -> List[str]:
+    """Split a continuous audio recording into segments at silence gaps.
+
+    Scans the audio for regions below the amplitude threshold and splits
+    the file at those silence boundaries. Each segment is written as a
+    separate file with automatic fading.
+
+    Ported from AudioHit's trim --split mode.
+
+    Args:
+        path: Path to input audio file.
+        output_dir: Directory to save segments (created if doesn't exist).
+        threshold_db: Amplitude threshold in dB (default: -48dB).
+            Audio below this level is considered silence.
+        min_silence: Minimum silence duration in seconds required to
+            trigger a split (default: 0.25).
+        min_segment: Minimum segment duration in seconds. Segments
+            shorter than this are discarded (default: 0.25).
+        fade_in: Fade-in duration in milliseconds for each segment
+            (default: 0, no fade).
+        fade_out: Fade-out duration in milliseconds for each segment
+            (default: 0, no fade).
+        speed_factor: If set, change playback speed of each segment.
+        output_format: Output file format/extension (default: "wav").
+        effects: Optional effects to apply to each segment.
+
+    Returns:
+        List of paths to the created segment files.
+
+    Example:
+        >>> segments = cysox.split_by_silence('recording.wav', 'one_shots/')
+        >>> segments = cysox.split_by_silence('recording.wav', 'one_shots/',
+        ...     threshold_db=-36, min_silence=0.5, fade_in=5, fade_out=20)
+    """
+    from .fx.time import Fade, Speed
+
+    _ensure_init()
+
+    path = str(path)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    file_info = info(path)
+    rate = file_info.sample_rate
+    channels = file_info.channels
+
+    # Convert threshold from dB to linear amplitude (int32 scale)
+    threshold_linear = int(2147483647 * (10 ** (threshold_db / 20.0)))
+
+    # Analysis window size in samples (~10ms)
+    window_samples = max(1, int(rate * channels * 0.01))
+    min_silence_windows = max(1, int(min_silence * rate * channels / window_samples))
+    min_segment_windows = max(1, int(min_segment * rate * channels / window_samples))
+
+    # Pass 1: scan audio to build silence map
+    input_fmt = sox.Format(path)
+    precision = input_fmt.signal.precision
+
+    peaks: List[int] = []
+    while True:
+        chunk = input_fmt.read(window_samples)
+        if len(chunk) == 0:
+            break
+        peak = 0
+        for s in chunk:
+            a = s if s >= 0 else -s
+            if a > peak:
+                peak = a
+        peaks.append(peak)
+    input_fmt.close()
+
+    if not peaks:
+        return []
+
+    # Find segment boundaries from peak data
+    segments: List[tuple] = []  # (start_window, end_window)
+    seg_start: Optional[int] = None
+    silence_run = 0
+
+    for i, peak in enumerate(peaks):
+        if peak > threshold_linear:
+            if seg_start is None:
+                seg_start = i
+            silence_run = 0
+        else:
+            silence_run += 1
+            if seg_start is not None and silence_run >= min_silence_windows:
+                seg_end = i - silence_run + 1
+                if seg_end - seg_start >= min_segment_windows:
+                    segments.append((seg_start, seg_end))
+                seg_start = None
+                silence_run = 0
+
+    # Handle last segment
+    if seg_start is not None:
+        seg_end = len(peaks)
+        if seg_end - seg_start >= min_segment_windows:
+            segments.append((seg_start, seg_end))
+
+    if not segments:
+        return []
+
+    # Build per-segment effects
+    from .fx.time import Reverse
+
+    seg_effects: List[Effect] = []
+    if speed_factor is not None and speed_factor != 1.0:
+        seg_effects.append(Speed(factor=speed_factor))
+
+    fade_in_secs = fade_in / 1000.0 if fade_in > 0 else 0
+    fade_out_secs = fade_out / 1000.0 if fade_out > 0 else 0
+    if fade_in_secs > 0:
+        seg_effects.append(Fade(fade_in=fade_in_secs))
+    if fade_out_secs > 0:
+        # Use reverse trick for reliable fade-out (sox fade_out is unreliable)
+        seg_effects.append(Reverse())
+        seg_effects.append(Fade(fade_in=fade_out_secs))
+        seg_effects.append(Reverse())
+
+    if effects:
+        seg_effects.extend(_expand_effects(effects))
+
+    # Pass 2: re-read and write segments
+    input_fmt = sox.Format(path)
+    current_sample = 0
+    output_paths: List[str] = []
+    basename = Path(path).stem
+
+    for i, (start_w, end_w) in enumerate(segments):
+        start_sample = start_w * window_samples
+        end_sample = min(end_w * window_samples, file_info.samples)
+        samples_to_read = end_sample - start_sample
+
+        if samples_to_read <= 0:
+            continue
+
+        # Skip to start position
+        skip = start_sample - current_sample
+        if skip > 0:
+            _ = input_fmt.read(skip)
+            current_sample += skip
+
+        # Read segment
+        segment = input_fmt.read(samples_to_read)
+        current_sample += len(segment)
+
+        if len(segment) == 0:
+            break
+
+        seg_name = f"{basename}_seg_{i:03d}.{output_format}"
+        seg_path = output_dir / seg_name
+
+        if seg_effects:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                temp_path = os.path.join(tmpdir, "temp.wav")
+                out_signal = sox.SignalInfo(
+                    rate=rate, channels=channels, precision=precision
+                )
+                temp_fmt = sox.Format(temp_path, signal=out_signal, mode="w")
+                temp_fmt.write(segment)
+                temp_fmt.close()
+                convert(temp_path, str(seg_path), effects=seg_effects)
+        else:
+            out_signal = sox.SignalInfo(
+                rate=rate, channels=channels, precision=precision
+            )
+            output_fmt = sox.Format(str(seg_path), signal=out_signal, mode="w")
+            output_fmt.write(segment)
+            output_fmt.close()
+
+        output_paths.append(str(seg_path))
+
+    input_fmt.close()
+    return output_paths
+
+
+def pitch_scale(
+    path: Union[str, Path],
+    output_dir: Union[str, Path],
+    *,
+    semitones: int = 12,
+    offset: int = 0,
+    output_format: str = "wav",
+    effects: Optional[List[Effect]] = None,
+) -> List[str]:
+    """Generate pitch-shifted copies of an audio file.
+
+    Creates multiple copies of the input file, each transposed by one
+    semitone. Useful for creating playable melodic sample libraries from
+    a single sample.
+
+    Ported from AudioHit's scale mode.
+
+    Args:
+        path: Path to input audio file.
+        output_dir: Directory to save pitch-shifted files (created if
+            doesn't exist).
+        semitones: Number of pitch-shifted copies to generate (default: 12,
+            one full octave). Each copy is transposed up by one additional
+            semitone from the previous.
+        offset: Starting semitone offset from the original pitch
+            (default: 0). For example, offset=-6 starts a tritone below.
+        output_format: Output file format/extension (default: "wav").
+        effects: Optional effects to apply to each copy after pitch shifting.
+
+    Returns:
+        List of paths to the created pitch-shifted files.
+
+    Example:
+        >>> # Generate one octave of chromatic variations
+        >>> files = cysox.pitch_scale('c3_piano.wav', 'scale/')
+        >>>
+        >>> # Generate 24 semitones starting from -12
+        >>> files = cysox.pitch_scale('sample.wav', 'scale/',
+        ...     semitones=24, offset=-12)
+    """
+    from .fx.time import Pitch
+
+    _ensure_init()
+
+    if semitones < 1:
+        raise ValueError("semitones must be at least 1")
+
+    path = str(path)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    basename = Path(path).stem
+    output_paths: List[str] = []
+
+    for i in range(semitones):
+        shift = i + offset
+        cents = shift * 100
+
+        out_name = f"{basename}_pitch_{shift:+d}.{output_format}"
+        out_path = output_dir / out_name
+
+        pitch_effects: List[Effect] = []
+        if cents != 0:
+            pitch_effects.append(Pitch(cents=cents))
+
+        if effects:
+            pitch_effects.extend(_expand_effects(effects))
+
+        if pitch_effects:
+            convert(path, str(out_path), effects=pitch_effects)
+        else:
+            # No shift needed (offset=0, first iteration) - just copy
+            convert(path, str(out_path))
+
+        output_paths.append(str(out_path))
+
+    return output_paths
+
+
+def batch(
+    input_dir: Union[str, Path],
+    output_dir: Union[str, Path],
+    *,
+    effects: Optional[List[Effect]] = None,
+    sample_rate: Optional[int] = None,
+    channels: Optional[int] = None,
+    bits: Optional[int] = None,
+    recursive: bool = True,
+    output_format: Optional[str] = None,
+    on_file: Optional[Callable[[str, str], None]] = None,
+) -> List[str]:
+    """Process all audio files in a directory.
+
+    Walks the input directory, applies effects and format conversions to
+    each audio file, and writes results to the output directory. The
+    relative directory structure is preserved.
+
+    Args:
+        input_dir: Directory containing audio files to process.
+        output_dir: Directory for processed output files (created if
+            doesn't exist).
+        effects: Optional effects to apply to each file.
+        sample_rate: Target sample rate in Hz (optional).
+        channels: Target number of channels (optional).
+        bits: Target bits per sample (optional).
+        recursive: If True, process subdirectories recursively
+            (default: True).
+        output_format: Output file format/extension. If None, keeps the
+            original format (default: None).
+        on_file: Optional callback called after each file is processed,
+            receiving (input_path, output_path).
+
+    Returns:
+        List of paths to the processed output files.
+
+    Example:
+        >>> # Convert a folder to mono 22050Hz
+        >>> processed = cysox.batch('samples/', 'processed/',
+        ...     sample_rate=22050, channels=1)
+        >>>
+        >>> # Apply effects to all files
+        >>> from cysox import fx
+        >>> processed = cysox.batch('raw/', 'ready/',
+        ...     effects=[fx.Normalize(), fx.Fade(fade_in=0.01)])
+    """
+    _ensure_init()
+
+    input_dir = Path(input_dir)
+    output_dir = Path(output_dir)
+
+    if not input_dir.is_dir():
+        raise ValueError(f"Input directory does not exist: {input_dir}")
+
+    if recursive:
+        files = sorted(
+            f for f in input_dir.rglob("*")
+            if f.is_file() and f.suffix.lower() in _AUDIO_EXTENSIONS
+        )
+    else:
+        files = sorted(
+            f for f in input_dir.glob("*")
+            if f.is_file() and f.suffix.lower() in _AUDIO_EXTENSIONS
+        )
+
+    if not files:
+        return []
+
+    processed: List[str] = []
+
+    for input_path in files:
+        rel = input_path.relative_to(input_dir)
+
+        if output_format:
+            out_path = output_dir / rel.with_suffix(f".{output_format}")
+        else:
+            out_path = output_dir / rel
+
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+
+        convert(
+            str(input_path),
+            str(out_path),
+            effects=effects,
+            sample_rate=sample_rate,
+            channels=channels,
+            bits=bits,
+        )
+
+        if on_file is not None:
+            on_file(str(input_path), str(out_path))
+
+        processed.append(str(out_path))
+
+    return processed

@@ -2,7 +2,7 @@
 
 cysox includes a CLI for common audio tasks. It is installed automatically with the package.
 
-```
+```text
 cysox [command] [options]
 ```
 
@@ -18,13 +18,13 @@ cysox [command] [options]
 
 Display audio file metadata.
 
-```
+```text
 cysox info <file>
 ```
 
 **Example:**
 
-```
+```text
 $ cysox info drums.wav
 File: drums.wav
 Format: wav
@@ -39,7 +39,7 @@ Encoding: Signed Integer PCM
 
 Convert an audio file with optional format changes and effects.
 
-```
+```text
 cysox convert <input> <output> [options]
 ```
 
@@ -67,7 +67,7 @@ cysox convert vocals.wav processed.wav -p Telephone
 
 Play an audio file to the default audio device.
 
-```
+```text
 cysox play <file>
 ```
 
@@ -75,7 +75,7 @@ cysox play <file>
 
 Concatenate multiple audio files into one. All input files must have matching sample rate, channels, and bit depth.
 
-```
+```text
 cysox concat <file1> <file2> [file3 ...] -o <output>
 ```
 
@@ -92,7 +92,7 @@ cysox concat intro.wav verse.wav chorus.wav -o song.wav
 
 Slice an audio file into segments. Supports three slicing modes: by count, by BPM, or by onset detection.
 
-```
+```text
 cysox slice <input> <output_dir> [options]
 ```
 
@@ -127,7 +127,7 @@ cysox slice drums.wav slices/ -t 0.3 -p VintageBreak
 
 Create a stutter/repeat effect by extracting a segment and repeating it.
 
-```
+```text
 cysox stutter <input> <output> [options]
 ```
 
@@ -156,7 +156,7 @@ Browse and apply effect presets.
 
 List available presets, optionally filtered by category.
 
-```
+```text
 cysox preset list [category]
 ```
 
@@ -164,7 +164,7 @@ Categories: `voice`, `lofi`, `spatial`, `broadcast`, `musical`, `drums`, `master
 
 **Example:**
 
-```
+```text
 $ cysox preset list spatial
 
 SPATIAL:
@@ -179,13 +179,13 @@ SPATIAL:
 
 Show detailed information about a preset including its parameters.
 
-```
+```text
 cysox preset info <name>
 ```
 
 **Example:**
 
-```
+```text
 $ cysox preset info Reverb
 
 Reverb
@@ -205,7 +205,7 @@ Parameters:
 
 Apply a preset to an audio file with optional parameter overrides.
 
-```
+```text
 cysox preset apply <name> <input> <output> [--param=value ...]
 ```
 

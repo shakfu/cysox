@@ -439,7 +439,7 @@ cysox.convert('input.wav', 'output.wav', effects=[fx.Telephone()])
 
 List all presets from the CLI:
 
-```
+```text
 cysox preset list
 ```
 

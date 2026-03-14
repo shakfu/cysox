@@ -297,6 +297,115 @@ def main():
     )
     slice_parser.add_argument("-p", "--preset", help="Apply preset to each slice")
 
+    # auto-trim command
+    autotrim_parser = subparsers.add_parser(
+        "auto-trim", help="Trim silence from beginning and end of audio"
+    )
+    autotrim_parser.add_argument("input", help="Input audio file")
+    autotrim_parser.add_argument("output", help="Output audio file")
+    autotrim_parser.add_argument(
+        "--thresh",
+        type=float,
+        default=-48,
+        help="Amplitude threshold in dB (default: -48)",
+    )
+    autotrim_parser.add_argument(
+        "--fadein", type=float, default=0, help="Fade-in duration in milliseconds"
+    )
+    autotrim_parser.add_argument(
+        "--fadeout", type=float, default=0, help="Fade-out duration in milliseconds"
+    )
+    autotrim_parser.add_argument(
+        "--speedup", type=float, default=None, help="Increase playback speed by factor X"
+    )
+    autotrim_parser.add_argument(
+        "--slowdown",
+        type=float,
+        default=None,
+        help="Decrease playback speed by factor 1/X",
+    )
+    autotrim_parser.add_argument("-p", "--preset", help="Apply preset after trimming")
+
+    # split command (by silence)
+    silence_split_parser = subparsers.add_parser(
+        "split", help="Split audio into segments at silence gaps"
+    )
+    silence_split_parser.add_argument("input", help="Input audio file")
+    silence_split_parser.add_argument(
+        "output_dir", help="Output directory for segments"
+    )
+    silence_split_parser.add_argument(
+        "--thresh",
+        type=float,
+        default=-48,
+        help="Amplitude threshold in dB (default: -48)",
+    )
+    silence_split_parser.add_argument(
+        "--min-silence",
+        type=float,
+        default=0.25,
+        help="Minimum silence duration to split at in seconds (default: 0.25)",
+    )
+    silence_split_parser.add_argument(
+        "--min-segment",
+        type=float,
+        default=0.25,
+        help="Minimum segment duration in seconds (default: 0.25)",
+    )
+    silence_split_parser.add_argument(
+        "--fadein", type=float, default=0, help="Fade-in duration in milliseconds"
+    )
+    silence_split_parser.add_argument(
+        "--fadeout", type=float, default=0, help="Fade-out duration in milliseconds"
+    )
+    silence_split_parser.add_argument("-p", "--preset", help="Apply preset to segments")
+
+    # pitch-scale command
+    pitch_scale_parser = subparsers.add_parser(
+        "pitch-scale", help="Generate pitch-shifted copies of an audio file"
+    )
+    pitch_scale_parser.add_argument("input", help="Input audio file")
+    pitch_scale_parser.add_argument(
+        "output_dir", help="Output directory for pitch-shifted files"
+    )
+    pitch_scale_parser.add_argument(
+        "--range",
+        type=int,
+        default=12,
+        dest="pitch_range",
+        help="Number of pitch-shifted copies (default: 12)",
+    )
+    pitch_scale_parser.add_argument(
+        "--offset",
+        type=int,
+        default=0,
+        help="Starting semitone offset (default: 0)",
+    )
+    pitch_scale_parser.add_argument("-p", "--preset", help="Apply preset to each copy")
+
+    # batch command
+    batch_parser = subparsers.add_parser(
+        "batch", help="Process all audio files in a directory"
+    )
+    batch_parser.add_argument("input_dir", help="Input directory")
+    batch_parser.add_argument("output_dir", help="Output directory")
+    batch_parser.add_argument(
+        "--rate", "-r", type=int, help="Target sample rate in Hz"
+    )
+    batch_parser.add_argument(
+        "--channels", "-c", type=int, help="Target number of channels"
+    )
+    batch_parser.add_argument("--bits", "-b", type=int, help="Target bits per sample")
+    batch_parser.add_argument(
+        "--format", "-f", dest="output_format", help="Output format (e.g., wav, mp3)"
+    )
+    batch_parser.add_argument(
+        "--no-recursive",
+        action="store_true",
+        help="Do not process subdirectories",
+    )
+    batch_parser.add_argument("-p", "--preset", help="Apply preset to each file")
+
     # stutter command
     stutter_parser = subparsers.add_parser("stutter", help="Create stutter effect")
     stutter_parser.add_argument("input", help="Input audio file")
@@ -427,6 +536,101 @@ def main():
                 effects=effects,
             )
         print(f"Created {len(slices)} slices in {args.output_dir}")
+        return 0
+
+    if args.command == "auto-trim":
+        # Determine speed factor
+        speed_factor = None
+        if args.speedup is not None:
+            speed_factor = args.speedup
+        elif args.slowdown is not None:
+            speed_factor = 1.0 / args.slowdown
+
+        effects = None
+        if args.preset:
+            preset_class = get_preset_class(args.preset)
+            if not preset_class:
+                print(f"Unknown preset: {args.preset}", file=sys.stderr)
+                return 1
+            effects = [preset_class()]
+
+        cysox.auto_trim(
+            args.input,
+            args.output,
+            threshold_db=args.thresh,
+            fade_in=args.fadein,
+            fade_out=args.fadeout,
+            speed_factor=speed_factor,
+            effects=effects,
+        )
+        print(f"Auto-trimmed: {args.input} -> {args.output}")
+        return 0
+
+    if args.command == "split":
+        effects = None
+        if args.preset:
+            preset_class = get_preset_class(args.preset)
+            if not preset_class:
+                print(f"Unknown preset: {args.preset}", file=sys.stderr)
+                return 1
+            effects = [preset_class()]
+
+        segments = cysox.split_by_silence(
+            args.input,
+            args.output_dir,
+            threshold_db=args.thresh,
+            min_silence=args.min_silence,
+            min_segment=args.min_segment,
+            fade_in=args.fadein,
+            fade_out=args.fadeout,
+            effects=effects,
+        )
+        print(f"Created {len(segments)} segments in {args.output_dir}")
+        return 0
+
+    if args.command == "pitch-scale":
+        effects = None
+        if args.preset:
+            preset_class = get_preset_class(args.preset)
+            if not preset_class:
+                print(f"Unknown preset: {args.preset}", file=sys.stderr)
+                return 1
+            effects = [preset_class()]
+
+        files = cysox.pitch_scale(
+            args.input,
+            args.output_dir,
+            semitones=args.pitch_range,
+            offset=args.offset,
+            effects=effects,
+        )
+        print(f"Created {len(files)} pitch-shifted files in {args.output_dir}")
+        return 0
+
+    if args.command == "batch":
+        effects = None
+        if args.preset:
+            preset_class = get_preset_class(args.preset)
+            if not preset_class:
+                print(f"Unknown preset: {args.preset}", file=sys.stderr)
+                return 1
+            effects = [preset_class()]
+
+        def on_file(inp, out):
+            print(f"  {inp} -> {out}")
+
+        processed = cysox.batch(
+            args.input_dir,
+            args.output_dir,
+            effects=effects,
+            sample_rate=args.rate,
+            channels=args.channels,
+            bits=args.bits,
+            recursive=not args.no_recursive,
+            output_format=args.output_format,
+            on_file=on_file,
+        )
+        print(f"Processed {len(processed)} files")
         return 0
 
     if args.command == "stutter":

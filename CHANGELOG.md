@@ -17,6 +17,80 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+### Added
+
+- **AudioHit Feature Port**: Batch sample processing features ported from
+  [AudioHit](https://github.com/icaroferre/AudioHit) (Rust CLI tool for
+  hardware/software sampler workflows)
+
+- **`Silence` Effect** (`cysox.fx.Silence`): Wraps sox's `silence` effect for
+  amplitude-based silence detection and removal
+  - Configurable threshold in dB, minimum duration, and above/below period counts
+  - Supports independent parameters for leading and trailing silence
+  - Building block for `auto_trim()` and usable standalone in effects chains
+
+- **`cysox.auto_trim()`**: Trim silence from beginning and end of audio files
+  based on amplitude threshold (AudioHit's trim mode)
+  - `threshold_db`: Amplitude threshold in dB (default: -48dB)
+  - `fade_in`/`fade_out`: Fade durations in milliseconds
+  - `speed_factor`: Playback speed change (AudioHit's `--speedup`/`--slowdown`)
+  - Optional additional effects chain
+  - Uses reverse trick for reliable fade-out behavior
+
+- **`cysox.split_by_silence()`**: Split continuous recordings into separate
+  one-shot samples at silence gaps (AudioHit's `--split true` mode)
+  - Two-pass algorithm: scans peaks in ~10ms windows, then re-reads and writes segments
+  - `threshold_db`, `min_silence`, `min_segment` for detection tuning
+  - Per-segment fades (milliseconds), speed change, and effects
+  - Returns list of created segment file paths
+
+- **`cysox.pitch_scale()`**: Generate N pitch-shifted copies at semitone
+  intervals (AudioHit's scale mode)
+  - `semitones`: Number of copies (default: 12 for one octave)
+  - `offset`: Starting semitone offset (default: 0)
+  - Optional effects applied to each copy after pitch shifting
+  - Output naming: `{basename}_pitch_{+N}.wav`
+
+- **`cysox.batch()`**: Process all audio files in a directory tree
+  (AudioHit's `--folder` mode)
+  - Preserves relative directory structure in output
+  - `recursive` flag (default: True)
+  - `output_format` for bulk format conversion
+  - `sample_rate`, `channels`, `bits` for bulk resampling
+  - `on_file` callback for progress reporting
+  - Recognizes common audio extensions: wav, mp3, flac, ogg, aiff, au, opus, wv, caf, amr
+
+- **CLI Commands** for all new features:
+  - `cysox auto-trim <input> <output>` with `--thresh`, `--fadein`, `--fadeout`,
+    `--speedup`, `--slowdown`, `-p PRESET`
+  - `cysox split <input> <output_dir>` with `--thresh`, `--min-silence`,
+    `--min-segment`, `--fadein`, `--fadeout`, `-p PRESET`
+  - `cysox pitch-scale <input> <output_dir>` with `--range`, `--offset`, `-p PRESET`
+  - `cysox batch <input_dir> <output_dir>` with `--rate`, `--channels`, `--bits`,
+    `--format`, `--no-recursive`, `-p PRESET`
+
+- **Tests**: 40 new tests in `test_audiohit_features.py` covering all new
+  functionality: Silence effect, auto_trim, split_by_silence, pitch_scale, and
+  batch processing
+
+### Changed
+
+- **README.md**: Updated to reflect current state of the project
+  - Added Sample Processing section documenting `auto_trim()`,
+    `split_by_silence()`, `pitch_scale()`, and `batch()` with full parameter
+    lists and examples
+  - Added CLI examples for `auto-trim`, `split`, `pitch-scale`, `batch`
+  - Updated `info()` return type from `dict` to `AudioInfo`
+  - Updated base effect count from 28 to 29 (added `Silence`)
+  - Added `Silence` to Time-Based effects listing
+  - Added `superflux` onset detection method to method lists and examples
+  - Added Features bullet for sample processing capabilities
+
+### Fixed
+
+- **README.md**: Fixed unclosed code block before "## Low-Level API" section
+  that caused downstream markdown rendering issues
+
 ## [0.1.9]
 
 ### Added
@@ -390,6 +464,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
   - Format, effect, and signal/encoding error validation
 
 ### Changed
+
 - **Error Handling**: Replaced assertions with proper exceptions in init/quit functions
 - **Memory Management**: Fixed memory leak in `SignalInfo.mult` setter
 - **API Consistency**: All error messages now use custom exception classes with detailed context
@@ -406,6 +481,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
   - Replaced outdated TODO list with completion status
 
 ### Fixed
+
 - **Critical Memory Issues** (P0):
   - Memory leak in `SignalInfo.mult` setter when setting to 0.0
   - Use-after-free bug in `OutOfBand.__dealloc__`
@@ -444,6 +520,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
   - Original exceptions still propagate correctly
 
 ### Removed
+
 - **Code Cleanup**: Removed 156 lines of commented-out code from `utils.py`
   - Sample conversion macros that were never implemented
   - Duplicate utility function stubs
@@ -454,6 +531,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
   - Constructors initialize struct members directly
 
 ### Security
+
 - **Null Pointer Validation**: Added null pointer checks before dereferencing in all property accessors
 - **Buffer Overflow Prevention**: Proper length validation in buffer protocol operations
 - **Exception Safety**: Callback exceptions properly caught and logged without crashing C code

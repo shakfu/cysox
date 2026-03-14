@@ -40,6 +40,10 @@ from .audio import (
     concat,
     slice_loop,
     stutter,
+    auto_trim,
+    split_by_silence,
+    pitch_scale,
+    batch,
 )
 
 # Effects module
@@ -68,6 +72,10 @@ __all__ = [
     "concat",
     "slice_loop",
     "stutter",
+    "auto_trim",
+    "split_by_silence",
+    "pitch_scale",
+    "batch",
     # Modules
     "fx",
     "onset",

@@ -62,6 +62,7 @@ from .time import (
     Reverse,
     Fade,
     Repeat,
+    Silence,
 )
 
 # Conversion effects
@@ -171,6 +172,7 @@ __all__ = [
     "Reverse",
     "Fade",
     "Repeat",
+    "Silence",
     # Convert
     "Rate",
     "Channels",
