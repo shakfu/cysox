@@ -1,5 +1,7 @@
 """sox.pyx - a thin wrapper around libsox"""
 
+import atexit
+import threading
 from types import SimpleNamespace
 from cpython.buffer cimport PyObject_CheckBuffer, PyObject_GetBuffer, PyBuffer_Release, PyBUF_WRITABLE, PyBUF_C_CONTIGUOUS, Py_buffer
 from cpython.ref cimport PyObject
@@ -8,16 +10,133 @@ from libc.stdint cimport uintptr_t
 cimport cysox.sox
 
 
-# Global storage for flow_effects callback
-# We use a dictionary to support multiple concurrent chains (thread-safety handled by GIL)
-_flow_callbacks = {}
+# Internal C-level init/quit helpers (cdef not allowed inside Python classes)
+def _do_sox_init():
+    """Call sox_init(). Raises SoxInitError on failure."""
+    cdef int result = sox_init()
+    if result != SOX_SUCCESS:
+        raise SoxInitError(
+            f"Failed to initialize SoX library: {strerror(result)}"
+        )
 
-# Storage for the last callback exception (since exceptions can't propagate through C code)
-_last_callback_exception = None
 
-# Track initialization state to make init()/quit() idempotent
-# (libsox crashes on repeated init/quit cycles, so we only do it once)
-_sox_initialized = False
+def _do_sox_quit():
+    """Call sox_quit(). Raises SoxInitError on failure."""
+    cdef int result = sox_quit()
+    if result != SOX_SUCCESS:
+        raise SoxInitError(
+            f"Failed to cleanup SoX library: {strerror(result)}"
+        )
+
+
+class SoxRuntime:
+    """Singleton managing libsox lifecycle, callbacks, and exception state.
+
+    Consolidates all global state into one place with proper locking for
+    thread safety under both GIL and free-threaded (PEP 703) Python builds.
+
+    Users should not need to interact with this class directly. Use the
+    module-level ``init()``, ``quit()``, and ``_force_quit()`` functions,
+    or the high-level ``cysox`` API which handles initialization
+    automatically.
+
+    The singleton instance is accessible as ``sox._runtime``.
+    """
+
+    _instance = None
+    _instance_lock = threading.Lock()
+
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._instance_lock:
+                # Double-checked locking for thread-safe singleton creation
+                if cls._instance is None:
+                    inst = super().__new__(cls)
+                    inst._lock = threading.Lock()
+                    inst._initialized = False
+                    inst._flow_callbacks = {}
+                    inst._last_callback_exception = None
+                    inst._atexit_registered = False
+                    cls._instance = inst
+        return cls._instance
+
+    @property
+    def initialized(self):
+        """Whether libsox has been initialized."""
+        return self._initialized
+
+    def ensure_init(self):
+        """Initialize libsox if not already initialized.
+
+        Thread-safe: uses double-checked locking so concurrent callers
+        are safe. Registers an atexit handler on first initialization.
+
+        Raises:
+            SoxInitError: If libsox initialization fails.
+        """
+        if self._initialized:
+            return
+        with self._lock:
+            if self._initialized:
+                return
+            _do_sox_init()
+            self._initialized = True
+            if not self._atexit_registered:
+                atexit.register(self._atexit_cleanup)
+                self._atexit_registered = True
+
+    def force_quit(self):
+        """Shut down libsox. Called by the atexit handler.
+
+        Warning:
+            Do not call this directly unless you know what you are doing.
+            libsox does not support repeated init/quit cycles.
+        """
+        with self._lock:
+            if not self._initialized:
+                return
+            _do_sox_quit()
+            self._initialized = False
+
+    def _atexit_cleanup(self):
+        """Atexit handler -- calls force_quit, swallowing errors."""
+        try:
+            self.force_quit()
+        except Exception:
+            pass
+
+    # -- callback storage (thread-safe) --
+
+    def register_callback(self, chain_id, callback, client_data):
+        """Register a flow_effects callback for an effects chain."""
+        with self._lock:
+            self._flow_callbacks[chain_id] = (callback, client_data)
+
+    def unregister_callback(self, chain_id):
+        """Remove a flow_effects callback."""
+        with self._lock:
+            self._flow_callbacks.pop(chain_id, None)
+
+    def get_callback(self, chain_id):
+        """Look up a registered callback, returning ``(callback, data)`` or None."""
+        with self._lock:
+            return self._flow_callbacks.get(chain_id)
+
+    # -- callback exception storage --
+
+    def set_last_exception(self, exc_info):
+        """Store an exception from a C callback for later retrieval."""
+        self._last_callback_exception = exc_info
+
+    def pop_last_exception(self):
+        """Return and clear the stored callback exception (or None)."""
+        exc_info = self._last_callback_exception
+        self._last_callback_exception = None
+        return exc_info
+
+
+# Module-level singleton instance
+_runtime = SoxRuntime()
 
 
 ERROR_CODES = {
@@ -194,7 +313,7 @@ cdef class SignalInfo:
 
     def __init__(self, rate: float = 0.0, channels: int = 0,
                 precision: int = 0, length: int = 0, mult: float = 0.0):
-        self.ptr = <sox_signalinfo_t*>malloc(sizeof(sox_signalinfo_t))
+        self.ptr = <sox_signalinfo_t*>calloc(1, sizeof(sox_signalinfo_t))
         if self.ptr is NULL:
             raise SoxMemoryError("Failed to allocate SignalInfo")
         self.ptr.mult = NULL  # Initialize before setter to avoid freeing garbage
@@ -329,7 +448,7 @@ cdef class EncodingInfo:
                 compression: float = 0.0, reverse_bytes: int = 0,
                 reverse_nibbles: int = 0, reverse_bits: int = 0,
                 opposite_endian: bool = False):
-        self.ptr = <sox_encodinginfo_t*>malloc(sizeof(sox_encodinginfo_t))
+        self.ptr = <sox_encodinginfo_t*>calloc(1, sizeof(sox_encodinginfo_t))
         if self.ptr is NULL:
             raise SoxMemoryError("Failed to allocate EncodingInfo")
         self.encoding = encoding
@@ -455,7 +574,7 @@ cdef class LoopInfo:
 
     def __init__(self, start: int = 0, length: int = 0, count: int = 0,
                  type: int = 0):
-        self.ptr = <sox_loopinfo_t*>malloc(sizeof(sox_loopinfo_t))
+        self.ptr = <sox_loopinfo_t*>calloc(1, sizeof(sox_loopinfo_t))
         self.start = start
         self.length = length
         self.count = count
@@ -537,7 +656,7 @@ cdef class InstrInfo:
 
     def __init__(self, note: int = 0, low: int = 0, high: int = 0,
                  loopmode: int = 0, nloops: int = 0):
-        self.ptr = <sox_instrinfo_t*>malloc(sizeof(sox_instrinfo_t))
+        self.ptr = <sox_instrinfo_t*>calloc(1, sizeof(sox_instrinfo_t))
         self.note = note
         self.low = low
         self.high = high
@@ -613,7 +732,7 @@ cdef class FileInfo:
 
     def __init__(self, buf: bytes = None, size: int = 0, count: int = 0,
                  pos: int = 0):
-        self.ptr = <sox_fileinfo_t*>malloc(sizeof(sox_fileinfo_t))
+        self.ptr = <sox_fileinfo_t*>calloc(1, sizeof(sox_fileinfo_t))
         if self.ptr is NULL:
             raise SoxMemoryError("Failed to allocate FileInfo")
 
@@ -689,7 +808,7 @@ cdef class OutOfBand:
             self.ptr = NULL
 
     def __init__(self):
-        self.ptr = <sox_oob_t*>malloc(sizeof(sox_oob_t))
+        self.ptr = <sox_oob_t*>calloc(1, sizeof(sox_oob_t))
         self.owner = True
 
     @staticmethod
@@ -1480,7 +1599,7 @@ cdef class FormatTab:
             self.ptr = NULL
 
     def __init__(self, name: str = None):
-        self.ptr = <sox_format_tab_t*>malloc(sizeof(sox_format_tab_t))
+        self.ptr = <sox_format_tab_t*>calloc(1, sizeof(sox_format_tab_t))
         if self.ptr is NULL:
             raise SoxMemoryError("Failed to allocate FormatTab")
 
@@ -1717,19 +1836,20 @@ cdef int _flow_effects_callback_wrapper(sox_bool all_done, void* client_data) no
     """C callback that wraps Python callback for flow_effects.
 
     This function is called from C code without the GIL, so we need to
-    acquire it before calling Python code.
+    acquire it before calling Python code. All state is accessed through
+    the ``_runtime`` singleton which provides its own locking.
     """
-    global _last_callback_exception
     with gil:
         try:
             # client_data is a pointer to the chain's address (as an integer)
             chain_id = <uintptr_t>client_data
 
-            # Look up the callback in our global dictionary
-            if chain_id not in _flow_callbacks:
+            # Look up the callback via the runtime singleton (thread-safe)
+            entry = _runtime.get_callback(chain_id)
+            if entry is None:
                 return SOX_SUCCESS  # No callback registered, continue
 
-            callback, user_data = _flow_callbacks[chain_id]
+            callback, user_data = entry
 
             # Call the Python callback
             # all_done is a sox_bool (enum), convert to Python bool
@@ -1746,7 +1866,7 @@ cdef int _flow_effects_callback_wrapper(sox_bool all_done, void* client_data) no
         except Exception as e:
             # Store the exception for later retrieval since we can't propagate through C code
             import sys
-            _last_callback_exception = sys.exc_info()
+            _runtime.set_last_exception(sys.exc_info())
             sys.stderr.write(f"Error in flow_effects callback: {e}\n")
             return -1
 
@@ -1754,9 +1874,10 @@ cdef int _flow_effects_callback_wrapper(sox_bool all_done, void* client_data) no
 def get_last_callback_exception():
     """Retrieve the last exception that occurred in a flow_effects callback.
 
-    Since exceptions cannot propagate through C code, they are stored for
-    later retrieval. This function returns the exception info tuple
-    (type, value, traceback) or None if no exception occurred.
+    Since exceptions cannot propagate through C code, they are stored
+    in the ``SoxRuntime`` singleton for later retrieval. This function
+    returns the exception info tuple (type, value, traceback) or None
+    if no exception occurred.
 
     After calling this function, the stored exception is cleared.
 
@@ -1769,10 +1890,7 @@ def get_last_callback_exception():
         >>> if exc_info:
         ...     raise exc_info[1].with_traceback(exc_info[2])
     """
-    global _last_callback_exception
-    exc_info = _last_callback_exception
-    _last_callback_exception = None
-    return exc_info
+    return _runtime.pop_last_exception()
 
 
 cdef class EffectsChain:
@@ -1851,9 +1969,9 @@ cdef class EffectsChain:
         cdef uintptr_t chain_id
 
         if callback is not None:
-            # Store the callback in our global dictionary using chain pointer as key
+            # Register the callback via the runtime singleton (thread-safe)
             chain_id = <uintptr_t>self.ptr
-            _flow_callbacks[chain_id] = (callback, client_data)
+            _runtime.register_callback(chain_id, callback, client_data)
 
             try:
                 # Call sox_flow_effects with our wrapper callback
@@ -1864,8 +1982,7 @@ cdef class EffectsChain:
                 )
             finally:
                 # Clean up callback storage
-                if chain_id in _flow_callbacks:
-                    del _flow_callbacks[chain_id]
+                _runtime.unregister_callback(chain_id)
         else:
             # No callback, call with NULL
             result = sox_flow_effects(self.ptr, NULL, NULL)
@@ -2031,6 +2148,8 @@ def init():
     This function is idempotent - calling it multiple times is safe.
     Subsequent calls after the first are no-ops.
 
+    Delegates to :attr:`_runtime` (the :class:`SoxRuntime` singleton).
+
     Raises:
         SoxInitError: If initialization fails.
 
@@ -2040,13 +2159,7 @@ def init():
         >>> # Use sox functions...
         >>> sox.quit()
     """
-    global _sox_initialized
-    if _sox_initialized:
-        return  # Already initialized, no-op
-    cdef int result = sox_init()
-    if result != SOX_SUCCESS:
-        raise SoxInitError(f"Failed to initialize SoX library: {strerror(result)}")
-    _sox_initialized = True
+    _runtime.ensure_init()
 
 
 def quit():
@@ -2055,8 +2168,9 @@ def quit():
     Note:
         Due to libsox limitations (crashes on re-initialization after quit),
         this function is a no-op during normal execution. Actual cleanup
-        happens automatically at process exit via atexit. This ensures the
-        library remains usable throughout the process lifetime.
+        happens automatically at process exit via the :class:`SoxRuntime`
+        atexit handler. This ensures the library remains usable throughout
+        the process lifetime.
 
         This function is retained for API compatibility but does not
         actually call sox_quit(). Use _force_quit() for testing if needed.
@@ -2067,8 +2181,8 @@ def quit():
         >>> # Use sox functions...
         >>> sox.quit()  # No-op; cleanup happens at process exit
     """
-    # No-op: actual cleanup happens via atexit to prevent crashes from
-    # repeated init/quit cycles. See KNOWN_LIMITATIONS.md
+    # No-op: actual cleanup happens via SoxRuntime atexit handler to
+    # prevent crashes from repeated init/quit cycles.
     pass
 
 
@@ -2077,14 +2191,10 @@ def _force_quit():
 
     Warning: Do not call this directly - it will crash if sox is used again.
     This is only for use by the atexit cleanup handler.
+
+    Delegates to :meth:`SoxRuntime.force_quit`.
     """
-    global _sox_initialized
-    if not _sox_initialized:
-        return
-    cdef int result = sox_quit()
-    _sox_initialized = False
-    if result != SOX_SUCCESS:
-        raise SoxInitError(f"Failed to cleanup SoX library: {strerror(result)}")
+    _runtime.force_quit()
 
 
 def strerror(sox_errno: int) -> str:

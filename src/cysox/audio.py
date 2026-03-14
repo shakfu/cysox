@@ -19,7 +19,6 @@ Example:
     ... ])
 """
 
-import atexit
 import os
 import tempfile
 from pathlib import Path
@@ -114,28 +113,14 @@ class AudioInfo:
         return tuple((k, getattr(self, k)) for k in self.__slots__)
 
 
-# Module state
-_initialized = False
-
-
 def _ensure_init() -> None:
-    """Ensure sox is initialized (called automatically)."""
-    global _initialized
-    if not _initialized:
-        sox.init()
-        atexit.register(_cleanup)
-        _initialized = True
+    """Ensure sox is initialized (called automatically).
 
-
-def _cleanup() -> None:
-    """Cleanup sox on exit (called automatically via atexit)."""
-    global _initialized
-    if _initialized:
-        try:
-            sox._force_quit()  # Use internal function for actual cleanup
-        except Exception:
-            pass  # Ignore errors during cleanup
-        _initialized = False
+    Delegates to :meth:`SoxRuntime.ensure_init` which handles
+    initialization, idempotency, locking, and atexit registration
+    in one place.
+    """
+    sox._runtime.ensure_init()
 
 
 def _expand_effects(effects: List[Effect]) -> List[Effect]:
@@ -1017,8 +1002,18 @@ def stutter(
 
 # Supported audio file extensions for batch processing
 _AUDIO_EXTENSIONS = {
-    ".wav", ".mp3", ".flac", ".ogg", ".aiff", ".aif", ".au",
-    ".opus", ".wv", ".caf", ".raw", ".amr",
+    ".wav",
+    ".mp3",
+    ".flac",
+    ".ogg",
+    ".aiff",
+    ".aif",
+    ".au",
+    ".opus",
+    ".wv",
+    ".caf",
+    ".raw",
+    ".amr",
 }
 
 
@@ -1425,12 +1420,14 @@ def batch(
 
     if recursive:
         files = sorted(
-            f for f in input_dir.rglob("*")
+            f
+            for f in input_dir.rglob("*")
             if f.is_file() and f.suffix.lower() in _AUDIO_EXTENSIONS
         )
     else:
         files = sorted(
-            f for f in input_dir.glob("*")
+            f
+            for f in input_dir.glob("*")
             if f.is_file() and f.suffix.lower() in _AUDIO_EXTENSIONS
         )
 

@@ -101,7 +101,7 @@ Nice-to-have features and long-term improvements.
 
 ### Architecture
 
-- [ ] **Consolidate init state into a SoxRuntime singleton**
+- [x] **Consolidate init state into a SoxRuntime singleton**
   - Currently `audio.py` (`_initialized`) and `sox.pyx` (`_sox_initialized`) independently track init state
   - Both paths converge correctly today (`sox.init()` is idempotent), but the dual tracking is unnecessary indirection
   - A `SoxRuntime` singleton would:

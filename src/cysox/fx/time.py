@@ -295,11 +295,21 @@ class Silence(Effect):
             f"{self.threshold}d",
         ]
         if self.below_periods > 0:
-            bd = self.below_duration if self.below_duration is not None else self.duration
-            bt = self.below_threshold if self.below_threshold is not None else self.threshold
-            args.extend([
-                str(self.below_periods),
-                str(bd),
-                f"{bt}d",
-            ])
+            bd = (
+                self.below_duration
+                if self.below_duration is not None
+                else self.duration
+            )
+            bt = (
+                self.below_threshold
+                if self.below_threshold is not None
+                else self.threshold
+            )
+            args.extend(
+                [
+                    str(self.below_periods),
+                    str(bd),
+                    f"{bt}d",
+                ]
+            )
         return args

@@ -73,6 +73,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
   functionality: Silence effect, auto_trim, split_by_silence, pitch_scale, and
   batch processing
 
+- **`SoxRuntime` Singleton** (`sox.SoxRuntime`): Consolidates all global state
+  (init tracking, callback storage, exception storage) into a single
+  thread-safe singleton
+  - Replaces three independent module-level globals (`_sox_initialized`,
+    `_flow_callbacks`, `_last_callback_exception`) in `sox.pyx` and
+    `_initialized` in `audio.py`
+  - Double-checked locking pattern in `ensure_init()` prevents the race
+    condition where two threads could both enter the `if not _initialized`
+    branch under free-threaded Python (PEP 703)
+  - Callback registration (`register_callback`, `unregister_callback`,
+    `get_callback`) is lock-protected, replacing the previous reliance on
+    the GIL for `_flow_callbacks` dict thread safety
+  - Atexit handler registration moved into the singleton (registered exactly
+    once on first init), eliminating the duplicate tracking between `sox.pyx`
+    and `audio.py`
+  - Accessible as `sox._runtime`; existing `sox.init()`, `sox.quit()`,
+    `sox._force_quit()` delegate to the singleton for full backwards
+    compatibility
+  - No measurable performance impact: lock overhead is ~10 us per convert
+    (128 callbacks x 78 ns per uncontended lock+lookup), well under 1% of
+    typical processing time
+  - 19 new tests in `test_sox_runtime.py`: singleton identity, thread-safe
+    concurrent init, concurrent callback registration, exception storage,
+    and backwards compatibility with existing APIs
+
 ### Changed
 
 - **README.md**: Updated to reflect current state of the project
@@ -87,6 +112,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
   - Added Features bullet for sample processing capabilities
 
 ### Fixed
+
+- **SIGSEGV in `OutOfBand.__dealloc__` on Linux** (valgrind CI crash):
+  `OutOfBand.__init__` used `malloc` without zeroing, leaving the `comments`
+  field (`char**`) as uninitialized garbage. `__dealloc__` checked
+  `if self.ptr.comments:` -- the garbage evaluated as truthy, then
+  `sox_delete_comments` dereferenced it, causing a segfault.
+  - Root cause: `malloc(sizeof(sox_oob_t))` does not zero memory
+  - Fix: replaced all 8 `malloc(sizeof(...))` calls across `SignalInfo`,
+    `EncodingInfo`, `LoopInfo`, `InstrInfo`, `FileInfo`, `OutOfBand`, and
+    `FormatTab` with `calloc(1, sizeof(...))` for zero-initialization
+  - Defense in depth: even structs that manually initialize fields are now
+    safe if an exception occurs between `calloc` and the field assignments
 
 - **README.md**: Fixed unclosed code block before "## Low-Level API" section
   that caused downstream markdown rendering issues

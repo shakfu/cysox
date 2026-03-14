@@ -316,7 +316,10 @@ def main():
         "--fadeout", type=float, default=0, help="Fade-out duration in milliseconds"
     )
     autotrim_parser.add_argument(
-        "--speedup", type=float, default=None, help="Increase playback speed by factor X"
+        "--speedup",
+        type=float,
+        default=None,
+        help="Increase playback speed by factor X",
     )
     autotrim_parser.add_argument(
         "--slowdown",
@@ -389,9 +392,7 @@ def main():
     )
     batch_parser.add_argument("input_dir", help="Input directory")
     batch_parser.add_argument("output_dir", help="Output directory")
-    batch_parser.add_argument(
-        "--rate", "-r", type=int, help="Target sample rate in Hz"
-    )
+    batch_parser.add_argument("--rate", "-r", type=int, help="Target sample rate in Hz")
     batch_parser.add_argument(
         "--channels", "-c", type=int, help="Target number of channels"
     )
