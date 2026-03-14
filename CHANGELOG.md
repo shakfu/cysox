@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+## [0.1.10]
+
 ### Added
 
 - **AudioHit Feature Port**: Batch sample processing features ported from
