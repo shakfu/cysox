@@ -80,39 +80,6 @@ jobs:
         uv sync
         uv run pytest tests/ -v
 
-  memory-leaks-macos:
-    name: Memory leak check (macOS)
-    runs-on: macos-latest
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.12"
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@v4
-
-    - name: Install system dependencies
-      run: |
-        brew install sox libsndfile mad libpng flac lame mpg123 libogg opus opusfile libvorbis
-
-    - name: Setup build environment
-      run: |
-        bash scripts/setup.sh
-
-    - name: Build
-      run: |
-        uv sync
-
-    - name: Check for memory leaks
-      run: |
-        MallocStackLogging=1 uv run leaks --atExit -- python tests/check_leaks.py 2>&1 | tee leaks_output.txt
-        # Fail if any leaks detected
-        grep -q "0 leaks for 0 total leaked bytes" leaks_output.txt
-
   memory-leaks-linux:
     name: Memory leak check (Linux/valgrind)
     runs-on: ubuntu-latest
