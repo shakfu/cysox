@@ -28,7 +28,7 @@ gcc -std=c11 -o build/$1 \
 	tests/examples/$1.c
 endef
 
-.PHONY: all sync build rebuild test testpy leaks lint typecheck format qa \
+.PHONY: all sync build rebuild test testpy leaks leaks-valgrind lint typecheck format qa \
         wheel sdist delocate strip check publish publish-test \
         examples-p examples-c benchmark benchmark-save benchmark-compare \
         docs docs-clean docs-serve docs-deploy clean reset distclean help
@@ -119,6 +119,13 @@ benchmark-compare:
 # Check for memory leaks using macOS leaks tool
 leaks:
 	@MallocStackLogging=1 uv run leaks --atExit -- python tests/check_leaks.py
+
+# Check for memory leaks using valgrind (Linux)
+# Uses --show-leak-kinds=definite to filter CPython allocator noise
+leaks-valgrind:
+	@uv run valgrind --leak-check=full --show-leak-kinds=definite \
+		--errors-for-leak-kinds=definite --error-exitcode=1 \
+		python tests/check_leaks.py
 
 # ============================================================================
 # Code Quality
@@ -245,6 +252,7 @@ help:
 	@echo "  test          - Run all tests"
 	@echo "  testpy        - Quick test with example0.py"
 	@echo "  leaks         - Check for memory leaks (macOS)"
+	@echo "  leaks-valgrind - Check for memory leaks (Linux, requires valgrind)"
 	@echo "  examples-p    - Run all Python examples"
 	@echo "  examples-c    - Build and run C examples (macOS)"
 	@echo ""

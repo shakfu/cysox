@@ -17,7 +17,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+## [0.1.9]
+
 ### Added
+
+- **Memory Leak Detection in CI**: Automated leak checking on every push/PR
+  - macOS: `leaks --atExit` via existing `check_leaks.py`, fails on any detected leak
+  - Linux: valgrind with `--show-leak-kinds=definite` and `--error-exitcode=1`
+  - New Makefile target: `make leaks-valgrind` for local Linux testing
+
+- **Documentation Improvements**:
+  - New [Effects Reference](docs/api/effects.md): Full parameter docs for all 28 effects and 40+ presets
+  - New [Onset Detection](docs/api/onset.md): API reference with detection method comparison and tuning guide
+  - New [CLI Reference](docs/cli.md): All 7 commands documented with options and examples
+  - Rewrote [Examples](docs/examples.md): High-level API examples now lead; covers convert, presets, streaming, progress callbacks, slicing, stutter, and onset detection
+  - Updated [Home](docs/index.md): Feature list now links to relevant docs sections
 
 - **Superflux Onset Detection** (`method='superflux'`): Implementation of the
   Boeck & Widmer (DAFx 2013) algorithm for onset detection with vibrato

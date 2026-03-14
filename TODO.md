@@ -31,13 +31,31 @@ Enhancements for robustness and completeness.
 
 ### Testing Improvements
 
-- [ ] **Add memory leak tests**
-  - Integrate valgrind or ASAN into CI
-  - Test allocation/deallocation cycles
-  - Focus on Format, Effect, EffectsChain lifecycle
-  - Note: ASAN already available via `DEBUG=1 make build`
+- [~] **Add memory leak tests**
+  - [x] CI job: macOS `leaks` tool (via existing `check_leaks.py`)
+  - [x] CI job: Linux valgrind (`--show-leak-kinds=definite`)
+  - [x] `make leaks-valgrind` target for local Linux testing
+  - [ ] Integrate ASAN into CI (requires custom Python build)
+  - Note: ASAN already available locally via `DEBUG=1 make build`
 
 ### Documentation
+
+- [x] **Effects reference** (`docs/api/effects.md`)
+  - All 28 effects with parameter tables, types, defaults, examples
+  - All 40+ presets organized by category
+  - Custom preset creation guide
+
+- [x] **Onset detection docs** (`docs/api/onset.md`)
+  - API reference for `detect()` and `detect_onsets()`
+  - Detection method comparison table
+  - Parameter tuning guide
+
+- [x] **CLI reference** (`docs/cli.md`)
+  - All 7 commands with option tables and examples
+
+- [x] **Examples rewrite** (`docs/examples.md`)
+  - High-level API examples now lead (was 100% low-level)
+  - Covers convert, presets, streaming, progress, slicing, stutter, onset
 
 - [ ] **Create architecture documentation**
   - Document class hierarchy and relationships
@@ -111,13 +129,12 @@ Items to consider for future releases.
 - [ ] Async/await support for effects processing
 - [ ] NumPy-native array returns (optional dependency)
 - [ ] Audio visualization helpers (waveform, spectrogram)
-- [ ] CLI tool wrapping the Python API
+- [x] CLI tool wrapping the Python API
 
 ---
 
 ## References
 
-- [PROJECT_REVIEW.md](PROJECT_REVIEW.md) - Full code review
 - [CHANGELOG.md](CHANGELOG.md) - Version history
 - [docs/dev/high_level_api.md](docs/dev/high_level_api.md) - High-level API documentation and extension guide
 - [libsox documentation](https://sourceforge.net/p/sox/code/ci/master/tree/src/sox.h)

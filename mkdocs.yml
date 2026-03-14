@@ -41,9 +41,12 @@ nav:
     - Installation: installation.md
     - Quick Start: quickstart.md
     - Examples: examples.md
+    - CLI: cli.md
     - Benchmarks: benchmarks.md
   - API Reference:
-    - Modules: api/modules.md
+    - Effects: api/effects.md
+    - Onset Detection: api/onset.md
+    - Low-Level Modules: api/modules.md
     - Exceptions: api/exceptions.md
   - Development:
     - High-Level API: dev/high_level_api.md
