@@ -1,0 +1,81 @@
+direction: down
+
+title: |md
+  # cysox Architecture Layers
+|
+
+user: "User Code" {
+  shape: rectangle
+  style: {
+    fill: "#e3f2fd"
+    stroke: "#1565C0"
+    font-color: "#0D47A1"
+    bold: true
+  }
+}
+
+high: "High-Level API (audio.py)" {
+  style: {
+    fill: "#e8f5e9"
+    stroke: "#2E7D32"
+    font-color: "#1B5E20"
+  }
+
+  functions: |md
+    info / convert / play / stream / concat
+    slice_loop / stutter / auto_trim
+    split_by_silence / pitch_scale / batch
+  |
+
+  fx: "fx module (27 effects + 53 presets)" {
+    style: {
+      fill: "#f1f8e9"
+      stroke: "#558B2F"
+    }
+  }
+
+  onset_py: "onset module (5 detection methods)" {
+    style: {
+      fill: "#f1f8e9"
+      stroke: "#558B2F"
+    }
+  }
+}
+
+low: "Low-Level Bindings (sox.pyx)" {
+  style: {
+    fill: "#fff3e0"
+    stroke: "#E65100"
+    font-color: "#BF360C"
+  }
+
+  types: |md
+    Format / EffectsChain / Effect / EffectHandler
+    SignalInfo / EncodingInfo / SoxRuntime
+  |
+
+  runtime: "SoxRuntime (singleton)" {
+    style: {
+      fill: "#fbe9e7"
+      stroke: "#BF360C"
+    }
+  }
+}
+
+c: "C Libraries" {
+  style: {
+    fill: "#f3e5f5"
+    stroke: "#7B1FA2"
+    font-color: "#4A148C"
+  }
+
+  libsox: "libsox (audio I/O, 150+ effects)"
+  kissfft: "KissFFT (vendored, FFT for onset detection)"
+}
+
+user -> high: "import cysox"
+high -> low: "sox.Format / sox.EffectsChain"
+high.fx -> low: "effect.name + effect.to_args()"
+high.onset_py -> c.kissfft: "FFT for spectral analysis"
+low -> c.libsox: "Cython cdef extern calls"
+low.runtime -> c.libsox: "sox_init() / sox_quit()"

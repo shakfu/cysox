@@ -1,0 +1,127 @@
+direction: down
+
+title: |md
+  # Memory Ownership Model
+|
+
+owns: "Owning Objects (owner=True)" {
+  style: {
+    fill: "#e8f5e9"
+    stroke: "#2E7D32"
+  }
+
+  Format: "Format" {
+    shape: class
+    style.fill: "#c8e6c9"
+    "alloc: sox_open_read() / sox_open_write()"
+    "dealloc: sox_close()"
+  }
+
+  EffectsChain: "EffectsChain" {
+    shape: class
+    style.fill: "#c8e6c9"
+    "alloc: sox_create_effects_chain()"
+    "dealloc: sox_delete_effects_chain()"
+  }
+
+  Effect: "Effect" {
+    shape: class
+    style.fill: "#c8e6c9"
+    "alloc: sox_create_effect(handler)"
+    "dealloc: free(ptr)"
+  }
+
+  SignalInfo: "SignalInfo" {
+    shape: class
+    style.fill: "#c8e6c9"
+    "alloc: calloc(1, sizeof(...))"
+    "dealloc: free(ptr.mult); free(ptr)"
+  }
+
+  EncodingInfo: "EncodingInfo" {
+    shape: class
+    style.fill: "#c8e6c9"
+    "alloc: calloc(1, sizeof(...))"
+    "dealloc: free(ptr)"
+  }
+
+  OutOfBand: "OutOfBand" {
+    shape: class
+    style.fill: "#c8e6c9"
+    "alloc: calloc(1, sizeof(...))"
+    "dealloc: sox_delete_comments(); free(ptr)"
+  }
+}
+
+borrows: "Borrowed References (owner=False)" {
+  style: {
+    fill: "#fff3e0"
+    stroke: "#E65100"
+  }
+
+  sig_b: "SignalInfo (borrowed)" {
+    shape: class
+    style.fill: "#ffe0b2"
+    "ptr = &format.signal (inside sox_format_t)"
+    "Valid only while parent Format is open"
+  }
+
+  enc_b: "EncodingInfo (borrowed)" {
+    shape: class
+    style.fill: "#ffe0b2"
+    "ptr = &format.encoding (inside sox_format_t)"
+    "Valid only while parent Format is open"
+  }
+
+  eff_b: "Effect (borrowed)" {
+    shape: class
+    style.fill: "#ffe0b2"
+    "ptr from chain's effects table"
+    "Valid only while parent chain exists"
+  }
+}
+
+static: "Static / Global (never freed)" {
+  style: {
+    fill: "#f3e5f5"
+    stroke: "#7B1FA2"
+  }
+
+  EffectHandler: "EffectHandler" {
+    shape: class
+    style.fill: "#e1bee7"
+    "Static pointer from sox_find_effect()"
+    "Lives for entire program lifetime"
+  }
+
+  Globals: "Globals" {
+    shape: class
+    style.fill: "#e1bee7"
+    "sox_get_globals() / sox_get_effects_globals()"
+    "Lives for entire program lifetime"
+  }
+}
+
+factory: "from_ptr() Factory Pattern" {
+  shape: page
+  style: {
+    fill: "#eceff1"
+    stroke: "#546E7A"
+  }
+  desc: |md
+    Every Cython class provides:
+    `ClassName.from_ptr(ptr, owner=False)`
+    - owner=True: we allocated, we free
+    - owner=False: borrowed, no dealloc
+  |
+}
+
+owns.Format -> borrows.sig_b: "format.signal creates" {
+  style.stroke-dash: 4
+}
+owns.Format -> borrows.enc_b: "format.encoding creates" {
+  style.stroke-dash: 4
+}
+owns.EffectsChain -> borrows.eff_b: "chain.effects[] creates" {
+  style.stroke-dash: 4
+}

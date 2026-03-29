@@ -1,0 +1,51 @@
+shape: sequence_diagram
+
+title: |md
+  # cysox.convert() Sequence
+|
+
+user: User
+api: "audio.py"
+runtime: SoxRuntime
+format: "sox.Format"
+chain: "sox.EffectsChain"
+fxmod: "fx module"
+libsox: "libsox (C)"
+
+user -> api: |md
+  convert("in.wav", "out.wav",
+    effects=[fx.DrumPunch()])
+|
+api -> runtime: "ensure_init()"
+runtime -> libsox: "sox_init() (once)"
+
+api -> format: 'Format("in.wav")'
+format -> libsox: "sox_open_read()"
+format -> api: "input_fmt"
+
+api -> format: 'Format("out.wav", signal, mode="w")'
+format -> libsox: "sox_open_write()"
+format -> api: "output_fmt"
+
+api -> chain: "EffectsChain(in_enc, out_enc)"
+chain -> libsox: "sox_create_effects_chain()"
+
+api -> chain: 'add "input" effect'
+
+api -> fxmod: "_expand_effects([DrumPunch()])"
+fxmod -> api: "[Bass(), Treble(), Normalize()]"
+
+api -> chain: "add Bass effect"
+api -> chain: "add Treble effect"
+api -> chain: "add Normalize effect"
+
+api -> chain: 'add "output" effect'
+
+api -> chain: "flow_effects()"
+chain -> libsox: "sox_flow_effects()"
+libsox -> chain: "all samples processed"
+
+api -> format: "close input + output"
+format -> libsox: "sox_close()"
+
+api -> user: "done"

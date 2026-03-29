@@ -739,6 +739,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../dev/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../dev/high_level_api/" class="md-nav__link">
         
   
@@ -895,10 +923,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#v0110-latest" class="md-nav__link">
+  <a href="#unreleased" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v0.1.10 (latest)
+        Unreleased
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v0110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.1.10
       
     </span>
   </a>
@@ -910,6 +949,17 @@
     <span class="md-ellipsis">
       
         v0.1.9
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v018" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.1.8
       
     </span>
   </a>
@@ -976,10 +1026,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#v0110-latest" class="md-nav__link">
+  <a href="#unreleased" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v0.1.10 (latest)
+        Unreleased
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v0110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.1.10
       
     </span>
   </a>
@@ -991,6 +1052,17 @@
     <span class="md-ellipsis">
       
         v0.1.9
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v018" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.1.8
       
     </span>
   </a>
@@ -1026,16 +1098,39 @@
 <p>The full changelog is maintained in the repository at
 <a href="https://github.com/shakfu/cysox/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
 <h2 id="recent-releases">Recent Releases<a class="headerlink" href="#recent-releases" title="Permanent link">&para;</a></h2>
-<h3 id="v0110-latest">v0.1.10 (latest)<a class="headerlink" href="#v0110-latest" title="Permanent link">&para;</a></h3>
+<h3 id="unreleased">Unreleased<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Memory leak fix</li>
-<li>Workflow fixes</li>
-<li>Features inspired from AudioHit (auto-trim, split by silence, pitch scale, batch processing)</li>
+<li>Fixed documentation accuracy: corrected effect counts (27 base, 53 presets), parameter names, return types</li>
+<li>Added Sample Processing API reference page (<code>docs/api/samples.md</code>)</li>
+<li>Added <code>Silence</code> effect to effects reference</li>
+<li>Added sample processing examples (auto-trim, split, pitch scale, batch)</li>
+<li>Added docs site link and badge to README</li>
+<li>Pinned <code>mkdocs&gt;=1.6,&lt;2</code> to avoid MkDocs 2.0 incompatibility with Material theme</li>
+</ul>
+<h3 id="v0110">v0.1.10<a class="headerlink" href="#v0110" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Memory leak fix (calloc replacing malloc for zero-initialization)</li>
+<li>AudioHit feature port: <code>auto_trim()</code>, <code>split_by_silence()</code>, <code>pitch_scale()</code>, <code>batch()</code></li>
+<li><code>Silence</code> effect wrapping sox's silence detection</li>
+<li><code>SoxRuntime</code> singleton for thread-safe global state</li>
+<li>CLI commands for all new sample processing features</li>
 </ul>
 <h3 id="v019">v0.1.9<a class="headerlink" href="#v019" title="Permanent link">&para;</a></h3>
 <ul>
-<li>See <a href="https://github.com/shakfu/cysox/blob/main/CHANGELOG.md">CHANGELOG.md</a> for earlier releases.</li>
+<li>Superflux onset detection (Boeck &amp; Widmer, DAFx 2013)</li>
+<li>Memory leak detection in CI (macOS leaks, Linux valgrind)</li>
+<li>Documentation rewrite: effects reference, onset detection, CLI reference, examples</li>
+<li>KissFFT integration for onset detection (~100x speedup)</li>
+<li>Migration from Sphinx to MkDocs</li>
 </ul>
+<h3 id="v018">v0.1.8<a class="headerlink" href="#v018" title="Permanent link">&para;</a></h3>
+<ul>
+<li>CLI preset support for convert (<code>-p</code> flag)</li>
+<li><code>AudioInfo</code> typed return from <code>info()</code></li>
+<li>Onset module type stubs</li>
+<li>Progress callbacks and cancellation for <code>convert()</code>, <code>play()</code>, <code>concat()</code></li>
+</ul>
+<p>See <a href="https://github.com/shakfu/cysox/blob/main/CHANGELOG.md">CHANGELOG.md</a> for earlier releases.</p>
 
 
 
