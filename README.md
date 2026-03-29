@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-online-blue)](https://shakfu.github.io/cysox/)
 
-A Pythonic audio processing library which uses cython to wrap [libsox](https://github.com/chirlu/sox).
+A Python audio processing tool / library which uses [Cython](https://cython.org) to wrap [libsox](https://github.com/chirlu/sox).
 
 **[Documentation](https://shakfu.github.io/cysox/)** | **[API Reference](https://shakfu.github.io/cysox/api/effects/)** | **[Examples](https://shakfu.github.io/cysox/examples/)**
 

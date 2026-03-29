@@ -4,7 +4,7 @@
 high-performance Python bindings to the SoX (Sound eXchange) audio processing library.
 
 !!! note
-    cysox requires libsox to be installed on your system. See [Installation](installation.md) for details.
+    On macOS, `pip install cysox` provides a self-contained wheel with libsox statically linked -- no extra dependencies needed. On Linux, libsox must be installed separately. See [Installation](installation.md) for details.
 
 ## Quick Start
 

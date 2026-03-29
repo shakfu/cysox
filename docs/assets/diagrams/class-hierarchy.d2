@@ -1,0 +1,177 @@
+direction: down
+
+title: |md
+  # cysox Class Hierarchy
+|
+
+fx: "Effects System (Python)" {
+  style: {
+    fill: "#e8f5e9"
+    stroke: "#2E7D32"
+  }
+
+  Effect: "Effect (ABC)" {
+    shape: class
+    style: {
+      fill: "#e8f4fd"
+      stroke: "#2196F3"
+    }
+    "name: str (abstract property)"
+    "to_args() -> List[str] (abstract)"
+  }
+
+  CompositeEffect: "CompositeEffect (ABC)" {
+    shape: class
+    style: {
+      fill: "#e8f4fd"
+      stroke: "#2196F3"
+    }
+    "effects: List[Effect] (abstract property)"
+  }
+
+  PythonEffect: "PythonEffect (ABC)" {
+    shape: class
+    style: {
+      fill: "#e8f4fd"
+      stroke: "#2196F3"
+    }
+    "process(samples, rate, channels) (abstract)"
+  }
+
+  CEffect: "CEffect (ABC)" {
+    shape: class
+    style: {
+      fill: "#e8f4fd"
+      stroke: "#2196F3"
+    }
+    "register() (classmethod)"
+  }
+
+  concrete: "27 Concrete Effects" {
+    style: {
+      fill: "#fff8e1"
+      stroke: "#FF8F00"
+    }
+    desc: |md
+      Volume, Gain, Normalize
+      Bass, Treble, Equalizer
+      HighPass, LowPass, BandPass, BandReject
+      Reverb, Echo, Chorus, Flanger
+      Trim, Pad, Speed, Tempo, Pitch
+      Reverse, Fade, Repeat, Silence
+      Rate, Channels, Remix, Dither
+    |
+  }
+
+  presets: "53 Presets" {
+    style: {
+      fill: "#fff8e1"
+      stroke: "#FF8F00"
+    }
+    desc: |md
+      Telephone, Cathedral, DrumPunch
+      LoFiHipHop, Chipmunk, GatedReverb, ...
+    |
+  }
+
+  CompositeEffect -> Effect: inherits
+  PythonEffect -> Effect: inherits
+  CEffect -> Effect: inherits
+  concrete -> Effect: "inherit"
+  presets -> CompositeEffect: "inherit"
+}
+
+sox: "Low-Level Bindings (Cython)" {
+  style: {
+    fill: "#f3e5f5"
+    stroke: "#7B1FA2"
+  }
+
+  Format: "Format" {
+    shape: class
+    style.fill: "#ede7f6"
+    "sox_format_t* ptr"
+    "read() / read_buffer() / read_into()"
+    "write() / seek() / close()"
+  }
+
+  EffectsChain: "EffectsChain" {
+    shape: class
+    style.fill: "#ede7f6"
+    "sox_effects_chain_t* ptr"
+    "add_effect() / flow_effects()"
+  }
+
+  LowEffect: "Effect" {
+    shape: class
+    style.fill: "#ede7f6"
+    "sox_effect_t* ptr"
+    "set_options(args)"
+  }
+
+  EffectHandler: "EffectHandler" {
+    shape: class
+    style.fill: "#ede7f6"
+    "sox_effect_handler_t* ptr"
+    "name / usage / flags"
+  }
+
+  SignalInfo: "SignalInfo" {
+    shape: class
+    style.fill: "#ede7f6"
+    "sox_signalinfo_t* ptr"
+    "rate / channels / precision / length"
+  }
+
+  EncodingInfo: "EncodingInfo" {
+    shape: class
+    style.fill: "#ede7f6"
+    "sox_encodinginfo_t* ptr"
+    "encoding / bits_per_sample"
+  }
+
+  SoxRuntime: "SoxRuntime (singleton)" {
+    shape: class
+    style: {
+      fill: "#fce4ec"
+      stroke: "#C62828"
+    }
+    "ensure_init() / force_quit()"
+    "_flow_callbacks: dict"
+    "_last_callback_exception"
+  }
+
+  EffectsChain -> LowEffect: "contains 1..*"
+  LowEffect -> EffectHandler: "references"
+  Format -> SignalInfo: "borrows signal"
+  Format -> EncodingInfo: "borrows encoding"
+}
+
+onset: "Onset Detection (Cython + KissFFT)" {
+  style: {
+    fill: "#fff3e0"
+    stroke: "#E65100"
+  }
+  detect: "detect(path, threshold, method)"
+  detect_onsets: "detect_onsets(samples, rate, channels)"
+  methods: "HFC | Flux | Energy | Complex | Superflux"
+}
+
+api: "High-Level API (audio.py)" {
+  style: {
+    fill: "#e3f2fd"
+    stroke: "#1565C0"
+  }
+  functions: |md
+    info / convert / play / stream / concat
+    slice_loop / stutter / auto_trim
+    split_by_silence / pitch_scale / batch
+  |
+}
+
+api -> fx.Effect: "accepts effects list"
+api -> sox.Format: "opens files"
+api -> sox.EffectsChain: "builds chains"
+api -> sox.SoxRuntime: "ensures init"
+api -> onset: "transient detection"
+onset -> sox.Format: "reads audio"

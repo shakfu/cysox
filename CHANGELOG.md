@@ -17,6 +17,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+### Fixed
+
+- **Documentation accuracy**: Corrected effect counts across all docs (README,
+  index, effects reference, high-level API guide) to match actual source:
+  27 base effects, 53 presets
+- **README.md**: Fixed `fx.Remix(out_spec=[[1, 2]])` to correct parameter name
+  `fx.Remix(mix=["1,2"])`
+- **dev/high_level_api.md**: Fixed `info()` return type from `dict` to
+  `AudioInfo` (supports both attribute and dict-style access)
+- **cli.md**: Added missing `superflux` to `--method` options for slice command
+- **installation.md**: Added missing `pkg-config` to Linux (Ubuntu and Fedora)
+  install instructions
+
+### Added
+
+- **Sample Processing API reference** (`docs/api/samples.md`): Full documentation
+  for `slice_loop()`, `stutter()`, `auto_trim()`, `split_by_silence()`,
+  `pitch_scale()`, and `batch()` with parameter tables and practical examples
+- **`Silence` effect** documented in effects reference (`docs/api/effects.md`)
+  with all 6 parameters
+- **Sample processing examples** in `docs/examples.md`: auto-trim, split by
+  silence, pitch scale, and batch processing sections
+- **Docs site link** in README.md: badge and nav links to
+  https://shakfu.github.io/cysox/
+- **docs/index.md**: Added Sample Processing and Drum Loop Tools to feature list
+
+### Changed
+
+- **dev/high_level_api.md**: Updated module structure to list all actual source
+  files (`onset.pyx`, `utils.py`, `__main__.py`, individual `fx/` submodules)
+- **docs/changelog.md**: Added recent release summaries instead of bare GitHub link
+- **pyproject.toml**: Pinned `mkdocs>=1.6,<2` to avoid incompatibility with
+  mkdocs-material (MkDocs 2.0 broke the Material theme)
+
 ## [0.1.10]
 
 ### Added
@@ -108,7 +142,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
     lists and examples
   - Added CLI examples for `auto-trim`, `split`, `pitch-scale`, `batch`
   - Updated `info()` return type from `dict` to `AudioInfo`
-  - Updated base effect count from 28 to 29 (added `Silence`)
+  - Updated base effect count to 27 (corrected from prior inaccurate counts)
   - Added `Silence` to Time-Based effects listing
   - Added `superflux` onset detection method to method lists and examples
   - Added Features bullet for sample processing capabilities
@@ -140,7 +174,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
   - New Makefile target: `make leaks-valgrind` for local Linux testing
 
 - **Documentation Improvements**:
-  - New [Effects Reference](docs/api/effects.md): Full parameter docs for all 28 effects and 40+ presets
+  - New [Effects Reference](docs/api/effects.md): Full parameter docs for all 27 effects and 53 presets
   - New [Onset Detection](docs/api/onset.md): API reference with detection method comparison and tuning guide
   - New [CLI Reference](docs/cli.md): All 7 commands documented with options and examples
   - Rewrote [Examples](docs/examples.md): High-level API examples now lead; covers convert, presets, streaming, progress callbacks, slicing, stutter, and onset detection
@@ -229,7 +263,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ### Added
 
-- **Composite Effect Presets Library** (`cysox.fx.presets`): 54 ready-to-use effect presets
+- **Composite Effect Presets Library** (`cysox.fx.presets`): 53 ready-to-use effect presets
   - Voice Effects: `Chipmunk`, `DeepVoice`, `Robot`, `HauntedVoice`, `VocalClarity`, `Whisper`
   - Lo-Fi Effects: `Telephone`, `AMRadio`, `Megaphone`, `Underwater`, `VinylWarmth`, `LoFiHipHop`, `Cassette`
   - Spatial Effects: `SmallRoom`, `LargeHall`, `Cathedral`, `Bathroom`, `Stadium`
@@ -408,7 +442,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
   - High-level API is now the default export from `import cysox`
   - Low-level API accessible via `from cysox import sox`
 
-- **Typed Effects Module** (`cysox.fx`): 28 effect classes with full parameter validation
+- **Typed Effects Module** (`cysox.fx`): 27 effect classes with full parameter validation
   - Base classes: `Effect`, `CompositeEffect`, `PythonEffect`, `CEffect`
   - Volume/Gain: `Volume`, `Gain`, `Normalize`
   - Equalization: `Bass`, `Treble`, `Equalizer`

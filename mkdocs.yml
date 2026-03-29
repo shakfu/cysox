@@ -50,6 +50,7 @@ nav:
     - Low-Level Modules: api/modules.md
     - Exceptions: api/exceptions.md
   - Development:
+    - Architecture: dev/architecture.md
     - High-Level API: dev/high_level_api.md
     - Known Limitations: dev/known_limitations.md
     - Contributing: contributing.md
