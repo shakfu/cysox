@@ -45,6 +45,7 @@ nav:
     - Benchmarks: benchmarks.md
   - API Reference:
     - Effects: api/effects.md
+    - Sample Processing: api/samples.md
     - Onset Detection: api/onset.md
     - Low-Level Modules: api/modules.md
     - Exceptions: api/exceptions.md

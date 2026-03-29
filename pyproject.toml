@@ -80,6 +80,7 @@ dev = [
     "pytest>=8.4.1",
     "pytest-benchmark",
     "memory-profiler",
+    "mkdocs>=1.6,<2",
     "mkdocs-material",
     "twine>=6.2.0",
     "mypy",

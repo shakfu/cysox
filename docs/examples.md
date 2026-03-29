@@ -158,6 +158,85 @@ for method in ['hfc', 'flux', 'energy', 'complex', 'superflux']:
     print(f"{method:10s}: {len(times)} onsets")
 ```
 
+### Auto-trim silence
+
+```python
+import cysox
+from cysox import fx
+
+# Basic silence trimming
+cysox.auto_trim('raw.wav', 'trimmed.wav')
+
+# Custom threshold with fades
+cysox.auto_trim('raw.wav', 'trimmed.wav',
+    threshold_db=-36,
+    fade_in=10,
+    fade_out=50,
+)
+
+# Trim and speed up
+cysox.auto_trim('raw.wav', 'trimmed.wav',
+    speed_factor=2.0,
+    effects=[fx.Normalize()],
+)
+```
+
+### Split recording into one-shots
+
+```python
+import cysox
+from cysox import fx
+
+# Split at silence gaps
+segments = cysox.split_by_silence('recording.wav', 'one_shots/')
+print(f"Created {len(segments)} one-shots")
+
+# Custom parameters for noisy recordings
+segments = cysox.split_by_silence('recording.wav', 'one_shots/',
+    threshold_db=-36,
+    min_silence=0.5,
+    min_segment=0.25,
+    effects=[fx.Normalize()],
+)
+```
+
+### Generate pitch-shifted chromatic scale
+
+```python
+import cysox
+from cysox import fx
+
+# One octave up from source
+files = cysox.pitch_scale('c3_piano.wav', 'scale/')
+
+# Two octaves centered on source
+files = cysox.pitch_scale('sample.wav', 'scale/',
+    semitones=24, offset=-12,
+    effects=[fx.Normalize()],
+)
+```
+
+### Batch process a directory
+
+```python
+import cysox
+from cysox import fx
+
+# Convert all files to mono 44.1kHz
+processed = cysox.batch('raw_samples/', 'processed/',
+    sample_rate=44100,
+    channels=1,
+    effects=[fx.Normalize()],
+)
+print(f"Processed {len(processed)} files")
+
+# Convert format with progress
+cysox.batch('input/', 'output/',
+    output_format='flac',
+    on_file=lambda i, o: print(f"  {i} -> {o}"),
+)
+```
+
 ---
 
 ## Low-Level API

@@ -9,8 +9,8 @@ A Pythonic audio processing library which uses cython to wrap [libsox](https://g
 ## Features
 
 - **Simple API**: Convert, analyze, and play audio with one-liners
-- **Typed Effects**: 29 base effect classes with IDE autocomplete and validation
-- **54 Effect Presets**: Ready-to-use composite effects for voice, lo-fi, drums, mastering, and more
+- **Typed Effects**: 27 base effect classes with IDE autocomplete and validation
+- **53 Effect Presets**: Ready-to-use composite effects for voice, lo-fi, drums, mastering, and more
 - **Sample Processing**: Auto-trim silence, split recordings into one-shots, generate chromatic pitch scales, batch process directories
 - **Drum Loop Tools**: Slice loops by BPM, create stutter effects, apply beat-synced processing
 - **High Performance**: Direct C bindings through Cython, KissFFT-accelerated onset detection
@@ -184,7 +184,7 @@ All input files must have the same sample rate and channel count.
 
 ## Effects Module
 
-The `cysox.fx` module provides 29 base effect classes and 54 composite presets:
+The `cysox.fx` module provides 27 base effect classes and 53 composite presets:
 
 ### Volume & Dynamics
 
@@ -239,7 +239,7 @@ fx.Silence(threshold=-48)          # Remove silence by amplitude
 ```python
 fx.Rate(sample_rate=48000)         # Resample
 fx.Channels(channels=1)            # Change channel count
-fx.Remix(out_spec=[[1, 2]])        # Custom channel mixing
+fx.Remix(mix=["1,2"])              # Custom channel mixing
 fx.Dither()                        # Add dither
 ```
 

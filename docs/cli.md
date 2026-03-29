@@ -103,7 +103,7 @@ cysox slice <input> <output_dir> [options]
 | `--beats` | Beats per slice when using `--bpm` (default: 1). |
 | `-t`, `--threshold` | Onset detection threshold 0.0-1.0 (enables transient-based slicing). |
 | `-s`, `--sensitivity` | Onset detection sensitivity 1.0-3.0 (default: 1.5). |
-| `-m`, `--method` | Onset detection method: `hfc`, `flux`, `energy`, `complex` (default: `hfc`). |
+| `-m`, `--method` | Onset detection method: `hfc`, `flux`, `energy`, `complex`, `superflux` (default: `hfc`). |
 | `--min-spacing` | Minimum time between onsets in seconds (default: 0.05). |
 | `-p`, `--preset` | Apply a preset to each slice. |
 
@@ -121,6 +121,9 @@ cysox slice drums.wav slices/ -t 0.3
 
 # Slice at transients with vintage processing
 cysox slice drums.wav slices/ -t 0.3 -p VintageBreak
+
+# Slice using superflux method (good for vibrato-heavy material)
+cysox slice drums.wav slices/ -t 0.3 -m superflux
 ```
 
 ### stutter

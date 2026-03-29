@@ -1,6 +1,6 @@
 # Effects Reference
 
-cysox provides 28 typed effect classes and 40+ composite presets. Effects are used with the high-level API:
+cysox provides 27 typed effect classes and 53 composite presets. Effects are used with the high-level API:
 
 ```python
 import cysox
@@ -367,6 +367,27 @@ fx.Repeat(count=2)     # Play 3 times total (original + 2 repeats)
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `count` | int | *required* | Number of additional plays (must be >= 1). |
+
+### Silence
+
+Remove silence from audio based on amplitude threshold detection.
+
+```python
+fx.Silence()                                   # Remove leading silence
+fx.Silence(threshold=-36)                      # Less sensitive threshold
+fx.Silence(below_periods=1)                    # Remove leading + trailing silence
+fx.Silence(above_periods=1, below_periods=1,   # Full control
+           duration=0.2, threshold=-40)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `above_periods` | int | 1 | Number of non-silence periods to keep from the start. Use 1 to remove leading silence. |
+| `duration` | float | 0.1 | Minimum duration (seconds) that audio must stay above threshold to be considered non-silence. |
+| `threshold` | float | -48 | Amplitude threshold in dB below which audio is considered silence. |
+| `below_periods` | int | 0 | If set to 1, also removes trailing silence. |
+| `below_duration` | float | None | Minimum silence duration for trailing detection. Defaults to `duration`. |
+| `below_threshold` | float | None | Threshold for trailing silence detection in dB. Defaults to `threshold`. |
 
 ---
 

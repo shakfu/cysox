@@ -294,6 +294,7 @@ source = { editable = "." }
 [package.dev-dependencies]
 dev = [
     { name = "memory-profiler" },
+    { name = "mkdocs" },
     { name = "mkdocs-material" },
     { name = "mypy" },
     { name = "pytest", version = "8.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -308,6 +309,7 @@ dev = [
 [package.metadata.requires-dev]
 dev = [
     { name = "memory-profiler" },
+    { name = "mkdocs", specifier = ">=1.6,<2" },
     { name = "mkdocs-material" },
     { name = "mypy" },
     { name = "pytest", specifier = ">=8.4.1" },

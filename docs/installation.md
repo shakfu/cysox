@@ -20,14 +20,14 @@ brew install sox libsndfile mad libpng flac lame mpg123 libogg opus libvorbis
 
 ```bash
 sudo apt-get install libsox-dev libsndfile1-dev libflac-dev \
-    libmp3lame-dev libvorbis-dev libopus-dev
+    libmp3lame-dev libvorbis-dev libopus-dev pkg-config
 ```
 
 ### Linux (Fedora/RHEL)
 
 ```bash
 sudo dnf install sox-devel libsndfile-devel flac-devel \
-    lame-devel libvorbis-devel opus-devel
+    lame-devel libvorbis-devel opus-devel pkg-config
 ```
 
 ### Windows

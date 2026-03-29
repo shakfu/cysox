@@ -27,35 +27,39 @@ sox.quit()
 ```text
 src/cysox/
     __init__.py      # Exports high-level API as default
-    audio.py         # High-level wrapper implementation
-    sox.pyx          # Low-level Cython bindings
+    __init__.pyi     # Type stubs for high-level API
+    __main__.py      # CLI entry point
+    audio.py         # High-level wrapper implementation (AudioInfo, info, convert, etc.)
+    utils.py         # Utility functions
+    sox.pyx          # Low-level Cython bindings to libsox
+    onset.pyx        # C-optimized onset detection with KissFFT
     fx/
         __init__.py  # Exports all effect classes
-        base.py      # Base classes (Effect, CompositeEffect, PythonEffect)
-        effects.py   # Built-in effect implementations
+        base.py      # Base classes (Effect, CompositeEffect, PythonEffect, CEffect)
+        volume.py    # Volume, Gain, Normalize
+        eq.py        # Bass, Treble, Equalizer
+        filter.py    # HighPass, LowPass, BandPass, BandReject
+        reverb.py    # Reverb, Echo, Chorus, Flanger
+        time.py      # Trim, Pad, Speed, Tempo, Pitch, Reverse, Fade, Repeat, Silence
+        convert.py   # Rate, Channels, Remix, Dither
+        presets.py   # 53 composite effect presets
 ```
 
 ---
 
 ## Core Functions
 
-### `info(path) -> dict`
+### `info(path) -> AudioInfo`
 
-Get audio file metadata.
+Get audio file metadata. Returns an `AudioInfo` object supporting both attribute access and dict-style access (for backwards compatibility).
 
 ```python
 info = cysox.info('audio.wav')
-# Returns:
-# {
-#     'path': 'audio.wav',
-#     'format': 'wav',
-#     'duration': 11.5,          # seconds
-#     'sample_rate': 44100,
-#     'channels': 2,
-#     'bits_per_sample': 16,
-#     'samples': 507150,
-#     'encoding': 'signed-integer',
-# }
+print(info.duration)         # Attribute access
+print(info['sample_rate'])   # Dict-style access
+
+# Fields: path, format, duration, sample_rate, channels,
+#         bits_per_sample, samples, encoding
 ```
 
 ### `convert(input, output, effects=None, **options)`
@@ -119,7 +123,7 @@ All input files must have the same sample rate and channel count.
 
 ## Effects Module
 
-The `cysox.fx` module provides 28 typed effect classes with IDE autocomplete and parameter validation.
+The `cysox.fx` module provides 27 typed effect classes with IDE autocomplete and parameter validation.
 
 ### Built-in Effects
 
@@ -129,7 +133,7 @@ The `cysox.fx` module provides 28 typed effect classes with IDE autocomplete and
 | Equalization | `Bass`, `Treble`, `Equalizer` |
 | Filters | `HighPass`, `LowPass`, `BandPass`, `BandReject` |
 | Spatial/Reverb | `Reverb`, `Echo`, `Chorus`, `Flanger` |
-| Time-based | `Trim`, `Pad`, `Speed`, `Tempo`, `Pitch`, `Reverse`, `Fade`, `Repeat` |
+| Time-based | `Trim`, `Pad`, `Speed`, `Tempo`, `Pitch`, `Reverse`, `Fade`, `Repeat`, `Silence` |
 | Conversion | `Rate`, `Channels`, `Remix`, `Dither` |
 
 ### Example Effect Usage

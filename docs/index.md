@@ -29,10 +29,12 @@ cysox.play('audio.wav')
 ## Features
 
 - **Audio Processing**: Convert between formats (WAV, MP3, FLAC, OGG, etc.) with optional effects
-- **[28 Built-in Effects](api/effects.md)**: Volume, EQ, reverb, echo, chorus, flanger, pitch, tempo, trim, and more
-- **[40+ Presets](api/effects.md#presets)**: Ready-to-use effect chains (Telephone, Cathedral, LoFiHipHop, DrumPunch, etc.)
+- **[27 Built-in Effects](api/effects.md)**: Volume, EQ, reverb, echo, chorus, flanger, pitch, tempo, trim, and more
+- **[53 Presets](api/effects.md#presets)**: Ready-to-use effect chains (Telephone, Cathedral, LoFiHipHop, DrumPunch, etc.)
 - **[Onset Detection](api/onset.md)**: C-optimized transient detection with 5 algorithms (HFC, flux, energy, complex, superflux)
-- **[CLI Tool](cli.md)**: Convert, slice, stutter, and apply presets from the command line
+- **[Sample Processing](api/samples.md)**: Auto-trim silence, split recordings into one-shots, generate chromatic pitch scales, batch process directories
+- **[Drum Loop Tools](api/samples.md#drum-loop-slicing)**: Slice loops by BPM, create stutter effects, apply beat-synced processing
+- **[CLI Tool](cli.md)**: Convert, slice, stutter, batch process, and apply presets from the command line
 - **High Performance**: Direct C bindings through Cython, KissFFT-accelerated analysis
 - **Buffer Protocol**: Zero-copy integration with NumPy, PyTorch, and array.array
 - **Type Hints**: Full IDE autocomplete support via type stubs
