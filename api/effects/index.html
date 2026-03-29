@@ -1,0 +1,3362 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Pythonic audio processing library wrapping libsox via Cython">
+      
+      
+      
+      
+        <link rel="prev" href="../../benchmarks/">
+      
+      
+        <link rel="next" href="../samples/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
+    
+    
+      
+        <title>Effects - cysox</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#effects-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="cysox" class="md-header__button md-logo" aria-label="cysox" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            cysox
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Effects
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/shakfu/cysox" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    shakfu/cysox
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="cysox" class="md-nav__button md-logo" aria-label="cysox" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    cysox
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/shakfu/cysox" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    shakfu/cysox
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Effects
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Effects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#volume-and-dynamics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Volume and Dynamics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Volume and Dynamics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#volume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Volume
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#normalize" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Normalize
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#equalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Equalization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Equalization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#treble" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Treble
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#equalizer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Equalizer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filters
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Filters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#highpass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HighPass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lowpass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LowPass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bandpass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BandPass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bandreject" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BandReject
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reverb-and-spatial" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reverb and Spatial
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reverb and Spatial">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#reverb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reverb
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#echo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Echo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chorus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chorus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flanger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flanger
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#time-and-pitch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time and Pitch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Time and Pitch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trim
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pad" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pad
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#speed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Speed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tempo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tempo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pitch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pitch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reverse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reverse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fade
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repeat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repeat
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#silence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Silence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#format-conversion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Format Conversion
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Format Conversion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dither" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dither
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#presets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Presets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Presets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#voice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Voice
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lo-fi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lo-Fi
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spatial" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spatial
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#broadcast" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Broadcast
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#musical" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Musical
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#drum-loops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Drum Loops
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mastering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mastering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transition
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-presets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Presets
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../samples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sample Processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../onset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Onset Detection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../modules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Low-Level Modules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exceptions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exceptions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/high_level_api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    High-Level API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/known_limitations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Known Limitations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#volume-and-dynamics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Volume and Dynamics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Volume and Dynamics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#volume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Volume
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#normalize" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Normalize
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#equalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Equalization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Equalization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#treble" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Treble
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#equalizer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Equalizer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filters
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Filters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#highpass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HighPass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lowpass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LowPass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bandpass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BandPass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bandreject" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BandReject
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reverb-and-spatial" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reverb and Spatial
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reverb and Spatial">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#reverb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reverb
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#echo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Echo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chorus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chorus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flanger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flanger
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#time-and-pitch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time and Pitch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Time and Pitch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trim
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pad" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pad
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#speed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Speed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tempo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tempo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pitch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pitch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reverse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reverse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fade
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repeat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repeat
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#silence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Silence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#format-conversion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Format Conversion
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Format Conversion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dither" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dither
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#presets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Presets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Presets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#voice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Voice
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lo-fi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lo-Fi
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spatial" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spatial
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#broadcast" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Broadcast
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#musical" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Musical
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#drum-loops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Drum Loops
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mastering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mastering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transition
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-presets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Presets
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="effects-reference">Effects Reference<a class="headerlink" href="#effects-reference" title="Permanent link">&para;</a></h1>
+<p>cysox provides 27 typed effect classes and 53 composite presets. Effects are used with the high-level API:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">cysox</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cysox</span><span class="w"> </span><span class="kn">import</span> <span class="n">fx</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">cysox</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s1">&#39;input.wav&#39;</span><span class="p">,</span> <span class="s1">&#39;output.wav&#39;</span><span class="p">,</span> <span class="n">effects</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">fx</span><span class="o">.</span><span class="n">Bass</span><span class="p">(</span><span class="n">gain</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">fx</span><span class="o">.</span><span class="n">Reverb</span><span class="p">(</span><span class="n">reverberance</span><span class="o">=</span><span class="mi">70</span><span class="p">),</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">fx</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(),</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">])</span>
+</code></pre></div>
+<p>Effects can also be combined into reusable presets using <code>CompositeEffect</code> (see <a href="#presets">Presets</a> below).</p>
+<hr />
+<h2 id="volume-and-dynamics">Volume and Dynamics<a class="headerlink" href="#volume-and-dynamics" title="Permanent link">&para;</a></h2>
+<h3 id="volume">Volume<a class="headerlink" href="#volume" title="Permanent link">&para;</a></h3>
+<p>Adjust volume level in decibels.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Volume</span><span class="p">(</span><span class="n">db</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>                  <span class="c1"># Boost by 3dB</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Volume</span><span class="p">(</span><span class="n">db</span><span class="o">=-</span><span class="mi">6</span><span class="p">)</span>                 <span class="c1"># Cut by 6dB</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">fx</span><span class="o">.</span><span class="n">Volume</span><span class="p">(</span><span class="n">db</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">limiter</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>    <span class="c1"># Boost with limiter to prevent clipping</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>db</code></td>
+<td>float</td>
+<td>0</td>
+<td>Volume adjustment in dB. Positive = louder.</td>
+</tr>
+<tr>
+<td><code>limiter</code></td>
+<td>bool</td>
+<td>False</td>
+<td>Apply limiter to prevent clipping.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gain">Gain<a class="headerlink" href="#gain" title="Permanent link">&para;</a></h3>
+<p>Apply gain with normalization and limiting options.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Gain</span><span class="p">(</span><span class="n">db</span><span class="o">=-</span><span class="mi">3</span><span class="p">)</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Gain</span><span class="p">(</span><span class="n">db</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>   <span class="c1"># Normalize only</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>db</code></td>
+<td>float</td>
+<td>0</td>
+<td>Gain in decibels.</td>
+</tr>
+<tr>
+<td><code>normalize</code></td>
+<td>bool</td>
+<td>False</td>
+<td>Normalize to 0dBFS before applying gain.</td>
+</tr>
+<tr>
+<td><code>limiter</code></td>
+<td>bool</td>
+<td>False</td>
+<td>Apply limiter to prevent clipping.</td>
+</tr>
+<tr>
+<td><code>balance</code></td>
+<td>bool</td>
+<td>False</td>
+<td>Balance channels (stereo).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="normalize">Normalize<a class="headerlink" href="#normalize" title="Permanent link">&para;</a></h3>
+<p>Normalize audio to a target peak level.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Normalize</span><span class="p">()</span>            <span class="c1"># Normalize to -1 dBFS</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">level</span><span class="o">=-</span><span class="mi">3</span><span class="p">)</span>    <span class="c1"># Normalize to -3 dBFS</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>level</code></td>
+<td>float</td>
+<td>-1</td>
+<td>Target peak level in dBFS.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="equalization">Equalization<a class="headerlink" href="#equalization" title="Permanent link">&para;</a></h2>
+<h3 id="bass">Bass<a class="headerlink" href="#bass" title="Permanent link">&para;</a></h3>
+<p>Boost or cut bass frequencies using a shelving filter.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Bass</span><span class="p">(</span><span class="n">gain</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>                      <span class="c1"># Boost bass by 5dB</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Bass</span><span class="p">(</span><span class="n">gain</span><span class="o">=-</span><span class="mi">3</span><span class="p">,</span> <span class="n">frequency</span><span class="o">=</span><span class="mi">80</span><span class="p">)</span>       <span class="c1"># Cut at 80Hz</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gain</code></td>
+<td>float</td>
+<td><em>required</em></td>
+<td>Boost (positive) or cut (negative) in dB.</td>
+</tr>
+<tr>
+<td><code>frequency</code></td>
+<td>float</td>
+<td>100</td>
+<td>Center frequency in Hz.</td>
+</tr>
+<tr>
+<td><code>width</code></td>
+<td>float</td>
+<td>0.5</td>
+<td>Filter width in octaves.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="treble">Treble<a class="headerlink" href="#treble" title="Permanent link">&para;</a></h3>
+<p>Boost or cut treble frequencies using a shelving filter.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Treble</span><span class="p">(</span><span class="n">gain</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>                        <span class="c1"># Boost treble by 3dB</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Treble</span><span class="p">(</span><span class="n">gain</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">frequency</span><span class="o">=</span><span class="mi">4000</span><span class="p">)</span>       <span class="c1"># Cut at 4kHz</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gain</code></td>
+<td>float</td>
+<td><em>required</em></td>
+<td>Boost (positive) or cut (negative) in dB.</td>
+</tr>
+<tr>
+<td><code>frequency</code></td>
+<td>float</td>
+<td>3000</td>
+<td>Center frequency in Hz.</td>
+</tr>
+<tr>
+<td><code>width</code></td>
+<td>float</td>
+<td>0.5</td>
+<td>Filter width in octaves.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="equalizer">Equalizer<a class="headerlink" href="#equalizer" title="Permanent link">&para;</a></h3>
+<p>Peaking EQ filter at a specific frequency.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Equalizer</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">gain</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>    <span class="c1"># Boost 1kHz</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>frequency</code></td>
+<td>float</td>
+<td><em>required</em></td>
+<td>Center frequency in Hz.</td>
+</tr>
+<tr>
+<td><code>width</code></td>
+<td>float</td>
+<td><em>required</em></td>
+<td>Q factor or bandwidth.</td>
+</tr>
+<tr>
+<td><code>gain</code></td>
+<td>float</td>
+<td><em>required</em></td>
+<td>Boost (positive) or cut (negative) in dB.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="filters">Filters<a class="headerlink" href="#filters" title="Permanent link">&para;</a></h2>
+<h3 id="highpass">HighPass<a class="headerlink" href="#highpass" title="Permanent link">&para;</a></h3>
+<p>High-pass filter that removes frequencies below the cutoff.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">HighPass</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="mi">80</span><span class="p">)</span>              <span class="c1"># Remove rumble below 80Hz</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">HighPass</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">poles</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>    <span class="c1"># Gentle rolloff</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>frequency</code></td>
+<td>float</td>
+<td><em>required</em></td>
+<td>Cutoff frequency in Hz.</td>
+</tr>
+<tr>
+<td><code>poles</code></td>
+<td>int</td>
+<td>2</td>
+<td>Filter order (1 or 2). Higher = steeper rolloff.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="lowpass">LowPass<a class="headerlink" href="#lowpass" title="Permanent link">&para;</a></h3>
+<p>Low-pass filter that removes frequencies above the cutoff.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">LowPass</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="mi">8000</span><span class="p">)</span>             <span class="c1"># Remove highs above 8kHz</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">LowPass</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span> <span class="n">poles</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>    <span class="c1"># Gentle rolloff</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>frequency</code></td>
+<td>float</td>
+<td><em>required</em></td>
+<td>Cutoff frequency in Hz.</td>
+</tr>
+<tr>
+<td><code>poles</code></td>
+<td>int</td>
+<td>2</td>
+<td>Filter order (1 or 2). Higher = steeper rolloff.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="bandpass">BandPass<a class="headerlink" href="#bandpass" title="Permanent link">&para;</a></h3>
+<p>Band-pass filter that passes frequencies within a range.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">BandPass</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>    <span class="c1"># Q=2 bandpass at 1kHz</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>frequency</code></td>
+<td>float</td>
+<td><em>required</em></td>
+<td>Center frequency in Hz.</td>
+</tr>
+<tr>
+<td><code>width</code></td>
+<td>float</td>
+<td><em>required</em></td>
+<td>Filter width (interpretation depends on <code>width_type</code>).</td>
+</tr>
+<tr>
+<td><code>width_type</code></td>
+<td>str</td>
+<td><code>"q"</code></td>
+<td><code>"q"</code> for Q-factor, <code>"h"</code> for Hz, <code>"o"</code> for octaves.</td>
+</tr>
+<tr>
+<td><code>constant_skirt</code></td>
+<td>bool</td>
+<td>False</td>
+<td>Use constant skirt gain.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="bandreject">BandReject<a class="headerlink" href="#bandreject" title="Permanent link">&para;</a></h3>
+<p>Band-reject (notch) filter that removes a narrow frequency range.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">BandReject</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>    <span class="c1"># Remove 60Hz hum</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>frequency</code></td>
+<td>float</td>
+<td><em>required</em></td>
+<td>Center frequency in Hz.</td>
+</tr>
+<tr>
+<td><code>width</code></td>
+<td>float</td>
+<td><em>required</em></td>
+<td>Filter width (interpretation depends on <code>width_type</code>).</td>
+</tr>
+<tr>
+<td><code>width_type</code></td>
+<td>str</td>
+<td><code>"q"</code></td>
+<td><code>"q"</code> for Q-factor, <code>"h"</code> for Hz, <code>"o"</code> for octaves.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="reverb-and-spatial">Reverb and Spatial<a class="headerlink" href="#reverb-and-spatial" title="Permanent link">&para;</a></h2>
+<h3 id="reverb">Reverb<a class="headerlink" href="#reverb" title="Permanent link">&para;</a></h3>
+<p>Add reverberation.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Reverb</span><span class="p">()</span>                                       <span class="c1"># Default reverb</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Reverb</span><span class="p">(</span><span class="n">reverberance</span><span class="o">=</span><span class="mi">80</span><span class="p">)</span>                        <span class="c1"># Long decay</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">fx</span><span class="o">.</span><span class="n">Reverb</span><span class="p">(</span><span class="n">room_scale</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">pre_delay</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>            <span class="c1"># Small room</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">fx</span><span class="o">.</span><span class="n">Reverb</span><span class="p">(</span><span class="n">reverberance</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span> <span class="n">wet_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>         <span class="c1"># Wet signal only</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>reverberance</code></td>
+<td>float</td>
+<td>50</td>
+<td>Reverb time, 0-100%.</td>
+</tr>
+<tr>
+<td><code>hf_damping</code></td>
+<td>float</td>
+<td>50</td>
+<td>High frequency damping, 0-100%.</td>
+</tr>
+<tr>
+<td><code>room_scale</code></td>
+<td>float</td>
+<td>100</td>
+<td>Room size, 0-100%.</td>
+</tr>
+<tr>
+<td><code>stereo_depth</code></td>
+<td>float</td>
+<td>100</td>
+<td>Stereo spread, 0-100%.</td>
+</tr>
+<tr>
+<td><code>pre_delay</code></td>
+<td>float</td>
+<td>0</td>
+<td>Pre-delay in milliseconds.</td>
+</tr>
+<tr>
+<td><code>wet_gain</code></td>
+<td>float</td>
+<td>0</td>
+<td>Wet signal gain in dB.</td>
+</tr>
+<tr>
+<td><code>wet_only</code></td>
+<td>bool</td>
+<td>False</td>
+<td>Output only the wet signal (no dry).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="echo">Echo<a class="headerlink" href="#echo" title="Permanent link">&para;</a></h3>
+<p>Add one or more echo taps.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Echo</span><span class="p">(</span><span class="n">delays</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">],</span> <span class="n">decays</span><span class="o">=</span><span class="p">[</span><span class="mf">0.5</span><span class="p">])</span>                  <span class="c1"># Single echo</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Echo</span><span class="p">(</span><span class="n">delays</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">],</span> <span class="n">decays</span><span class="o">=</span><span class="p">[</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">])</span>        <span class="c1"># Multi-tap</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>delays</code></td>
+<td>list[float]</td>
+<td><em>required</em></td>
+<td>Delay times in milliseconds.</td>
+</tr>
+<tr>
+<td><code>decays</code></td>
+<td>list[float]</td>
+<td><em>required</em></td>
+<td>Decay values (0-1) for each delay. Must match length of <code>delays</code>.</td>
+</tr>
+<tr>
+<td><code>gain_in</code></td>
+<td>float</td>
+<td>0.8</td>
+<td>Input gain (0-1).</td>
+</tr>
+<tr>
+<td><code>gain_out</code></td>
+<td>float</td>
+<td>0.9</td>
+<td>Output gain (0-1).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="chorus">Chorus<a class="headerlink" href="#chorus" title="Permanent link">&para;</a></h3>
+<p>Add chorus modulation.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Chorus</span><span class="p">()</span>                              <span class="c1"># Default chorus</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Chorus</span><span class="p">(</span><span class="n">depth</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>            <span class="c1"># Deeper, faster</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gain_in</code></td>
+<td>float</td>
+<td>0.7</td>
+<td>Input gain (0-1).</td>
+</tr>
+<tr>
+<td><code>gain_out</code></td>
+<td>float</td>
+<td>0.9</td>
+<td>Output gain (0-1).</td>
+</tr>
+<tr>
+<td><code>delay</code></td>
+<td>float</td>
+<td>55</td>
+<td>Base delay in ms.</td>
+</tr>
+<tr>
+<td><code>decay</code></td>
+<td>float</td>
+<td>0.4</td>
+<td>Decay factor.</td>
+</tr>
+<tr>
+<td><code>speed</code></td>
+<td>float</td>
+<td>0.25</td>
+<td>Modulation speed in Hz.</td>
+</tr>
+<tr>
+<td><code>depth</code></td>
+<td>float</td>
+<td>2</td>
+<td>Modulation depth in ms.</td>
+</tr>
+<tr>
+<td><code>shape</code></td>
+<td>str</td>
+<td><code>"s"</code></td>
+<td><code>"s"</code> (sine) or <code>"t"</code> (triangle).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="flanger">Flanger<a class="headerlink" href="#flanger" title="Permanent link">&para;</a></h3>
+<p>Add flanging effect.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Flanger</span><span class="p">()</span>                                     <span class="c1"># Default flanger</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Flanger</span><span class="p">(</span><span class="n">depth</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">regen</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>         <span class="c1"># Deeper with feedback</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>delay</code></td>
+<td>float</td>
+<td>0</td>
+<td>Base delay in ms.</td>
+</tr>
+<tr>
+<td><code>depth</code></td>
+<td>float</td>
+<td>2</td>
+<td>Modulation depth in ms.</td>
+</tr>
+<tr>
+<td><code>regen</code></td>
+<td>float</td>
+<td>0</td>
+<td>Regeneration/feedback, -95 to 95%.</td>
+</tr>
+<tr>
+<td><code>width</code></td>
+<td>float</td>
+<td>71</td>
+<td>Wet/dry mix percentage.</td>
+</tr>
+<tr>
+<td><code>speed</code></td>
+<td>float</td>
+<td>0.5</td>
+<td>Modulation speed in Hz.</td>
+</tr>
+<tr>
+<td><code>shape</code></td>
+<td>str</td>
+<td><code>"sine"</code></td>
+<td><code>"sine"</code> or <code>"triangle"</code>.</td>
+</tr>
+<tr>
+<td><code>phase</code></td>
+<td>float</td>
+<td>25</td>
+<td>Phase offset for stereo, percentage.</td>
+</tr>
+<tr>
+<td><code>interp</code></td>
+<td>str</td>
+<td><code>"linear"</code></td>
+<td><code>"linear"</code> or <code>"quadratic"</code>.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="time-and-pitch">Time and Pitch<a class="headerlink" href="#time-and-pitch" title="Permanent link">&para;</a></h2>
+<h3 id="trim">Trim<a class="headerlink" href="#trim" title="Permanent link">&para;</a></h3>
+<p>Extract a portion of the audio. Specify either <code>end</code> or <code>duration</code>, not both.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Trim</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="mf">10.0</span><span class="p">)</span>        <span class="c1"># From 1.5s to 10s</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Trim</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)</span>                  <span class="c1"># From 5s to end</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="n">fx</span><span class="o">.</span><span class="n">Trim</span><span class="p">(</span><span class="n">end</span><span class="o">=</span><span class="mf">30.0</span><span class="p">)</span>                   <span class="c1"># First 30 seconds</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="n">fx</span><span class="o">.</span><span class="n">Trim</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>       <span class="c1"># First 10 seconds</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>start</code></td>
+<td>float</td>
+<td>0</td>
+<td>Start time in seconds.</td>
+</tr>
+<tr>
+<td><code>end</code></td>
+<td>float</td>
+<td>None</td>
+<td>End time in seconds.</td>
+</tr>
+<tr>
+<td><code>duration</code></td>
+<td>float</td>
+<td>None</td>
+<td>Duration in seconds.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="pad">Pad<a class="headerlink" href="#pad" title="Permanent link">&para;</a></h3>
+<p>Add silence to the beginning and/or end.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Pad</span><span class="p">(</span><span class="n">before</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>                  <span class="c1"># 1s silence at start</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Pad</span><span class="p">(</span><span class="n">after</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>                   <span class="c1"># 2s silence at end</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">fx</span><span class="o">.</span><span class="n">Pad</span><span class="p">(</span><span class="n">before</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">after</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>       <span class="c1"># Both</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>before</code></td>
+<td>float</td>
+<td>0</td>
+<td>Seconds of silence at the beginning.</td>
+</tr>
+<tr>
+<td><code>after</code></td>
+<td>float</td>
+<td>0</td>
+<td>Seconds of silence at the end.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="speed">Speed<a class="headerlink" href="#speed" title="Permanent link">&para;</a></h3>
+<p>Change playback speed. This affects pitch (higher speed = higher pitch).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Speed</span><span class="p">(</span><span class="n">factor</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>     <span class="c1"># Double speed, octave up</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Speed</span><span class="p">(</span><span class="n">factor</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>     <span class="c1"># Half speed, octave down</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>factor</code></td>
+<td>float</td>
+<td><em>required</em></td>
+<td>Speed multiplier (must be positive).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tempo">Tempo<a class="headerlink" href="#tempo" title="Permanent link">&para;</a></h3>
+<p>Change tempo without affecting pitch.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Tempo</span><span class="p">(</span><span class="n">factor</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>                       <span class="c1"># 50% faster</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Tempo</span><span class="p">(</span><span class="n">factor</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">audio_type</span><span class="o">=</span><span class="s1">&#39;s&#39;</span><span class="p">)</span>       <span class="c1"># Slower, optimized for speech</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>factor</code></td>
+<td>float</td>
+<td><em>required</em></td>
+<td>Tempo multiplier (must be positive).</td>
+</tr>
+<tr>
+<td><code>audio_type</code></td>
+<td>str</td>
+<td>None</td>
+<td>Optimize for <code>"m"</code> (music), <code>"s"</code> (speech), or <code>"l"</code> (linear).</td>
+</tr>
+<tr>
+<td><code>quick</code></td>
+<td>bool</td>
+<td>False</td>
+<td>Use quicker, lower-quality algorithm.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="pitch">Pitch<a class="headerlink" href="#pitch" title="Permanent link">&para;</a></h3>
+<p>Change pitch without affecting tempo.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Pitch</span><span class="p">(</span><span class="n">cents</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>      <span class="c1"># Up one semitone</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Pitch</span><span class="p">(</span><span class="n">cents</span><span class="o">=-</span><span class="mi">200</span><span class="p">)</span>     <span class="c1"># Down two semitones</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cents</code></td>
+<td>float</td>
+<td><em>required</em></td>
+<td>Pitch shift in cents (100 cents = 1 semitone).</td>
+</tr>
+<tr>
+<td><code>quick</code></td>
+<td>bool</td>
+<td>False</td>
+<td>Use quicker, lower-quality algorithm.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="reverse">Reverse<a class="headerlink" href="#reverse" title="Permanent link">&para;</a></h3>
+<p>Reverse the audio.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Reverse</span><span class="p">()</span>
+</code></pre></div>
+<p>No parameters.</p>
+<h3 id="fade">Fade<a class="headerlink" href="#fade" title="Permanent link">&para;</a></h3>
+<p>Apply fade-in and/or fade-out.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Fade</span><span class="p">(</span><span class="n">fade_in</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>                              <span class="c1"># 0.5s fade in</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Fade</span><span class="p">(</span><span class="n">fade_out</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>                              <span class="c1"># 2s fade out</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="n">fx</span><span class="o">.</span><span class="n">Fade</span><span class="p">(</span><span class="n">fade_in</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">fade_out</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;l&#39;</span><span class="p">)</span>       <span class="c1"># Logarithmic fades</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fade_in</code></td>
+<td>float</td>
+<td>0</td>
+<td>Fade-in duration in seconds.</td>
+</tr>
+<tr>
+<td><code>fade_out</code></td>
+<td>float</td>
+<td>0</td>
+<td>Fade-out duration in seconds.</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td>str</td>
+<td><code>"t"</code></td>
+<td>Curve type: <code>"q"</code> (quarter sine), <code>"h"</code> (half sine), <code>"t"</code> (linear), <code>"l"</code> (logarithmic), <code>"p"</code> (parabola).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="repeat">Repeat<a class="headerlink" href="#repeat" title="Permanent link">&para;</a></h3>
+<p>Repeat the audio a specified number of times.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Repeat</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>     <span class="c1"># Play 3 times total (original + 2 repeats)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>count</code></td>
+<td>int</td>
+<td><em>required</em></td>
+<td>Number of additional plays (must be &gt;= 1).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="silence">Silence<a class="headerlink" href="#silence" title="Permanent link">&para;</a></h3>
+<p>Remove silence from audio based on amplitude threshold detection.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Silence</span><span class="p">()</span>                                   <span class="c1"># Remove leading silence</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Silence</span><span class="p">(</span><span class="n">threshold</span><span class="o">=-</span><span class="mi">36</span><span class="p">)</span>                      <span class="c1"># Less sensitive threshold</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="n">fx</span><span class="o">.</span><span class="n">Silence</span><span class="p">(</span><span class="n">below_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>                    <span class="c1"># Remove leading + trailing silence</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="n">fx</span><span class="o">.</span><span class="n">Silence</span><span class="p">(</span><span class="n">above_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">below_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>   <span class="c1"># Full control</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>           <span class="n">duration</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=-</span><span class="mi">40</span><span class="p">)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>above_periods</code></td>
+<td>int</td>
+<td>1</td>
+<td>Number of non-silence periods to keep from the start. Use 1 to remove leading silence.</td>
+</tr>
+<tr>
+<td><code>duration</code></td>
+<td>float</td>
+<td>0.1</td>
+<td>Minimum duration (seconds) that audio must stay above threshold to be considered non-silence.</td>
+</tr>
+<tr>
+<td><code>threshold</code></td>
+<td>float</td>
+<td>-48</td>
+<td>Amplitude threshold in dB below which audio is considered silence.</td>
+</tr>
+<tr>
+<td><code>below_periods</code></td>
+<td>int</td>
+<td>0</td>
+<td>If set to 1, also removes trailing silence.</td>
+</tr>
+<tr>
+<td><code>below_duration</code></td>
+<td>float</td>
+<td>None</td>
+<td>Minimum silence duration for trailing detection. Defaults to <code>duration</code>.</td>
+</tr>
+<tr>
+<td><code>below_threshold</code></td>
+<td>float</td>
+<td>None</td>
+<td>Threshold for trailing silence detection in dB. Defaults to <code>threshold</code>.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="format-conversion">Format Conversion<a class="headerlink" href="#format-conversion" title="Permanent link">&para;</a></h2>
+<h3 id="rate">Rate<a class="headerlink" href="#rate" title="Permanent link">&para;</a></h3>
+<p>Resample to a different sample rate.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Rate</span><span class="p">(</span><span class="n">sample_rate</span><span class="o">=</span><span class="mi">48000</span><span class="p">)</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Rate</span><span class="p">(</span><span class="n">sample_rate</span><span class="o">=</span><span class="mi">44100</span><span class="p">,</span> <span class="n">quality</span><span class="o">=</span><span class="s1">&#39;very-high&#39;</span><span class="p">)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sample_rate</code></td>
+<td>int</td>
+<td><em>required</em></td>
+<td>Target sample rate in Hz.</td>
+</tr>
+<tr>
+<td><code>quality</code></td>
+<td>str</td>
+<td><code>"high"</code></td>
+<td><code>"quick"</code>, <code>"low"</code>, <code>"medium"</code>, <code>"high"</code>, or <code>"very-high"</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="channels">Channels<a class="headerlink" href="#channels" title="Permanent link">&para;</a></h3>
+<p>Change the number of audio channels.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Channels</span><span class="p">(</span><span class="n">channels</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>     <span class="c1"># Convert to mono</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Channels</span><span class="p">(</span><span class="n">channels</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>     <span class="c1"># Convert to stereo</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>channels</code></td>
+<td>int</td>
+<td><em>required</em></td>
+<td>Target number of channels (&gt;= 1).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="remix">Remix<a class="headerlink" href="#remix" title="Permanent link">&para;</a></h3>
+<p>Remix channels with custom mix specification.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Remix</span><span class="p">(</span><span class="n">mix</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;1,2&quot;</span><span class="p">])</span>              <span class="c1"># Mono mixdown</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Remix</span><span class="p">(</span><span class="n">mix</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">])</span>           <span class="c1"># Swap L/R</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="n">fx</span><span class="o">.</span><span class="n">Remix</span><span class="p">(</span><span class="n">mix</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;1v0.5,2v0.5&quot;</span><span class="p">])</span>     <span class="c1"># Mono with equal volume mix</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mix</code></td>
+<td>list[str]</td>
+<td><em>required</em></td>
+<td>Channel mix specification. Each string defines one output channel.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dither">Dither<a class="headerlink" href="#dither" title="Permanent link">&para;</a></h3>
+<p>Apply dithering for bit-depth reduction.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="n">fx</span><span class="o">.</span><span class="n">Dither</span><span class="p">()</span>                         <span class="c1"># Default shaped dither</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="n">fx</span><span class="o">.</span><span class="n">Dither</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;triangular&#39;</span><span class="p">)</span>        <span class="c1"># TPDF dither</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>type</code></td>
+<td>str</td>
+<td><code>"shaped"</code></td>
+<td><code>"rectangular"</code>, <code>"triangular"</code>, <code>"gaussian"</code>, or <code>"shaped"</code>.</td>
+</tr>
+<tr>
+<td><code>precision</code></td>
+<td>int</td>
+<td>None</td>
+<td>Target precision in bits.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="presets">Presets<a class="headerlink" href="#presets" title="Permanent link">&para;</a></h2>
+<p>Presets are <code>CompositeEffect</code> subclasses that combine multiple effects into reusable chains. Use them exactly like single effects:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="n">cysox</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s1">&#39;input.wav&#39;</span><span class="p">,</span> <span class="s1">&#39;output.wav&#39;</span><span class="p">,</span> <span class="n">effects</span><span class="o">=</span><span class="p">[</span><span class="n">fx</span><span class="o">.</span><span class="n">Telephone</span><span class="p">()])</span>
+</code></pre></div>
+<p>List all presets from the CLI:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>cysox preset list
+</code></pre></div>
+<h3 id="voice">Voice<a class="headerlink" href="#voice" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Chipmunk</code></td>
+<td>High-pitched voice via speed increase.</td>
+</tr>
+<tr>
+<td><code>DeepVoice</code></td>
+<td>Low-pitched voice via speed decrease.</td>
+</tr>
+<tr>
+<td><code>Robot</code></td>
+<td>Robotic, metallic voice with chorus and flanger.</td>
+</tr>
+<tr>
+<td><code>HauntedVoice</code></td>
+<td>Eerie voice with reverb and pitch shift.</td>
+</tr>
+<tr>
+<td><code>VocalClarity</code></td>
+<td>Enhanced voice clarity with EQ and compression.</td>
+</tr>
+<tr>
+<td><code>Whisper</code></td>
+<td>Soft, breathy sound with low volume and reverb.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="lo-fi">Lo-Fi<a class="headerlink" href="#lo-fi" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Telephone</code></td>
+<td>Narrow bandwidth telephone simulation.</td>
+</tr>
+<tr>
+<td><code>AMRadio</code></td>
+<td>AM radio frequency response.</td>
+</tr>
+<tr>
+<td><code>Megaphone</code></td>
+<td>Harsh, compressed megaphone sound.</td>
+</tr>
+<tr>
+<td><code>Underwater</code></td>
+<td>Muffled, submerged sound.</td>
+</tr>
+<tr>
+<td><code>VinylWarmth</code></td>
+<td>Warm analog vinyl character.</td>
+</tr>
+<tr>
+<td><code>LoFiHipHop</code></td>
+<td>Lo-fi hip-hop aesthetic with warmth and slow tempo.</td>
+</tr>
+<tr>
+<td><code>Cassette</code></td>
+<td>Cassette tape degradation.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="spatial">Spatial<a class="headerlink" href="#spatial" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SmallRoom</code></td>
+<td>Small room reverb.</td>
+</tr>
+<tr>
+<td><code>LargeHall</code></td>
+<td>Large concert hall reverb.</td>
+</tr>
+<tr>
+<td><code>Cathedral</code></td>
+<td>Very long cathedral reverb.</td>
+</tr>
+<tr>
+<td><code>Bathroom</code></td>
+<td>Small tiled bathroom reflections.</td>
+</tr>
+<tr>
+<td><code>Stadium</code></td>
+<td>Open stadium ambience.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="broadcast">Broadcast<a class="headerlink" href="#broadcast" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Podcast</code></td>
+<td>Voice optimized for podcast production.</td>
+</tr>
+<tr>
+<td><code>RadioDJ</code></td>
+<td>Bright, compressed radio DJ sound.</td>
+</tr>
+<tr>
+<td><code>Voiceover</code></td>
+<td>Clean voiceover processing.</td>
+</tr>
+<tr>
+<td><code>Intercom</code></td>
+<td>Intercom/PA system simulation.</td>
+</tr>
+<tr>
+<td><code>WalkieTalkie</code></td>
+<td>Walkie-talkie radio effect.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="musical">Musical<a class="headerlink" href="#musical" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EightiesChorus</code></td>
+<td>Classic 1980s chorus.</td>
+</tr>
+<tr>
+<td><code>DreamyPad</code></td>
+<td>Ethereal pad with reverb and chorus.</td>
+</tr>
+<tr>
+<td><code>SlowedReverb</code></td>
+<td>Slowed + reverb aesthetic.</td>
+</tr>
+<tr>
+<td><code>SlapbackEcho</code></td>
+<td>Short slapback delay.</td>
+</tr>
+<tr>
+<td><code>DubDelay</code></td>
+<td>Dub-style echo with feedback.</td>
+</tr>
+<tr>
+<td><code>JetFlanger</code></td>
+<td>Jet engine flanging sweep.</td>
+</tr>
+<tr>
+<td><code>ShoegazeWash</code></td>
+<td>Shoegaze-style reverb wash.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="drum-loops">Drum Loops<a class="headerlink" href="#drum-loops" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HalfTime</code></td>
+<td>Half-speed for half-time feel.</td>
+</tr>
+<tr>
+<td><code>DoubleTime</code></td>
+<td>Double-speed for double-time feel.</td>
+</tr>
+<tr>
+<td><code>DrumPunch</code></td>
+<td>Punchy drums with bass boost and compression.</td>
+</tr>
+<tr>
+<td><code>DrumCrisp</code></td>
+<td>Crisp, bright drums with high-end boost.</td>
+</tr>
+<tr>
+<td><code>DrumFat</code></td>
+<td>Fat, heavy drums with low-end emphasis.</td>
+</tr>
+<tr>
+<td><code>Breakbeat</code></td>
+<td>Breakbeat-style processing.</td>
+</tr>
+<tr>
+<td><code>VintageBreak</code></td>
+<td>Vintage breakbeat character.</td>
+</tr>
+<tr>
+<td><code>DrumRoom</code></td>
+<td>Natural room ambience on drums.</td>
+</tr>
+<tr>
+<td><code>GatedReverb</code></td>
+<td>Classic gated reverb on drums.</td>
+</tr>
+<tr>
+<td><code>DrumSlice</code></td>
+<td>Tight, sliced drum sound.</td>
+</tr>
+<tr>
+<td><code>ReverseCymbal</code></td>
+<td>Reversed cymbal effect.</td>
+</tr>
+<tr>
+<td><code>LoopReady</code></td>
+<td>Normalized and trimmed for clean looping.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="mastering">Mastering<a class="headerlink" href="#mastering" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BroadcastLimiter</code></td>
+<td>Broadcast-standard limiting.</td>
+</tr>
+<tr>
+<td><code>WarmMaster</code></td>
+<td>Warm mastering with bass and treble shaping.</td>
+</tr>
+<tr>
+<td><code>BrightMaster</code></td>
+<td>Bright mastering with treble lift.</td>
+</tr>
+<tr>
+<td><code>LoudnessMaster</code></td>
+<td>Loudness-maximized mastering.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cleanup">Cleanup<a class="headerlink" href="#cleanup" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>RemoveRumble</code></td>
+<td>High-pass filter to remove low-frequency rumble.</td>
+</tr>
+<tr>
+<td><code>RemoveHiss</code></td>
+<td>Low-pass filter to reduce high-frequency hiss.</td>
+</tr>
+<tr>
+<td><code>RemoveHum</code></td>
+<td>Notch filter to remove 60Hz mains hum.</td>
+</tr>
+<tr>
+<td><code>CleanVoice</code></td>
+<td>Voice cleanup with rumble and hiss removal.</td>
+</tr>
+<tr>
+<td><code>TapeRestoration</code></td>
+<td>Restore tape recordings with EQ correction.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="transition">Transition<a class="headerlink" href="#transition" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FadeInOut</code></td>
+<td>Apply fade-in and fade-out.</td>
+</tr>
+<tr>
+<td><code>CrossfadeReady</code></td>
+<td>Prepare audio for crossfading with fades at boundaries.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="custom-presets">Custom Presets<a class="headerlink" href="#custom-presets" title="Permanent link">&para;</a></h2>
+<p>Create reusable effect combinations by subclassing <code>CompositeEffect</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cysox.fx</span><span class="w"> </span><span class="kn">import</span> <span class="n">CompositeEffect</span><span class="p">,</span> <span class="n">Bass</span><span class="p">,</span> <span class="n">Treble</span><span class="p">,</span> <span class="n">Reverb</span><span class="p">,</span> <span class="n">Normalize</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyPreset</span><span class="p">(</span><span class="n">CompositeEffect</span><span class="p">):</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom processing chain.&quot;&quot;&quot;</span>
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>
+<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bass_gain</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">reverb_time</span><span class="o">=</span><span class="mi">60</span><span class="p">):</span>
+<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">bass_gain</span> <span class="o">=</span> <span class="n">bass_gain</span>
+<a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">reverb_time</span> <span class="o">=</span> <span class="n">reverb_time</span>
+<a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>
+<a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a>    <span class="nd">@property</span>
+<a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a>        <span class="k">return</span> <span class="s2">&quot;my_preset&quot;</span>
+<a id="__codelineno-30-13" name="__codelineno-30-13" href="#__codelineno-30-13"></a>
+<a id="__codelineno-30-14" name="__codelineno-30-14" href="#__codelineno-30-14"></a>    <span class="nd">@property</span>
+<a id="__codelineno-30-15" name="__codelineno-30-15" href="#__codelineno-30-15"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">effects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-30-16" name="__codelineno-30-16" href="#__codelineno-30-16"></a>        <span class="k">return</span> <span class="p">[</span>
+<a id="__codelineno-30-17" name="__codelineno-30-17" href="#__codelineno-30-17"></a>            <span class="n">Bass</span><span class="p">(</span><span class="n">gain</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bass_gain</span><span class="p">),</span>
+<a id="__codelineno-30-18" name="__codelineno-30-18" href="#__codelineno-30-18"></a>            <span class="n">Treble</span><span class="p">(</span><span class="n">gain</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+<a id="__codelineno-30-19" name="__codelineno-30-19" href="#__codelineno-30-19"></a>            <span class="n">Reverb</span><span class="p">(</span><span class="n">reverberance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reverb_time</span><span class="p">),</span>
+<a id="__codelineno-30-20" name="__codelineno-30-20" href="#__codelineno-30-20"></a>            <span class="n">Normalize</span><span class="p">(),</span>
+<a id="__codelineno-30-21" name="__codelineno-30-21" href="#__codelineno-30-21"></a>        <span class="p">]</span>
+<a id="__codelineno-30-22" name="__codelineno-30-22" href="#__codelineno-30-22"></a>
+<a id="__codelineno-30-23" name="__codelineno-30-23" href="#__codelineno-30-23"></a><span class="c1"># Use it like any other effect</span>
+<a id="__codelineno-30-24" name="__codelineno-30-24" href="#__codelineno-30-24"></a><span class="n">cysox</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s1">&#39;input.wav&#39;</span><span class="p">,</span> <span class="s1">&#39;output.wav&#39;</span><span class="p">,</span> <span class="n">effects</span><span class="o">=</span><span class="p">[</span><span class="n">MyPreset</span><span class="p">(</span><span class="n">bass_gain</span><span class="o">=</span><span class="mi">5</span><span class="p">)])</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.sections", "navigation.expand", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
