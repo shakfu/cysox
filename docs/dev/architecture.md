@@ -8,7 +8,7 @@ Diagrams are generated from [d2](https://d2lang.com) source files in
 `docs/assets/diagrams/`. To regenerate after editing:
 
 ```bash
-d2 --theme 200 docs/assets/diagrams/<name>.d2 docs/assets/diagrams/<name>.svg
+d2 docs/assets/diagrams/<name>.d2 docs/assets/diagrams/<name>.svg
 ```
 
 ---
