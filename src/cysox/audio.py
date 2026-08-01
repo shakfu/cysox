@@ -217,45 +217,117 @@ def info(path: Union[str, Path]) -> AudioInfo:
     raise AssertionError("unreachable")
 
 
+# Indices correspond to sox.ENCODINGS order (sox_encoding_t enum)
+_ENCODING_NAMES = {
+    0: "unknown",  # UNKNOWN
+    1: "signed-integer",  # SIGN2
+    2: "unsigned-integer",  # UNSIGNED
+    3: "float",  # FLOAT
+    4: "float-text",  # FLOAT_TEXT
+    5: "flac",  # FLAC
+    6: "hcom",  # HCOM
+    7: "wavpack",  # WAVPACK
+    8: "wavpackf",  # WAVPACKF
+    9: "ulaw",  # ULAW
+    10: "alaw",  # ALAW
+    11: "g721",  # G721
+    12: "g723",  # G723
+    13: "cl-adpcm",  # CL_ADPCM
+    14: "cl-adpcm16",  # CL_ADPCM16
+    15: "ms-adpcm",  # MS_ADPCM
+    16: "ima-adpcm",  # IMA_ADPCM
+    17: "oki-adpcm",  # OKI_ADPCM
+    18: "dpcm",  # DPCM
+    19: "dwvw",  # DWVW
+    20: "dwvwn",  # DWVWN
+    21: "gsm",  # GSM
+    22: "mp3",  # MP3
+    23: "vorbis",  # VORBIS
+    24: "amr-wb",  # AMR_WB
+    25: "amr-nb",  # AMR_NB
+    26: "cvsd",  # CVSD
+    27: "lpc10",  # LPC10
+    28: "opus",  # OPUS
+}
+
+# Reverse map for the ``encoding=`` argument of convert(). "unknown" is
+# excluded deliberately - it is a read-side result, not something to request.
+_ENCODING_TYPES = {name: value for value, name in _ENCODING_NAMES.items() if value != 0}
+
+
 def _encoding_name(encoding_type: int) -> str:
     """Convert encoding type constant to string.
 
     Maps libsox encoding enum values (indices into sox.ENCODINGS) to
     human-readable names.
     """
-    # Indices correspond to sox.ENCODINGS order (sox_encoding_t enum)
-    _ENCODING_NAMES = {
-        0: "unknown",  # UNKNOWN
-        1: "signed-integer",  # SIGN2
-        2: "unsigned-integer",  # UNSIGNED
-        3: "float",  # FLOAT
-        4: "float-text",  # FLOAT_TEXT
-        5: "flac",  # FLAC
-        6: "hcom",  # HCOM
-        7: "wavpack",  # WAVPACK
-        8: "wavpackf",  # WAVPACKF
-        9: "ulaw",  # ULAW
-        10: "alaw",  # ALAW
-        11: "g721",  # G721
-        12: "g723",  # G723
-        13: "cl-adpcm",  # CL_ADPCM
-        14: "cl-adpcm16",  # CL_ADPCM16
-        15: "ms-adpcm",  # MS_ADPCM
-        16: "ima-adpcm",  # IMA_ADPCM
-        17: "oki-adpcm",  # OKI_ADPCM
-        18: "dpcm",  # DPCM
-        19: "dwvw",  # DWVW
-        20: "dwvwn",  # DWVWN
-        21: "gsm",  # GSM
-        22: "mp3",  # MP3
-        23: "vorbis",  # VORBIS
-        24: "amr-wb",  # AMR_WB
-        25: "amr-nb",  # AMR_NB
-        26: "cvsd",  # CVSD
-        27: "lpc10",  # LPC10
-        28: "opus",  # OPUS
-    }
     return _ENCODING_NAMES.get(encoding_type, "unknown")
+
+
+def _supports(path: str, enc_type: int, bits: int) -> bool:
+    """Whether the handler for ``path`` can write this encoding/bits pair.
+
+    Both halves matter: a format may accept the encoding type at one width
+    and reject it at another (WAV takes float at 32 bits but not at 16).
+    """
+    try:
+        probe = sox.EncodingInfo(encoding=enc_type, bits_per_sample=bits)
+        return sox.format_supports_encoding(path, probe)
+    except Exception:
+        # Unknown extension or unloadable handler - let libsox decide.
+        return False
+
+
+def _build_output_encoding(
+    output_path: str,
+    input_fmt: "sox.Format",
+    encoding: Optional[str],
+    bits: Optional[int],
+) -> Optional["sox.EncodingInfo"]:
+    """Choose the encoding to open the output file with.
+
+    Returns None to mean "let the format handler pick its default", which is
+    what libsox does when no encoding is supplied.
+
+    An explicitly requested ``encoding`` that the target format cannot write
+    is an error; an encoding merely *inherited* from the input is a preference
+    and falls back to the handler default. Passing an unsupported pair through
+    to libsox is never useful: it silently substitutes something else and
+    writes a warning to stderr that Python cannot capture.
+    """
+    in_encoding = input_fmt.encoding
+
+    if encoding is not None:
+        try:
+            enc_type = _ENCODING_TYPES[encoding]
+        except KeyError:
+            valid = ", ".join(sorted(_ENCODING_TYPES))
+            raise ValueError(
+                f"Unknown encoding: {encoding!r}. Expected one of: {valid}"
+            )
+        # An explicit bits= wins; otherwise keep the input's width.
+        enc_bits = bits or (in_encoding.bits_per_sample if in_encoding else 0)
+        if not _supports(output_path, enc_type, enc_bits):
+            raise ValueError(
+                f"Output format of {output_path!r} cannot encode "
+                f"{encoding!r} at {enc_bits} bits"
+            )
+        return sox.EncodingInfo(encoding=enc_type, bits_per_sample=enc_bits)
+
+    # No explicit request: preserve the input's encoding where the target
+    # format can represent it, so a float WAV does not come back as int PCM.
+    if in_encoding is None:
+        return None
+
+    enc_type = in_encoding.encoding
+    enc_bits = bits or in_encoding.bits_per_sample
+    if _supports(output_path, enc_type, enc_bits):
+        return sox.EncodingInfo(encoding=enc_type, bits_per_sample=enc_bits)
+
+    # Cannot preserve it (float -> mp3, or float paired with an explicit
+    # bits= the format rejects). Defer to the handler default at the
+    # requested precision rather than forcing a mismatch.
+    return None
 
 
 def convert(
@@ -266,6 +338,7 @@ def convert(
     sample_rate: Optional[int] = None,
     channels: Optional[int] = None,
     bits: Optional[int] = None,
+    encoding: Optional[str] = None,
     on_progress: Optional[ProgressCallback] = None,
 ) -> None:
     """Convert audio file with optional effects.
@@ -277,12 +350,18 @@ def convert(
         sample_rate: Target sample rate in Hz (optional).
         channels: Target number of channels (optional).
         bits: Target bits per sample (optional).
+        encoding: Target sample encoding, using the same names :func:`info`
+            reports (``'float'``, ``'signed-integer'``, ...). Defaults to the
+            input's encoding where the output format supports it, falling back
+            to that format's default otherwise.
         on_progress: Optional callback receiving progress (0.0 to 1.0).
             Return True to continue, False to cancel. Called periodically
             during processing (approximately once per internal buffer).
 
     Raises:
         CancelledError: If the progress callback returns False.
+        ValueError: If ``encoding`` is not a known name, or the output format
+            cannot write the requested encoding at the requested width.
 
     Example:
         >>> # Simple conversion
@@ -298,6 +377,12 @@ def convert(
         >>> cysox.convert('input.wav', 'output.wav',
         ...     sample_rate=48000,
         ...     channels=1,
+        ... )
+        >>>
+        >>> # Stating the output encoding explicitly
+        >>> cysox.convert('input.wav', 'output.wav',
+        ...     encoding='float',
+        ...     bits=32,
         ... )
         >>>
         >>> # With progress reporting
@@ -322,8 +407,12 @@ def convert(
             precision=bits or input_fmt.signal.precision,
         )
 
-        # Open output
-        output_fmt = sox.Format(output_path, signal=out_signal, mode="w")
+        # Open output. Without an explicit encoding libsox picks the handler
+        # default for the precision, which drops the input's encoding type.
+        out_encoding = _build_output_encoding(output_path, input_fmt, encoding, bits)
+        output_fmt = sox.Format(
+            output_path, signal=out_signal, encoding=out_encoding, mode="w"
+        )
 
         # Create effects chain
         chain = sox.EffectsChain(input_fmt.encoding, output_fmt.encoding)
@@ -609,6 +698,7 @@ def concat(
     output_path: Union[str, Path],
     *,
     chunk_size: int = 8192,
+    encoding: Optional[str] = None,
     on_progress: Optional[ProgressCallback] = None,
 ) -> None:
     """Concatenate multiple audio files into one.
@@ -620,12 +710,16 @@ def concat(
         inputs: List of paths to input audio files (minimum 2).
         output_path: Path for the concatenated output file.
         chunk_size: Number of samples to read/write at a time (default: 8192).
+        encoding: Sample encoding for the output, using the names :func:`info`
+            reports. Defaults to the first input's encoding where the output
+            format supports it, falling back to that format's default.
         on_progress: Optional callback receiving progress (0.0 to 1.0).
             Return True to continue, False to cancel.
 
     Raises:
         ValueError: If fewer than 2 input files provided.
         ValueError: If input files have mismatched sample rates or channels.
+        ValueError: If the output format cannot write the requested encoding.
         CancelledError: If the progress callback returns False.
 
     Example:
@@ -666,9 +760,8 @@ def concat(
                     channels=reference_channels,
                     precision=input_fmt.signal.precision,
                 )
-                out_encoding = sox.EncodingInfo(
-                    encoding=int(input_fmt.encoding.encoding),
-                    bits_per_sample=input_fmt.encoding.bits_per_sample,
+                out_encoding = _build_output_encoding(
+                    output_path, input_fmt, encoding, None
                 )
                 output_fmt = sox.Format(
                     output_path, signal=out_signal, encoding=out_encoding, mode="w"
@@ -735,6 +828,7 @@ def slice_loop(
     min_onset_spacing: float = 0.05,
     output_format: str = "wav",
     effects: Optional[List[Effect]] = None,
+    encoding: Optional[str] = None,
 ) -> List[str]:
     """Slice a drum loop or audio file into multiple segments.
 
@@ -768,6 +862,9 @@ def slice_loop(
                            (default: 0.05). Prevents double triggers.
         output_format: Output file format/extension (default: "wav").
         effects: Optional list of effects to apply to each slice.
+        encoding: Sample encoding for the slices, using the names :func:`info`
+            reports. Defaults to the input's encoding where the output format
+            supports it, falling back to that format's default.
 
     Returns:
         List of paths to the created slice files.
@@ -892,22 +989,37 @@ def slice_loop(
             with tempfile.TemporaryDirectory() as tmpdir:
                 temp_path = os.path.join(tmpdir, "temp.wav")
 
-                # Write raw segment
+                # Write raw segment. The temp file keeps the input's encoding
+                # rather than the caller's - degrading here would throw away
+                # resolution before the effects run. convert() applies the
+                # requested encoding on the way out.
                 out_signal = sox.SignalInfo(
                     rate=rate, channels=channels, precision=precision
                 )
-                temp_fmt = sox.Format(temp_path, signal=out_signal, mode="w")
+                temp_fmt = sox.Format(
+                    temp_path,
+                    signal=out_signal,
+                    encoding=_build_output_encoding(temp_path, input_fmt, None, None),
+                    mode="w",
+                )
                 temp_fmt.write(segment)
                 temp_fmt.close()
 
                 # Apply effects
-                convert(temp_path, str(slice_path), effects=effects)
+                convert(temp_path, str(slice_path), effects=effects, encoding=encoding)
         else:
             # Write directly without effects
             out_signal = sox.SignalInfo(
                 rate=rate, channels=channels, precision=precision
             )
-            output_fmt = sox.Format(str(slice_path), signal=out_signal, mode="w")
+            output_fmt = sox.Format(
+                str(slice_path),
+                signal=out_signal,
+                encoding=_build_output_encoding(
+                    str(slice_path), input_fmt, encoding, None
+                ),
+                mode="w",
+            )
             output_fmt.write(segment)
             output_fmt.close()
 
@@ -925,6 +1037,7 @@ def stutter(
     segment_duration: float = 0.125,
     repeats: int = 8,
     effects: Optional[List[Effect]] = None,
+    encoding: Optional[str] = None,
 ) -> None:
     """Create a stutter effect by extracting and repeating a segment.
 
@@ -939,6 +1052,9 @@ def stutter(
                          which is 1/8 note at 120 BPM).
         repeats: Total number of times the segment plays (default: 8).
         effects: Optional effects to apply after stuttering.
+        encoding: Sample encoding for the output, using the names :func:`info`
+            reports. Defaults to the input's encoding where the output format
+            supports it, falling back to that format's default.
 
     Example:
         >>> # Create 8x stutter from first 1/8 note
@@ -976,13 +1092,20 @@ def stutter(
 
     # Read segment
     segment = input_fmt.read(read_samples)
+    # Resolve the temp file's encoding while the input is still open. Only the
+    # extension is consulted, and the temp file below is always a WAV. The temp
+    # keeps the input's encoding rather than the caller's; convert() applies
+    # the requested one at the end so nothing is degraded before the effects.
+    temp_encoding = _build_output_encoding("segment.wav", input_fmt, None, None)
     input_fmt.close()
 
     with tempfile.TemporaryDirectory() as tmpdir:
         # Write segment to temp file
         temp_path = os.path.join(tmpdir, "segment.wav")
         out_signal = sox.SignalInfo(rate=rate, channels=channels, precision=precision)
-        temp_fmt = sox.Format(temp_path, signal=out_signal, mode="w")
+        temp_fmt = sox.Format(
+            temp_path, signal=out_signal, encoding=temp_encoding, mode="w"
+        )
         temp_fmt.write(segment)
         temp_fmt.close()
 
@@ -994,10 +1117,10 @@ def stutter(
             repeat_effects.extend(_expand_effects(effects))
 
         if repeat_effects:
-            convert(temp_path, output_path, effects=repeat_effects)
+            convert(temp_path, output_path, effects=repeat_effects, encoding=encoding)
         else:
             # Just copy if no repeat or effects
-            convert(temp_path, output_path)
+            convert(temp_path, output_path, encoding=encoding)
 
 
 # Supported audio file extensions for batch processing
@@ -1109,6 +1232,7 @@ def split_by_silence(
     speed_factor: Optional[float] = None,
     output_format: str = "wav",
     effects: Optional[List[Effect]] = None,
+    encoding: Optional[str] = None,
 ) -> List[str]:
     """Split a continuous audio recording into segments at silence gaps.
 
@@ -1134,6 +1258,9 @@ def split_by_silence(
         speed_factor: If set, change playback speed of each segment.
         output_format: Output file format/extension (default: "wav").
         effects: Optional effects to apply to each segment.
+        encoding: Sample encoding for the segments, using the names :func:`info`
+            reports. Defaults to the input's encoding where the output format
+            supports it, falling back to that format's default.
 
     Returns:
         List of paths to the created segment files.
@@ -1267,15 +1394,31 @@ def split_by_silence(
                 out_signal = sox.SignalInfo(
                     rate=rate, channels=channels, precision=precision
                 )
-                temp_fmt = sox.Format(temp_path, signal=out_signal, mode="w")
+                # Temp keeps the input's encoding; convert() applies the
+                # requested one so nothing degrades before the effects run.
+                temp_fmt = sox.Format(
+                    temp_path,
+                    signal=out_signal,
+                    encoding=_build_output_encoding(temp_path, input_fmt, None, None),
+                    mode="w",
+                )
                 temp_fmt.write(segment)
                 temp_fmt.close()
-                convert(temp_path, str(seg_path), effects=seg_effects)
+                convert(
+                    temp_path, str(seg_path), effects=seg_effects, encoding=encoding
+                )
         else:
             out_signal = sox.SignalInfo(
                 rate=rate, channels=channels, precision=precision
             )
-            output_fmt = sox.Format(str(seg_path), signal=out_signal, mode="w")
+            output_fmt = sox.Format(
+                str(seg_path),
+                signal=out_signal,
+                encoding=_build_output_encoding(
+                    str(seg_path), input_fmt, encoding, None
+                ),
+                mode="w",
+            )
             output_fmt.write(segment)
             output_fmt.close()
 
