@@ -39,7 +39,7 @@ jobs:
       - name: Setup macOS build environment
         if: runner.os == 'macOS'
         run: |
-          brew install sox libsndfile mad libpng flac lame mpg123 libogg opus opusfile libvorbis
+          brew install libsndfile libpng flac lame mpg123 libogg opus opusfile libvorbis
           bash scripts/setup.sh
 
       - name: Build wheels

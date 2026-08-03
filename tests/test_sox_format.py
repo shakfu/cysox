@@ -44,14 +44,23 @@ def test_sox_format():
 def test_sox_format_mp3():
     f = sox.Format("tests/data/s00.mp3")
     assert f.signal.channels == 2
-    assert f.signal.length == 506798
     assert f.signal.precision == 16
     assert f.signal.rate == 44100.0
 
-    assert f.encoding.bits_per_sample == 0
+    # Not an exact sample count: which decoder libsox was built with changes how
+    # encoder delay/padding is trimmed. libmad reports 506798 here, libmpg123
+    # (what sox_ng uses when built without libmad) reports 508558 - about 20ms
+    # apart. Assert the duration instead.
+    duration = f.signal.length / (f.signal.rate * f.signal.channels)
+    assert abs(duration - 5.747) < 0.05, f"unexpected duration {duration}"
+
+    # 0 from libmad (mp3 has no fixed sample width); 16 when the decode is
+    # routed through the sndfile/libmpg123 handler, which reports its own.
+    assert f.encoding.bits_per_sample in (0, 16)
     assert f.encoding.compression == math.inf
-    assert f.encoding.encoding == 22
-    assert sox.ENCODINGS[f.encoding.encoding] == ("MP3", "MP3 compression")
+    # Compare by name, not by enum value: sox_ng inserted MP1/MP2 ahead of MP3,
+    # so the numeric value differs between builds.
+    assert sox.ENCODING_NAMES[f.encoding.encoding] == "mp3"
     assert f.encoding.opposite_endian == 0
     assert f.encoding.reverse_bits == 0
     assert f.encoding.reverse_bytes == 0

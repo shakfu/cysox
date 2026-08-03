@@ -161,37 +161,66 @@ ENOTSUP = SOX_ENOTSUP
 EINVAL = SOX_EINVAL
 
 
+# Master encoding table: (enum value, C member suffix, slug, description).
+#
+# The enum *values* come from whatever sox.h this was compiled against - they are
+# NOT positional. sox_ng inserted MP1/MP2 between GSM and MP3 and appended DSD, so
+# any table indexed by position silently mislabels everything after GSM. Encodings
+# the linked libsox does not define carry a negative sentinel and are filtered out.
+_ENCODING_TABLE = (
+    (SOX_ENCODING_UNKNOWN,    "UNKNOWN",    "unknown",          "encoding has not yet been determined"),
+    (SOX_ENCODING_SIGN2,      "SIGN2",      "signed-integer",   "signed linear 2's comp: Mac"),
+    (SOX_ENCODING_UNSIGNED,   "UNSIGNED",   "unsigned-integer", "unsigned linear: Sound Blaster"),
+    (SOX_ENCODING_FLOAT,      "FLOAT",      "float",            "floating point (binary format)"),
+    (SOX_ENCODING_FLOAT_TEXT, "FLOAT_TEXT", "float-text",       "floating point (text format)"),
+    (SOX_ENCODING_FLAC,       "FLAC",       "flac",             "FLAC compression"),
+    (SOX_ENCODING_HCOM,       "HCOM",       "hcom",             "Mac FSSD files with Huffman compression"),
+    (SOX_ENCODING_WAVPACK,    "WAVPACK",    "wavpack",          "WavPack with integer samples"),
+    (SOX_ENCODING_WAVPACKF,   "WAVPACKF",   "wavpackf",         "WavPack with float samples"),
+    (SOX_ENCODING_ULAW,       "ULAW",       "ulaw",             "u-law signed logs: US telephony, SPARC"),
+    (SOX_ENCODING_ALAW,       "ALAW",       "alaw",             "A-law signed logs: non-US telephony, Psion"),
+    (SOX_ENCODING_G721,       "G721",       "g721",             "G.721 4-bit ADPCM"),
+    (SOX_ENCODING_G723,       "G723",       "g723",             "G.723 3 or 5 bit ADPCM"),
+    (SOX_ENCODING_CL_ADPCM,   "CL_ADPCM",   "cl-adpcm",         "Creative Labs 8 --> 2,3,4 bit Compressed PCM"),
+    (SOX_ENCODING_CL_ADPCM16, "CL_ADPCM16", "cl-adpcm16",       "Creative Labs 16 --> 4 bit Compressed PCM"),
+    (SOX_ENCODING_MS_ADPCM,   "MS_ADPCM",   "ms-adpcm",         "Microsoft Compressed PCM"),
+    (SOX_ENCODING_IMA_ADPCM,  "IMA_ADPCM",  "ima-adpcm",        "IMA Compressed PCM"),
+    (SOX_ENCODING_OKI_ADPCM,  "OKI_ADPCM",  "oki-adpcm",        "Dialogic/OKI Compressed PCM"),
+    (SOX_ENCODING_DPCM,       "DPCM",       "dpcm",             "Differential PCM: Fasttracker 2 (xi)"),
+    (SOX_ENCODING_DWVW,       "DWVW",       "dwvw",             "Delta Width Variable Word"),
+    (SOX_ENCODING_DWVWN,      "DWVWN",      "dwvwn",            "Delta Width Variable Word N-bit"),
+    (SOX_ENCODING_GSM,        "GSM",        "gsm",              "GSM 6.10 33byte frame lossy compression"),
+    (CYSOX_ENCODING_MP1,      "MP1",        "mp1",              "MP1 compression (sox_ng only)"),
+    (CYSOX_ENCODING_MP2,      "MP2",        "mp2",              "MP2 compression (sox_ng only)"),
+    (SOX_ENCODING_MP3,        "MP3",        "mp3",              "MP3 compression"),
+    (SOX_ENCODING_VORBIS,     "VORBIS",     "vorbis",           "Vorbis compression"),
+    (SOX_ENCODING_AMR_WB,     "AMR_WB",     "amr-wb",           "AMR-WB compression"),
+    (SOX_ENCODING_AMR_NB,     "AMR_NB",     "amr-nb",           "AMR-NB compression"),
+    (SOX_ENCODING_CVSD,       "CVSD",       "cvsd",             "Continuously Variable Slope Delta modulation"),
+    (SOX_ENCODING_LPC10,      "LPC10",      "lpc10",            "Linear Predictive Coding"),
+    (SOX_ENCODING_OPUS,       "OPUS",       "opus",             "Opus compression"),
+    (CYSOX_ENCODING_DSD,      "DSD",        "dsd",              "Direct Stream Digital (sox_ng only)"),
+)
+
+# (member, description) for every encoding this libsox knows about, in enum order.
 ENCODINGS = [
-    ("UNKNOWN",     "encoding has not yet been determined"),
-    ("SIGN2",       "signed linear 2's comp: Mac"),
-    ("UNSIGNED",    "unsigned linear: Sound Blaster"),
-    ("FLOAT",       "floating point (binary format)"),
-    ("FLOAT_TEXT",  "floating point (text format)"),
-    ("FLAC",        "FLAC compression"),
-    ("HCOM",        "Mac FSSD files with Huffman compression"),
-    ("WAVPACK",     "WavPack with integer samples"),
-    ("WAVPACKF",    "WavPack with float samples"),
-    ("ULAW",        "u-law signed logs: US telephony, SPARC"),
-    ("ALAW",        "A-law signed logs: non-US telephony, Psion"),
-    ("G721",        "G.721 4-bit ADPCM"),
-    ("G723",        "G.723 3 or 5 bit ADPCM"),
-    ("CL_ADPCM",    "Creative Labs 8 --> 2,3,4 bit Compressed PCM"),
-    ("CL_ADPCM16",  "Creative Labs 16 --> 4 bit Compressed PCM"),
-    ("MS_ADPCM",    "Microsoft Compressed PCM"),
-    ("IMA_ADPCM",   "IMA Compressed PCM"),
-    ("OKI_ADPCM",   "Dialogic/OKI Compressed PCM"),
-    ("DPCM",        "Differential PCM: Fasttracker 2 (xi)"),
-    ("DWVW",        "Delta Width Variable Word"),
-    ("DWVWN",       "Delta Width Variable Word N-bit"),
-    ("GSM",         "GSM 6.10 33byte frame lossy compression"),
-    ("MP3",         "MP3 compression"),
-    ("VORBIS",      "Vorbis compression"),
-    ("AMR_WB",      "AMR-WB compression"),
-    ("AMR_NB",      "AMR-NB compression"),
-    ("CVSD",        "Continuously Variable Slope Delta modulation"),
-    ("LPC10",       "Linear Predictive Coding"),
-    ("OPUS",        "Opus compression"),
+    (member, desc)
+    for value, member, _slug, desc in sorted(_ENCODING_TABLE)
+    if value >= 0
 ]
+
+# enum value -> slug, for callers translating a sox_encoding_t to a name.
+ENCODING_NAMES = {
+    value: slug for value, _member, slug, _desc in _ENCODING_TABLE if value >= 0
+}
+
+# slug -> enum value. "unknown" is excluded deliberately: it is a read-side
+# result, not something a caller can request.
+ENCODING_TYPES = {
+    slug: value
+    for value, _member, slug, _desc in _ENCODING_TABLE
+    if value > 0
+}
 
 constant = SimpleNamespace(**{
     'INT8_MAX': SOX_INT8_MAX,
@@ -331,6 +360,34 @@ cdef class SignalInfo:
         wrapper.owner = owner
         return wrapper
 
+    @staticmethod
+    cdef SignalInfo copy_from_ptr(const sox_signalinfo_t* ptr):
+        """Snapshot ``ptr`` into an independently owned SignalInfo.
+
+        Used for members of structures libsox owns, so the wrapper stays valid
+        after the owner is freed - ``fmt.signal`` outliving ``fmt.close()`` is
+        an ordinary thing for callers to do.
+        """
+        if ptr is NULL:
+            return None
+        cdef SignalInfo wrapper = SignalInfo.__new__(SignalInfo)
+        wrapper.ptr = <sox_signalinfo_t*>calloc(1, sizeof(sox_signalinfo_t))
+        if wrapper.ptr is NULL:
+            raise SoxMemoryError("Failed to allocate SignalInfo")
+        memcpy(wrapper.ptr, ptr, sizeof(sox_signalinfo_t))
+        # mult is a pointer into the source struct - deep-copy it so freeing
+        # either wrapper cannot touch the other's memory.
+        wrapper.ptr.mult = NULL
+        if ptr.mult is not NULL:
+            wrapper.ptr.mult = <double*>malloc(sizeof(double))
+            if wrapper.ptr.mult is NULL:
+                free(wrapper.ptr)
+                wrapper.ptr = NULL
+                raise SoxMemoryError("Failed to allocate memory for mult")
+            wrapper.ptr.mult[0] = ptr.mult[0]
+        wrapper.owner = True
+        return wrapper
+
     @property
     def rate(self) -> sox_rate_t:
         """samples per second, 0 if unknown"""
@@ -465,6 +522,22 @@ cdef class EncodingInfo:
         cdef EncodingInfo wrapper = EncodingInfo.__new__(EncodingInfo)
         wrapper.ptr = <sox_encodinginfo_t*>ptr
         wrapper.owner = owner
+        return wrapper
+
+    @staticmethod
+    cdef EncodingInfo copy_from_ptr(const sox_encodinginfo_t* ptr):
+        """Snapshot ``ptr`` into an independently owned EncodingInfo.
+
+        See SignalInfo.copy_from_ptr - same rationale.
+        """
+        if ptr is NULL:
+            return None
+        cdef EncodingInfo wrapper = EncodingInfo.__new__(EncodingInfo)
+        wrapper.ptr = <sox_encodinginfo_t*>calloc(1, sizeof(sox_encodinginfo_t))
+        if wrapper.ptr is NULL:
+            raise SoxMemoryError("Failed to allocate EncodingInfo")
+        memcpy(wrapper.ptr, ptr, sizeof(sox_encodinginfo_t))
+        wrapper.owner = True
         return wrapper
 
     @property
@@ -914,10 +987,14 @@ cdef class VersionInfo:
 
     @property
     def time(self) -> str:
-        """build time = __DATE__ __TIME__, for example, Jan  7 2010 03:31:50"""
-        if self.ptr.time == NULL:
+        """build time = __DATE__ __TIME__, for example, Jan  7 2010 03:31:50
+
+        Always None on sox_ng, which dropped the field for reproducible builds.
+        """
+        cdef const char * t = cysox_version_info_time(self.ptr)
+        if t == NULL:
             return None
-        return self.ptr.time.decode()
+        return t.decode()
 
     @property
     def distro(self) -> str:
@@ -1443,13 +1520,36 @@ cdef class Format:
 
     @property
     def signal(self) -> SignalInfo:
-        """Signal information (sample rate, channels, precision, length)."""
-        return SignalInfo.from_ptr(&self.ptr.signal)
+        """Signal information (sample rate, channels, precision, length).
+
+        A snapshot: libsox owns the underlying struct and frees it in
+        ``close()``, so handing out a view would dangle the moment the caller
+        did the very natural ``signal = f.signal`` outside a ``with`` block.
+        """
+        return SignalInfo.copy_from_ptr(&self.ptr.signal)
 
     @property
     def encoding(self) -> EncodingInfo:
-        """Encoding information (format, bits per sample, compression)."""
-        return EncodingInfo.from_ptr(&self.ptr.encoding)
+        """Encoding information (format, bits per sample, compression).
+
+        A snapshot, for the same reason as :attr:`signal`.
+        """
+        return EncodingInfo.copy_from_ptr(&self.ptr.encoding)
+
+    @property
+    def signal_view(self) -> SignalInfo:
+        """Live, *aliasing* view of the format's signal struct.
+
+        Unlike :attr:`signal` this shares memory with libsox, so
+        ``sox_add_effect()`` writing back the negotiated signal is visible here
+        and to the format itself - which is what effects-chain construction
+        relies on.
+
+        The flip side: it is only valid while the format is open. Reading it
+        after :meth:`close` is a use-after-free. Prefer :attr:`signal` unless
+        you specifically need the write-back.
+        """
+        return SignalInfo.from_ptr(&self.ptr.signal)
 
     @property
     def filetype(self) -> str:
@@ -1897,10 +1997,17 @@ cdef class EffectsChain:
     """Effects chain structure."""
     cdef sox_effects_chain_t* ptr
     cdef bint owner
+    # libsox stores the two encodinginfo pointers and dereferences them during
+    # flow_effects(), so the chain must outlive whatever owns those structs.
+    # Hold the Python objects to keep them alive.
+    cdef object _in_encoding
+    cdef object _out_encoding
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._in_encoding = None
+        self._out_encoding = None
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
@@ -1915,6 +2022,8 @@ cdef class EffectsChain:
             out_encoding.ptr if out_encoding else NULL)
         if self.ptr == NULL:
             raise SoxEffectError("Failed to create effects chain")
+        self._in_encoding = in_encoding
+        self._out_encoding = out_encoding
         self.owner = True
 
     @staticmethod
@@ -2085,13 +2194,15 @@ def version_info():
     if info == NULL:
         return None
 
+    cdef const char * build_time = cysox_version_info_time(info)
+
     return {
         'size': info.size,
         'flags': info.flags,
         'version_code': info.version_code,
         'version': info.version.decode() if info.version else None,
         'version_extra': info.version_extra.decode() if info.version_extra else None,
-        'time': info.time.decode() if info.time else None,
+        'time': build_time.decode() if build_time != NULL else None,
         'distro': info.distro.decode() if info.distro else None,
         'compiler': info.compiler.decode() if info.compiler else None,
         'arch': info.arch.decode() if info.arch else None

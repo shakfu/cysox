@@ -103,7 +103,24 @@
 
 ### Licensing
 
-- [ ] **Drop `libmad` (GPL-2.0+) from the macOS bundle - it conflicts with cysox's MIT license**
+- [x] **Drop `libmad` (GPL-2.0+) from the macOS bundle - it conflicts with cysox's MIT license**
+  - **DONE 2026-08-03 via option F (sox_ng `--without-mad`).** `scripts/setup.sh` no longer lists
+    `mad` in `DEPS` and no longer builds libmad from source; it builds sox_ng 14.8.0.1 from the
+    release tarball with `--enable-replace --without-mad --with-pic` and copies the resulting
+    `libsox.a` / `sox.h` into `lib/` and `include/`. `CMakeLists.txt` drops `libmad_static`.
+    mp3 read now goes through libsndfile/libmpg123, mp3 write still through LAME - all LGPL-2.1.
+    `setup.sh` hard-fails if the configure result has `HAVE_MAD`, or lacks `HAVE_SNDFILE`/`HAVE_LAME`
+    (the mp3 handler is only registered when MAD or LAME is present, and without MAD the decode path
+    needs sndfile), so the GPL cannot creep back in silently.
+  - **Verified:** full test suite green against both sox 14.4.2 (585 passed) and sox_ng 14.8.0
+    (585 passed); `nm libsox.a | grep mad_` is empty; a statically linked extension shows no
+    libsox/libmad in `ldd`.
+  - **Still open, and NOT covered by this change** (see the LGPL discussion below): the wheel still
+    ships no third-party licence texts, and still static-links LGPL components. Both need doing
+    before the next release.
+  - Original analysis retained below.
+
+- [ ] ~~**Drop `libmad` (GPL-2.0+) from the macOS bundle**~~ (analysis, kept for the record)
   - **This is live today, not hypothetical.** `scripts/setup.sh:53` lists `mad` in `DEPS`, and
     `:62-80` goes further: when Homebrew has no static lib it **downloads and builds `libmad.a` from
     source** and copies it into `lib/`. libmad is **GPL-2.0-or-later**. cysox is MIT
@@ -151,6 +168,7 @@
     | C | build libsox from source with `--with-mad=dyn` | yes | **viable** - preferred |
     | D | drop mp3 decode from the bundle | no (write still works) | viable, cheapest |
     | E | keep libmad, convey the *wheel* under GPL | yes | viable, no build work, high downstream cost |
+    | F | switch to `sox_ng`, build `--without-mad` | yes | **verified working - recommended** (added 2026-08-03) |
 
     - **B, tested directly:** `sox.Format('x.mp3', filetype='sndfile')` fails on two different mp3
       files while the default handler opens both. sox 14.4.2's sndfile handler advertises only `aiff`
@@ -176,6 +194,66 @@
       `pip install`s cysox subject to GPL, which for a library binding is usually the outcome you
       least want. Listed for completeness, not recommended.
 
+  - **NEW 2026-08-03: option F - switch the bundled library to `sox_ng` and build `--without-mad`.
+    This is the recommended path. It keeps mp3 read *and* write, ships nothing GPL, and was verified
+    end-to-end by building it, not inferred.**
+    - `sox_ng` (https://codeberg.org/sox_ng/sox_ng) is the maintained fork of sox; upstream sox has
+      not shipped since 14.4.2 (2015). Latest release `sox_ng-14.8.0.1` (2026-05-26).
+    - **The premise that "sox has no alternative mp3 decoder" is true of 14.4.2 but false of
+      sox_ng.** `src/mp3.c` gates the handler on `#if HAVE_MAD || HAVE_LAME` and picks the read path
+      at compile time: `startread_mad` if MAD, **`startread_sndfile` (libsndfile -> libmpg123) if
+      not**, and `startread_hip` (LAME's own `hip_decode*` decoder) as a third fallback. Both
+      fallbacks are LGPL-2.1. Write is always LAME. Comment in the source: *"In case someone is
+      configuring with sndfile but not mad, make the default MP3 decoder fall back to sndfile."*
+    - **Verified by building it (Linux, 2026-08-03).** `sox_ng-14.8.0.1`, `./configure --without-mad`
+      with libsndfile 1.2.2 + libmp3lame present:
+      - `sox_ng tests/data/s00.mp3 -n stat` -> reads 506880 samples through the **default** `.mp3`
+        handler. No `-t sndfile` needed.
+      - `sox_ng in.mp3 out.mp3` -> writes via LAME; the result reads back.
+      - `nm -D libsox_ng.so | grep mad_` -> **empty**. `ldd` shows only libsndfile, libmpg123,
+        libmp3lame - all LGPL-2.1.
+      - Built a second time with `--without-mad --without-lame`: the default handler then
+        disappears entirely (the `HAVE_MAD || HAVE_LAME` gate), but `-t sndfile` still decodes the
+        same file. So LAME - which we already bundle - is what keeps the `.mp3` handler registered.
+    - **Porting cost to cysox is one struct field.** Compiling the existing generated
+      `src/cysox/sox.c` against `sox_ng.h` produces exactly one error, four times:
+      `sox_version_info_t has no member named 'time'` (sox_ng dropped the `__DATE__ __TIME__` field
+      for reproducible builds). Everything else in `sox.pxd` matches. Fix: drop/guard `time` at
+      `src/cysox/sox.pxd:353` and its uses in `sox.pyx`.
+    - **Build/packaging cost is the same as option C and no more.** Homebrew *does* have a `sox_ng`
+      formula (14.8.0.1) but its bottle is compiled **with** `mad`, so the prebuilt static lib is
+      unusable for us - we must build from source with `--without-mad` either way. Header installs
+      as `sox_ng.h`, lib as `libsox_ng`, pkg-config as `sox_ng`; `src/Makefile.am:224` symlinks
+      `sox.h -> sox_ng.h` on install, so `cdef extern from "sox.h"` keeps working.
+    - **Why F beats C:** C (`--with-mad=dyn`) makes mp3 read conditional on the *user* having
+      installed libmad, so a plain `pip install cysox` still cannot read mp3. F makes mp3 read work
+      out of the box with nothing GPL in the wheel. As a bonus, libmad cannot decode above 192 kbps
+      (documented limitation, `soxformat_ng(7)`); libmpg123 can, and handles damaged files better.
+    - **Residual risks to check before committing:**
+      1. **11 years of behaviour drift.** 14.4.2 -> 14.8.0.1 is a large jump. The cysox test suite is
+         the gate; expect effect-output and metadata differences.
+      2. **sox_ng's `COPYING` is muddier than upstream's.** It reads "SoX is distributed under GPLv2.
+         Most individual source files are distributed under more permissive licenses compatible with
+         the GPLv2." Spot-checked `src/formats.c`: still LGPL-2.1-or-later, same as upstream. But
+         *every* file linked into `libsox_ng` needs auditing, including the bundled `libgsm`,
+         `lpc10`, `libdolbyb`, `libebur128` trees, before relying on the LGPL reading.
+      3. Requires libsndfile >= 1.1.0 for `SF_FORMAT_MPEG` (Homebrew ships 1.2.x - fine).
+      4. Static-linking `libsox_ng.a` still carries the LGPL relinking obligation (unchanged from
+         today - see the note below).
+
+  - **Option D no longer needs "checking" - confirmed by source.** Upstream `src/mp3.c` guards read
+    and write independently: `#ifdef HAVE_MAD_H` for read (else `startread` fails with *"SoX was
+    compiled without MP3 decoding support"* and `sox_mp3read` is `NULL`), `#if defined(HAVE_LAME) ||
+    defined(HAVE_TWOLAME)` for write. The handler registers if any of the three is present. So an
+    encode-only mp3 build is legal and degrades cleanly. `SOX_FMT_REQ` does not force the decoder.
+
+  - **Option B re-tested on Linux 2026-08-03 - still dead on 14.4.2, and now with a cause.**
+    `sox.Format(path, None, None, 'sndfile', 'r')` on `tests/data/s00.mp3` against system sox 14.4.2
+    + libsndfile 1.2.2 fails, and libmpg123 prints `parse.c:do_readahead(): error: Cannot seek back!`
+    first - i.e. sox 14.4.2's sndfile wrapper hands libsndfile a stream it cannot rewind. The same
+    file opens fine through the default (libmad) handler. sox_ng's `-t sndfile` on the identical file
+    works, so this is a bug fixed in the fork, not something we can work around in 14.4.2.
+
   - **Bundling libmad as a `.dylib` instead of a `.a` does NOT help - considered and rejected.**
     Worth recording because the mechanical change is small enough to look attractive:
     - *Technically it is nearly free.* Homebrew's `mad` ships **only** a dylib - which is exactly why
@@ -194,13 +272,54 @@
     obligations. Dynamic linking is the simpler story for wheels. Worth a short LICENSING section in
     the README stating what is linked and under what terms.
   - MP3 patents expired in 2017, so licensing is the only remaining constraint here.
-  - **Recommended sequencing:** decide C vs D vs E first, because it determines whether the bundling
+  - **Recommended sequencing:** decide C vs D vs E vs F first, because it determines whether the bundling
     ticket below is "copy Homebrew's prebuilt libs" or "build libsox from source" - a materially
     different project. Do not start by deleting `mad` from `DEPS`; that is the path already reverted
     once.
   - **Caveat on all of the above:** this is the standard reading of the GPL, not legal advice. Option
     E in particular - publishing wheels under GPL while the source stays MIT - is worth confirming
     with someone qualified before acting on it.
+
+- [ ] **LGPL compliance for the bundled libraries - not fixed by the libmad removal**
+  - Inspecting the published `cysox-0.1.11-cp313-cp313-macosx_11_0_arm64.whl` (2026-08-03): the wheel
+    is a single statically-linked 3.3 MB `sox.cpython-313-darwin.so`, `dist-info/licenses/` contains
+    **only cysox's own MIT LICENSE**, and metadata says `License-Expression: MIT`.
+  - Two gaps remain now that libmad is gone: (1) no third-party licence texts are shipped at all,
+    though libsox/libsndfile/libmpg123/LAME are LGPL-2.1 and FLAC/ogg/vorbis/opus are BSD-3-Clause;
+    (2) static linking triggers the LGPL §6 relinking obligation.
+  - **Relicensing cysox to LGPL is not the fix and was considered and rejected.** It would not have
+    helped with libmad (GPL-2.0+ forces GPL on the whole conveyed work; LGPL compatibility is
+    one-way), and for the remaining LGPL components there is a cheaper standard answer: ship the
+    licence texts in `dist-info/licenses/` and link the bundled libs dynamically. `Makefile:167`
+    already runs `delocate-wheel`; flipping `STATIC` off on macOS (`CMakeLists.txt:24`) satisfies
+    §6(b) outright. This is what `soundfile` and PyAV do - permissive own code, copyleft deps,
+    notices included. Note libmpg123 is LGPL-2.1-**only**, so if the wheel ever is relicensed it
+    must be exactly LGPL-2.1, not LGPL-3.
+  - Also worth a short LICENSING section in the README stating what is linked and under what terms.
+
+### Correctness
+
+- [x] **Use-after-free in `Format.signal` / `Format.encoding`** - fixed 2026-08-03.
+  - Both returned non-owning wrappers around `&ft->signal` / `&ft->encoding`, which `sox_close()`
+    frees. `signal = f.signal` outside a `with` block - which `info()` and several tests do - then
+    read freed memory. Demonstrable single-threaded on **both** sox 14.4.2 and sox_ng: after
+    `f.close()`, `signal.rate` returned garbage (`1.0e-70`, `4.03e+244`). Pre-existing, not a
+    sox_ng regression; sox_ng's allocation pattern just made it deterministic instead of lucky.
+  - Fix: `signal`/`encoding` now return owned snapshots (`copy_from_ptr`). `mult` is deep-copied so
+    the two wrappers cannot free each other's memory.
+  - **`Format.signal_view` was added for the one caller that genuinely needs aliasing.** `convert()`
+    and `concat()` rely on `sox_add_effect()` writing the negotiated signal back through the pointer
+    they passed; switching them to snapshots silently broke length-changing effects (`trim`, and the
+    drum-slice preset) with `SoxEffectError`. They now use `signal_view` explicitly, which is
+    documented as valid only while the format is open.
+
+- [ ] **`EffectsChain` holds libsox's encoding pointers without owning the objects.**
+  - `sox_create_effects_chain(in_enc, out_enc)` stores both pointers and dereferences them during
+    `flow_effects()`. `EffectsChain.__init__` now keeps Python references so a temporary
+    `EncodingInfo` cannot be collected out from under the chain. The same class of bug likely exists
+    elsewhere - `Effect.in_signal`/`out_signal` are still raw views into `effp->…`, and
+    `add_effect()` passes `in_signal.ptr` straight through. Worth an audit pass over every
+    `from_ptr` call site to classify each as "borrowed, owner outlives it" or "needs a snapshot".
 
 ### Platform Support
 
@@ -221,11 +340,13 @@
     | flac | libFLAC | BSD-3-Clause | yes |
     | ogg / vorbis | libogg, libvorbis | BSD-3-Clause | yes |
     | opus | opus, opusfile | BSD-3-Clause | yes |
-    | **mp3 decode** | **libmad** | **GPL-2.0+** | **no - sox has no alternative decoder** |
+    | **mp3 decode** | libmad *(sox 14.4.2)* / libmpg123 or LAME-hip *(sox_ng)* | GPL-2.0+ / LGPL-2.1 | **yes, via sox_ng** |
 
-    mpg123 is *not* a substitute here: it is libsndfile's mp3 decoder, and sox cannot use it. Bundling
-    mp3 *reading* therefore means either `--with-mad=dyn` (dlopen, nothing GPL in the wheel) or
-    shipping without mp3 read.
+    **Superseded 2026-08-03.** mpg123 is not a substitute *in sox 14.4.2* - it is libsndfile's mp3
+    decoder and 14.4.2 cannot reach it. In `sox_ng` it is: built `--without-mad`, the `.mp3` handler
+    falls back to libsndfile/libmpg123 (or LAME's `hip` decoder), both LGPL-2.1. Verified by building
+    it - see option F under Licensing. So bundling mp3 read no longer requires either `--with-mad=dyn`
+    or giving up mp3 read; it requires switching the bundled library to sox_ng.
 
   - **Sequencing:** do the libmad removal first and independently. It is a small, self-contained
     correctness fix, whereas bundling is a packaging project - and shipping the bundle first would

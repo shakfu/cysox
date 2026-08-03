@@ -50,42 +50,94 @@ case "$(uname -s)" in
             [ -d "$prefix/lib" ] && cp -af "$prefix/lib/"*.dylib "$LIB_DIR/" 2>/dev/null || true
         }
 
-        DEPS=(sox flac lame mpg123 libogg libsndfile opus opusfile libvorbis libpng mad)
+        # Note: `sox` and `mad` are deliberately absent.
+        #
+        # Homebrew's libsox is compiled against libmad, which is GPL-2.0-or-later.
+        # Bundling it into a wheel would make the distributed artifact GPL and so
+        # unshippable under cysox's MIT licence. Instead we build sox_ng below with
+        # --without-mad; its mp3 handler then decodes through libsndfile/libmpg123
+        # (LGPL-2.1) and still encodes through LAME, so mp3 read *and* write keep
+        # working with nothing GPL in the wheel.
+        DEPS=(flac lame mpg123 libogg libsndfile opus opusfile libvorbis libpng)
         for dep in "${DEPS[@]}"; do
             copy_lib "$dep"
         done
 
-        # Build libmad from source if static library not available
-        # (Homebrew's mad package only ships dynamic libraries)
-        # Build libmad from source if static library not available
-        # (Homebrew's mad package only ships dynamic libraries)
-        if [ ! -f "$LIB_DIR/libmad.a" ]; then
-            echo "libmad.a not found - building from source..."
-            MAD_VERSION="0.16.4"
-            MAD_BUILD_DIR=$(mktemp -d)
-            curl -sL "https://codeberg.org/tenacityteam/libmad/archive/${MAD_VERSION}.tar.gz" \
-                | tar xz -C "$MAD_BUILD_DIR"
-            pushd "$MAD_BUILD_DIR/libmad" > /dev/null
-            cmake -B build \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_OSX_ARCHITECTURES="$(uname -m)" \
-                -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-                -DBUILD_SHARED_LIBS=OFF
-            cmake --build build
+        # Build sox_ng from source, without libmad (see the note above).
+        if [ ! -f "$LIB_DIR/libsox.a" ]; then
+            echo "libsox.a not found - building sox_ng from source..."
+            SOX_NG_VERSION="14.8.0.1"
+            SOX_BUILD_DIR=$(mktemp -d)
+            SOX_PREFIX="$SOX_BUILD_DIR/prefix"
+            BREW_PREFIX=$(brew --prefix)
+
+            # The release tarball ships a pregenerated `configure`, so autotools
+            # are not needed on the build machine.
+            curl -sL "https://codeberg.org/sox_ng/sox_ng/releases/download/sox_ng-${SOX_NG_VERSION}/sox_ng-${SOX_NG_VERSION}.tar.gz" \
+                | tar xz -C "$SOX_BUILD_DIR"
+            pushd "$SOX_BUILD_DIR/sox_ng-${SOX_NG_VERSION}" > /dev/null
+
+            # --enable-replace installs under the traditional sox.h / libsox.a /
+            # sox.pc names, so nothing downstream has to know this is sox_ng.
+            PKG_CONFIG_PATH="$BREW_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH" \
+            ./configure \
+                --prefix="$SOX_PREFIX" \
+                --enable-replace \
+                --without-mad \
+                --enable-static \
+                --disable-shared \
+                --with-pic \
+                --without-ao \
+                --without-oss \
+                --without-alsa \
+                --without-pulseaudio \
+                --without-sndio \
+                --without-ladspa \
+                --without-amrnb \
+                --without-amrwb \
+                CPPFLAGS="-I$BREW_PREFIX/include" \
+                LDFLAGS="-L$BREW_PREFIX/lib"
+
+            # Fail loudly rather than silently shipping a wheel that is GPL-
+            # encumbered, or one that cannot read mp3 at all. The mp3 handler is
+            # only registered when MAD or LAME is present, and with MAD excluded
+            # the decode path needs SNDFILE (libmpg123) to be found.
+            if grep -q '^#define HAVE_MAD ' src/soxconfig.h; then
+                echo "Error: sox_ng configured WITH libmad - refusing to build a GPL-encumbered wheel"
+                exit 1
+            fi
+            if ! grep -q '^#define HAVE_SNDFILE ' src/soxconfig.h; then
+                echo "Error: sox_ng configured without libsndfile - mp3 decoding would be unavailable"
+                exit 1
+            fi
+            if ! grep -q '^#define HAVE_LAME ' src/soxconfig.h; then
+                echo "Error: sox_ng configured without LAME - the mp3 handler would not be registered"
+                exit 1
+            fi
+
+            make -j"$(sysctl -n hw.ncpu)"
+            make install
             popd > /dev/null
-            cp "$MAD_BUILD_DIR/libmad/build/libmad.a" "$LIB_DIR/"
-            [ ! -f "$INCLUDE_DIR/mad.h" ] && cp "$MAD_BUILD_DIR/libmad/build/mad.h" "$INCLUDE_DIR/"
-            rm -rf "$MAD_BUILD_DIR"
-            echo "libmad.a built successfully"
+
+            cp -L "$SOX_PREFIX/lib/libsox.a" "$LIB_DIR/"
+            cp -L "$SOX_PREFIX/include/sox.h" "$INCLUDE_DIR/"
+            rm -rf "$SOX_BUILD_DIR"
+            echo "libsox.a (sox_ng ${SOX_NG_VERSION}, without libmad) built successfully"
         fi
 
-        # Remove unnecessary libraries
+        # Remove unnecessary libraries. libmad*/mad.h are cleaned up too: they are
+        # left over from earlier checkouts that bundled it, and a stale libmad.a
+        # in lib/ would silently be linked back into the wheel.
         rm -f \
             "$LIB_DIR/libpng.a" \
             "$LIB_DIR/libsyn123.a" \
             "$LIB_DIR/libout123.a" \
             "$LIB_DIR/libFLAC++.a" \
-            "$LIB_DIR/libopusurl.a"
+            "$LIB_DIR/libopusurl.a" \
+            "$LIB_DIR/libmad.a" \
+            "$LIB_DIR/libmad."*.dylib \
+            "$LIB_DIR/libmad.dylib" \
+            "$INCLUDE_DIR/mad.h"
 
         echo "Setup complete - libraries copied to $LIB_DIR"
         ;;

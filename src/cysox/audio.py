@@ -217,42 +217,14 @@ def info(path: Union[str, Path]) -> AudioInfo:
     raise AssertionError("unreachable")
 
 
-# Indices correspond to sox.ENCODINGS order (sox_encoding_t enum)
-_ENCODING_NAMES = {
-    0: "unknown",  # UNKNOWN
-    1: "signed-integer",  # SIGN2
-    2: "unsigned-integer",  # UNSIGNED
-    3: "float",  # FLOAT
-    4: "float-text",  # FLOAT_TEXT
-    5: "flac",  # FLAC
-    6: "hcom",  # HCOM
-    7: "wavpack",  # WAVPACK
-    8: "wavpackf",  # WAVPACKF
-    9: "ulaw",  # ULAW
-    10: "alaw",  # ALAW
-    11: "g721",  # G721
-    12: "g723",  # G723
-    13: "cl-adpcm",  # CL_ADPCM
-    14: "cl-adpcm16",  # CL_ADPCM16
-    15: "ms-adpcm",  # MS_ADPCM
-    16: "ima-adpcm",  # IMA_ADPCM
-    17: "oki-adpcm",  # OKI_ADPCM
-    18: "dpcm",  # DPCM
-    19: "dwvw",  # DWVW
-    20: "dwvwn",  # DWVWN
-    21: "gsm",  # GSM
-    22: "mp3",  # MP3
-    23: "vorbis",  # VORBIS
-    24: "amr-wb",  # AMR_WB
-    25: "amr-nb",  # AMR_NB
-    26: "cvsd",  # CVSD
-    27: "lpc10",  # LPC10
-    28: "opus",  # OPUS
-}
+# Resolved from the sox_encoding_t values the extension was compiled against -
+# never hard-coded, because sox_ng renumbered the enum (MP1/MP2 inserted before
+# MP3, DSD appended). See _ENCODING_TABLE in sox.pyx.
+_ENCODING_NAMES = sox.ENCODING_NAMES
 
 # Reverse map for the ``encoding=`` argument of convert(). "unknown" is
 # excluded deliberately - it is a read-side result, not something to request.
-_ENCODING_TYPES = {name: value for value, name in _ENCODING_NAMES.items() if value != 0}
+_ENCODING_TYPES = sox.ENCODING_TYPES
 
 
 def _encoding_name(encoding_type: int) -> str:
@@ -420,8 +392,11 @@ def convert(
         # Save original input properties (before any mutation)
         original_rate = input_fmt.signal.rate
 
-        # Track current signal - use same object pattern to allow libsox in-place updates
-        current_signal = input_fmt.signal
+        # Track current signal. This must be the *aliasing* view: sox_add_effect()
+        # writes the negotiated signal back through this pointer, and the input
+        # effect reads it from the format struct. A snapshot silently breaks
+        # length-changing effects such as trim.
+        current_signal = input_fmt.signal_view
 
         # Target output rate
         target_rate = sample_rate or original_rate
@@ -639,7 +614,7 @@ def play(
 
         # Create effects chain
         chain = sox.EffectsChain(input_fmt.encoding, output_fmt.encoding)
-        current_signal = input_fmt.signal
+        current_signal = input_fmt.signal_view  # aliasing - see convert()
 
         # Add input effect
         e = sox.Effect(sox.find_effect("input"))

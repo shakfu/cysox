@@ -230,7 +230,7 @@ While cysox supports concurrent operations on separate `Format` objects and effe
 
 - **Fully supported**
 - Static linking available for self-contained wheels
-- Homebrew dependencies: `sox libsndfile mad libpng flac lame mpg123 libogg opus opusfile libvorbis`
+- Homebrew dependencies: `libsndfile libpng flac lame mpg123 libogg opus opusfile libvorbis` (libsox itself is built from source by `scripts/setup.sh`)
 
 ### Linux
 

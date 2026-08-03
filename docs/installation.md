@@ -13,7 +13,7 @@ cysox requires:
 ### macOS (Homebrew)
 
 ```bash
-brew install sox libsndfile mad libpng flac lame mpg123 libogg opus libvorbis
+brew install libsndfile libpng flac lame mpg123 libogg opus libvorbis
 ```
 
 ### Linux (Ubuntu/Debian)

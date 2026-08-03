@@ -802,7 +802,7 @@ sox.quit()
 ### macOS
 
 ```sh
-brew install sox libsndfile mad libpng flac lame mpg123 libogg opus opusfile libvorbis
+brew install libsndfile libpng flac lame mpg123 libogg opus opusfile libvorbis
 make
 make test
 ```

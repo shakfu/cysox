@@ -350,7 +350,7 @@ cdef extern from "sox.h":
         sox_uint32_t version_code   # version number = 0x140400
         const char * version        # version string = sox_version(), for example, "14.4.0"
         const char * version_extra  # version extra info or null = "PACKAGE_EXTRA", for example, "beta"
-        const char * time           # build time = "__DATE__ __TIME__", for example, "Jan  7 2010 03:31:50"
+        # NOTE: `time` is deliberately absent - sox_ng dropped it (see cysox_version_info_time below).
         const char * distro         # distro or null = "DISTRO", for example, "Debian"
         const char * compiler       # compiler info or null, for example, "msvc 160040219"
         const char * arch           # arch, for example, "1248 48 44 L OMP"
@@ -850,3 +850,42 @@ cdef extern from "sox.h":
         size_t base_buffer_len, # Size of base_buffer, in bytes. 
         const char * filename # Filename from which to extract basename. 
     )
+
+
+cdef extern from *:
+    """
+    #include "sox.h"
+
+    /* sox_ng removed sox_version_info_t.time (it embedded __DATE__ __TIME__,
+     * which breaks reproducible builds).  Resolve the field in C so cysox
+     * builds against both upstream sox 14.4.2 and sox_ng; on sox_ng the
+     * Python-level attribute is simply None. */
+    #if SOX_LIB_VERSION_CODE >= SOX_LIB_VERSION(14, 5, 0)
+    #define cysox_version_info_time(info) ((char const *)NULL)
+    #else
+    #define cysox_version_info_time(info) ((info)->time)
+    #endif
+
+    /* sox_ng added encodings to the middle and end of sox_encoding_t, which
+     * shifts every value after GSM.  Never hard-code these numbers: expose the
+     * real enum values, and a negative sentinel where the build predates them,
+     * so the Python-side tables key off whatever this libsox actually uses.
+     *   DSD      added in sox_ng 14.6
+     *   MP1/MP2  added in sox_ng 14.7 (between GSM and MP3) */
+    #if SOX_LIB_VERSION_CODE >= SOX_LIB_VERSION(14, 6, 0)
+    #define CYSOX_ENCODING_DSD ((int)SOX_ENCODING_DSD)
+    #else
+    #define CYSOX_ENCODING_DSD (-1)
+    #endif
+    #if SOX_LIB_VERSION_CODE >= SOX_LIB_VERSION(14, 7, 0)
+    #define CYSOX_ENCODING_MP1 ((int)SOX_ENCODING_MP1)
+    #define CYSOX_ENCODING_MP2 ((int)SOX_ENCODING_MP2)
+    #else
+    #define CYSOX_ENCODING_MP1 (-2)
+    #define CYSOX_ENCODING_MP2 (-3)
+    #endif
+    """
+    const char * cysox_version_info_time(const sox_version_info_t * info)
+    const int CYSOX_ENCODING_DSD
+    const int CYSOX_ENCODING_MP1
+    const int CYSOX_ENCODING_MP2

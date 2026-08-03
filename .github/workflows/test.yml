@@ -28,7 +28,7 @@ jobs:
 
     - name: Install system dependencies
       run: |
-        brew install sox libsndfile mad libpng flac lame mpg123 libogg opus opusfile libvorbis
+        brew install libsndfile libpng flac lame mpg123 libogg opus opusfile libvorbis
 
     - name: Setup build environment
       run: |

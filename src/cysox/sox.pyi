@@ -1,7 +1,7 @@
 # Type stubs for cysox.sox (Cython extension module)
 # This file provides type hints for the low-level libsox API
 
-from typing import Optional, List, Union, Tuple, Callable, Any
+from typing import Optional, List, Union, Tuple, Callable, Dict, Any
 from pathlib import Path
 import array
 
@@ -53,6 +53,7 @@ class EncodingInfo:
 class Format:
     filename: str
     signal: SignalInfo
+    signal_view: SignalInfo
     encoding: EncodingInfo
     filetype: str
     seekable: bool
@@ -236,3 +237,5 @@ EINVAL: int
 SOX_SEEK_SET: int
 
 ENCODINGS: List[Tuple[str, str]]
+ENCODING_NAMES: Dict[int, str]
+ENCODING_TYPES: Dict[str, int]

@@ -104,9 +104,6 @@ if(IS_MACOS)
         add_library(libmp3lame_static STATIC IMPORTED)
         set_target_properties(libmp3lame_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libmp3lame.a")
 
-        add_library(libmad_static STATIC IMPORTED)
-        set_target_properties(libmad_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libmad.a")
-
         add_library(libmpg123_static STATIC IMPORTED)
         set_target_properties(libmpg123_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libmpg123.a")
 
@@ -133,7 +130,8 @@ if(IS_MACOS)
             libopus_static
             libopusfile_static
             libmp3lame_static
-            libmad_static
+            # No libmad: it is GPL-2.0+ and cannot ship in an MIT wheel. libsox is
+            # built --without-mad, so mp3 decodes via libsndfile/libmpg123 instead.
             libmpg123_static
             libvorbis_static
             libvorbisfile_static
