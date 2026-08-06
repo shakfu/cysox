@@ -27,7 +27,9 @@ The crash typically occurs on the second or third init/quit cycle, manifesting a
 libsox uses global state that is not designed to be re-initialized after shutdown. The `sox_quit()` function frees internal data structures, but `sox_init()` does not fully reinitialize them on subsequent calls. This leads to:
 
 1. **Dangling pointers**: Internal effect handler tables and format handler registries may contain stale references after quit.
+
 2. **Double-free potential**: Some cleanup code may attempt to free already-freed memory on repeated cycles.
+
 3. **Static initialization issues**: Certain global variables are initialized once via static initializers and are not reset by `sox_init()`.
 
 ### Affected Code
@@ -136,13 +138,17 @@ The memory-based I/O functions (`open_mem_read`, `open_mem_write`, `open_memstre
 ### Affected Functions
 
 - `sox.open_mem_read()` - Read audio from memory buffer
+
 - `sox.open_mem_write()` - Write audio to memory buffer
+
 - `sox.open_memstream_write()` - Write audio to dynamically-sized memory stream
 
 ### Symptoms
 
 - Functions may return `None` or raise exceptions
+
 - Written data may be truncated or corrupted
+
 - Platform-dependent behavior (works on some systems, fails on others)
 
 ### Root Cause
@@ -150,7 +156,9 @@ The memory-based I/O functions (`open_mem_read`, `open_mem_write`, `open_memstre
 libsox's memory I/O implementation relies on platform-specific features (`fmemopen`, `open_memstream`) that have inconsistent behavior across operating systems:
 
 - **macOS**: `fmemopen` available but has quirks with binary modes
+
 - **Linux**: Generally works but has edge cases with buffer sizing
+
 - **Windows**: Functions not available (would require custom implementation)
 
 ### Workaround
@@ -205,21 +213,29 @@ While cysox supports concurrent operations on separate `Format` objects and effe
 ### Safe Operations (Thread-Safe)
 
 - Opening and reading from different `Format` objects concurrently
+
 - Writing to different output files concurrently
+
 - Running separate effects chains in parallel
+
 - Creating `SignalInfo`, `EncodingInfo`, and other value objects
+
 - Looking up effect handlers via `find_effect()`
 
 ### Unsafe Operations (Not Thread-Safe)
 
 - Calling `init()` or `quit()` from multiple threads
+
 - Sharing a single `Format` object across threads without synchronization
+
 - Sharing a single `EffectsChain` across threads
 
 ### Recommendations
 
 1. Call `init()` and `quit()` only from the main thread
+
 2. Create separate `Format` and `EffectsChain` objects per thread
+
 3. Use thread-local storage if needed for per-thread sox resources
 
 ---
@@ -229,21 +245,29 @@ While cysox supports concurrent operations on separate `Format` objects and effe
 ### macOS
 
 - **Fully supported**
+
 - Static linking available for self-contained wheels
+
 - Homebrew dependencies: `libsndfile libpng flac lame mpg123 libogg opus opusfile libvorbis` (libsox itself is built from source by `scripts/setup.sh`)
 
 ### Linux
 
 - **Fully supported**
+
 - Dynamic linking to system libsox
+
 - Package dependencies vary by distribution (see README.md)
 
 ### Windows
 
 - **Placeholder support only**
+
 - Requires manual installation of libsox
+
 - Environment variables `SOX_INCLUDE_DIR` and `SOX_LIB_DIR` must be set
+
 - No CI testing or pre-built wheels
+
 - Contributions welcome
 
 ---
@@ -251,5 +275,7 @@ While cysox supports concurrent operations on separate `Format` objects and effe
 ## References
 
 - [libsox source code](https://sourceforge.net/p/sox/code/ci/master/tree/)
+
 - [SoX documentation](http://sox.sourceforge.net/libsox.html)
+
 - [cysox issue tracker](https://github.com/shakfu/cysox/issues)
