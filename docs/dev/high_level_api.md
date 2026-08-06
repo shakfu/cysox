@@ -7,6 +7,7 @@ This document describes the high-level API for cysox and how to extend it.
 cysox provides two API layers:
 
 1. **High-Level API** (recommended) - Pythonic, auto-initializing, simple
+
 2. **Low-Level API** - Direct libsox bindings for advanced use cases
 
 ```python
@@ -374,9 +375,13 @@ cdef int custom_flow(sox_effect_t *effp,
 ### Recommendations
 
 1. **Most users**: Use built-in `fx.*` classes or `CompositeEffect`
+
 2. **Custom presets**: Use `CompositeEffect` to combine effects
+
 3. **Missing sox effects**: Create a simple `Effect` subclass wrapper
+
 4. **Custom DSP prototype**: Use `PythonEffect` with NumPy
+
 5. **Production/real-time**: Write in C, wrap with Python class
 
 ---
@@ -461,8 +466,11 @@ struct sox_effect_handler_t {
 Common effect flags:
 
 - `SOX_EFF_MCHAN` - Effect handles multiple channels
+
 - `SOX_EFF_GAIN` - Effect may increase signal amplitude
+
 - `SOX_EFF_RATE` - Effect may change sample rate
+
 - `SOX_EFF_PREC` - Effect may change sample precision
 
 ---
@@ -470,10 +478,15 @@ Common effect flags:
 ## Design Principles
 
 1. **Simple types** - Functions return paths (str) or dicts, not low-level objects
+
 2. **Typed effects** - IDE autocomplete and validation via effect classes
+
 3. **Time in seconds** - Not samples (unless explicitly needed)
+
 4. **Sensible defaults** - Minimal required arguments
+
 5. **Auto resource management** - No manual init/quit or cleanup required
+
 6. **Clear errors** - Exceptions with context, no silent failures
 
 ---
