@@ -119,6 +119,19 @@ def all_test_wavs(test_data_dir) -> list:
     return list(test_data_dir.glob("*.wav"))
 
 
+@pytest.fixture(scope="session")
+def source_metrics(test_wav_str):
+    """Measured properties of the primary test WAV.
+
+    Session-scoped because effect tests compare their output against the
+    source, and measuring it once keeps that comparison cheap. See
+    ``tests/audio_metrics.py``.
+    """
+    from audio_metrics import measure
+
+    return measure(test_wav_str)
+
+
 # =============================================================================
 # Benchmark Configuration
 # =============================================================================

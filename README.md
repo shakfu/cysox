@@ -842,6 +842,31 @@ make docs-serve    # Live preview at http://localhost:8000
 
 ## License
 
-MIT
+cysox's own source code is **MIT** (see `LICENSE`).
 
-KissFFT (vendored in `vendor/kissfft/`) is BSD-3-Clause licensed. See `vendor/kissfft/COPYING`.
+**Binary wheels are not pure MIT.** They bundle native libraries — statically
+linked on macOS, vendored by `auditwheel` on Linux — and each keeps its own
+licence inside the distributed artifact:
+
+- **LGPL-2.1**: libsox/sox_ng, libsndfile, libmpg123, LAME, libsoxr, libltdl
+- **BSD / permissive**: KissFFT, FLAC, Ogg, Vorbis, Opus, libmagic, libgsm, zlib, libpng
+- **Deliberately absent**: libmad and libid3tag (GPL-2.0-or-later). Excluding them
+  is enforced by the build, not by convention — `scripts/setup.sh` aborts if
+  sox_ng configures with MAD, and `scripts/check_licenses.py` fails the build if
+  a denylisted or unaudited library reaches the wheel. mp3 read and write both
+  still work (libsndfile/libmpg123 in, LAME out).
+
+Because the LGPL components are statically linked on macOS, **redistributing the
+wheels carries LGPL obligations** — notice, corresponding source, and the ability
+to relink. Full details and upstream source links are in
+[`NOTICE-THIRD-PARTY.md`](NOTICE-THIRD-PARTY.md), which ships inside every wheel
+at `cysox-*.dist-info/licenses/`.
+
+Building from source against your own system libraries bundles nothing, and only
+the MIT licence applies.
+
+To audit a wheel yourself:
+
+```sh
+python scripts/check_licenses.py wheel dist/cysox-*.whl
+```

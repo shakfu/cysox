@@ -4,6 +4,9 @@ version = "0.1.11"
 description = "A Pythonic audio processing library wrapping libsox"
 readme = "README.md"
 license = "MIT"
+# Wheels bundle native libraries that keep their own licences; the notice and
+# KissFFT's BSD text ride along inside every wheel.
+license-files = ["LICENSE", "NOTICE-THIRD-PARTY.md", "vendor/kissfft/COPYING"]
 authors = [
     { name = "Shakeeb Alireza", email = "shakfu@users.noreply.github.com" }
 ]
@@ -108,17 +111,39 @@ skip = "*-win* *-musllinux_*"
 # Python versions to build
 build = "cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*"
 
-# Test the wheel with a simple import
+# Test the repaired wheel. Not just an import: the mp3 assertions catch a
+# wheel whose bundled libsox lost its mp3 handler, which is otherwise silent.
 test-requires = "pytest"
-test-command = "python -c \"import cysox; from cysox import sox; sox.init(); print(f'cysox {cysox.__version__}, libsox {sox.version()}'); sox.quit()\""
+test-command = "python {project}/scripts/smoke_test.py {project}"
 
 [tool.cibuildwheel.linux]
 archs = ["x86_64", "aarch64"]
 
-# Install dependencies in manylinux container
+# Build sox_ng from source rather than using the distro's libsox. The distro
+# package delivers mp3 as a dlopen'd plugin that auditwheel cannot vendor, so
+# wheels built against it have no mp3 support at all; sox_ng --without-mad
+# compiles the handler in. See the long note in scripts/setup.sh.
+#
+# Note what is NOT installed here: sox / sox-devel. Leaving the distro libsox
+# out of the container means there is no second libsox for pkg-config or the
+# linker to find by accident.
 before-all = [
     "yum install -y epel-release || true",
-    "yum install -y sox sox-devel libsndfile-devel flac-devel libvorbis-devel opus-devel libpng-devel pkgconfig || (apt-get update && apt-get install -y libsox-dev libsndfile1-dev libflac-dev libvorbis-dev libopus-dev libpng-dev pkg-config)",
+    "yum install -y flac-devel libvorbis-devel opus-devel opusfile-devel libogg-devel libpng-devel pkgconfig gcc gcc-c++ make bzip2 xz || (apt-get update && apt-get install -y libflac-dev libvorbis-dev libopus-dev libopusfile-dev libogg-dev libpng-dev pkg-config gcc g++ make bzip2 xz-utils)",
+    "SOX_NG=1 bash scripts/setup.sh",
+    # Backstop behind setup.sh's own HAVE_MAD / ldd assertions.
+    "python3 scripts/check_licenses.py libs",
+]
+
+# setup.sh installs sox_ng under /usr/local; point the build and auditwheel at
+# it rather than at any system copy.
+environment = { PKG_CONFIG_PATH = "/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig", LD_LIBRARY_PATH = "/usr/local/lib:/usr/local/lib64" }
+
+# auditwheel vendors libsox and its dependencies into the wheel, so re-check
+# what actually landed inside before the wheel is allowed out.
+repair-wheel-command = [
+    "auditwheel repair -w {dest_dir} {wheel}",
+    "python3 scripts/check_licenses.py wheel {dest_dir}",
 ]
 
 [tool.cibuildwheel.macos]
@@ -128,6 +153,16 @@ archs = ["native"]
 
 # macOS dependencies installed via Homebrew in workflow before cibuildwheel runs
 before-build = "pip install cython"
+
+# Static libsox is built by scripts/setup.sh, which hard-fails on HAVE_MAD.
+# This is the backstop: check the archive carries no libmad symbols.
+before-all = "python3 scripts/check_licenses.py libs"
+
+# delocate bundles the dylibs; verify the result the same way Linux does.
+repair-wheel-command = [
+    "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}",
+    "python3 scripts/check_licenses.py wheel {dest_dir}",
+]
 
 # Use static linking to bundle libsox into the wheel
 environment = { STATIC = "1" }

@@ -3,9 +3,9 @@ name: Tests
 on:
   workflow_dispatch:
   push:
-    branches: [ main, develop ]
+    branches: [ main, dev ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, dev ]
 
 jobs:
   test-macos:
@@ -123,6 +123,29 @@ jobs:
         uv run valgrind --leak-check=full --show-leak-kinds=definite \
           --errors-for-leak-kinds=definite --error-exitcode=1 \
           python tests/check_leaks.py
+
+  licenses:
+    name: Licence audit
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install libsox
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libsox-dev pkg-config
+
+    # Fails if the libsox we would link pulls in libmad or any unaudited
+    # library. The wheel-side counterpart runs in build-wheel.yml via
+    # cibuildwheel's repair-wheel-command.
+    - name: Check for GPL-encumbered dependencies
+      run: python3 scripts/check_licenses.py libs
 
   lint:
     name: Lint code
