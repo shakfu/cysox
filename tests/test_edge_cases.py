@@ -8,7 +8,6 @@ import struct
 import tempfile
 
 import pytest
-import cysox  # For auto-init
 from cysox import sox
 
 
@@ -24,7 +23,7 @@ class TestZeroLengthFiles:
     def test_write_empty_file(self, output_path):
         """Write a file with no samples."""
         signal = sox.SignalInfo(rate=44100, channels=2, precision=16)
-        with sox.Format(str(output_path), signal=signal, mode='w') as f:
+        with sox.Format(str(output_path), signal=signal, mode='w'):
             # Write nothing, just close
             pass
 

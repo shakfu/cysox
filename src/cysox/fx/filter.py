@@ -2,6 +2,7 @@
 
 from typing import List
 
+from . import _validate
 from .base import Effect
 
 
@@ -20,7 +21,7 @@ class HighPass(Effect):
     def __init__(self, frequency: float, *, poles: int = 2):
         if poles not in (1, 2):
             raise ValueError("poles must be 1 or 2")
-        self.frequency = frequency
+        self.frequency = _validate.positive(frequency, "frequency")
         self.poles = poles
 
     @property
@@ -46,7 +47,7 @@ class LowPass(Effect):
     def __init__(self, frequency: float, *, poles: int = 2):
         if poles not in (1, 2):
             raise ValueError("poles must be 1 or 2")
-        self.frequency = frequency
+        self.frequency = _validate.positive(frequency, "frequency")
         self.poles = poles
 
     @property
@@ -80,8 +81,8 @@ class BandPass(Effect):
     ):
         if width_type not in ("q", "h", "o"):
             raise ValueError("width_type must be 'q', 'h', or 'o'")
-        self.frequency = frequency
-        self.width = width
+        self.frequency = _validate.positive(frequency, "frequency")
+        self.width = _validate.positive(width, "width")
         self.width_type = width_type
         self.constant_skirt = constant_skirt
 
@@ -113,8 +114,8 @@ class BandReject(Effect):
     def __init__(self, frequency: float, width: float, *, width_type: str = "q"):
         if width_type not in ("q", "h", "o"):
             raise ValueError("width_type must be 'q', 'h', or 'o'")
-        self.frequency = frequency
-        self.width = width
+        self.frequency = _validate.positive(frequency, "frequency")
+        self.width = _validate.positive(width, "width")
         self.width_type = width_type
 
     @property

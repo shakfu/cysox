@@ -12,10 +12,9 @@ amplitude in 0..1, `zcr` is the zero-crossing rate, a coarse brightness proxy
 
 Output files are preserved in build/test_output/fx_outputs/ for listening.
 
-Several tests here are `xfail(strict=True)`. They assert the *correct*
-behaviour of effects that convert() currently gets wrong -- see the module
-docstring of test_signal_negotiation_bugs below. Strict means they will fail
-loudly as XPASS once the bug is fixed, prompting the marks to be removed.
+`TestSignalNegotiationRegression` at the end guards the defect these tests
+were written to find: convert() used to apply every conversion ratio twice,
+silently discarding audio on any downward conversion.
 """
 
 import pytest
@@ -299,11 +298,6 @@ class TestTimeEffects:
         cysox.convert(test_wav_str, output_path, effects=[fx.Trim(start=0, end=1.0)])
         assert_audio(output_path, duration=1.0, duration_tol=0.02)
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="convert() truncates by an extra `start` seconds when Trim start > 0; "
-        "see TestSignalNegotiationBugs",
-    )
     def test_trim_middle(self, test_wav_str, output_path):
         """trim 1.0 =3.0 should keep exactly 2 seconds."""
         cysox.convert(test_wav_str, output_path, effects=[fx.Trim(start=1.0, end=3.0)])
@@ -326,11 +320,6 @@ class TestTimeEffects:
         m = assert_audio(output_path, duration=source_metrics.duration / 0.75, duration_tol=0.03)
         assert_ratio(m.zcr, source_metrics.zcr, 0.15, "tempo must not shift pitch")
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="convert() applies tempo twice when factor > 1 (duration ends up "
-        "divided by factor**2); see TestSignalNegotiationBugs",
-    )
     def test_tempo_faster(self, test_wav_str, output_path, source_metrics):
         cysox.convert(test_wav_str, output_path, effects=[fx.Tempo(factor=1.5)])
         assert_audio(output_path, duration=source_metrics.duration / 1.5, duration_tol=0.03)
@@ -341,11 +330,6 @@ class TestTimeEffects:
         m = assert_audio(output_path, duration=source_metrics.duration, duration_tol=0.02)
         assert m.zcr > source_metrics.zcr * 1.3, "pitch up did not brighten"
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="convert() scales duration by 2**(cents/1200) for negative cents; "
-        "pitch must preserve duration. See TestSignalNegotiationBugs",
-    )
     def test_pitch_down_fifth(self, test_wav_str, output_path, source_metrics):
         cysox.convert(test_wav_str, output_path, effects=[fx.Pitch(cents=-700)])
         assert_audio(output_path, duration=source_metrics.duration, duration_tol=0.02)
@@ -404,11 +388,6 @@ class TestTimeEffects:
 class TestConversionEffects:
     """Format conversion outputs."""
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="convert() applies downsampling twice and loses 75% of the audio; "
-        "see TestSignalNegotiationBugs",
-    )
     def test_rate_downsample_22050(self, test_wav_str, output_path, source_metrics):
         """An explicit sample_rate= is honoured and preserves duration."""
         cysox.convert(test_wav_str, output_path, sample_rate=22050)
@@ -420,11 +399,6 @@ class TestConversionEffects:
             duration_tol=0.02,
         )
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="convert() applies downsampling twice and loses 82% of the audio; "
-        "see TestSignalNegotiationBugs",
-    )
     def test_rate_downsample_8000(self, test_wav_str, output_path, source_metrics):
         cysox.convert(test_wav_str, output_path, sample_rate=8000)
         assert_audio(
@@ -442,11 +416,6 @@ class TestConversionEffects:
             duration_tol=0.02,
         )
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="convert(channels=1) halves the duration -- the downmix ratio is "
-        "applied to the frame count too; see TestSignalNegotiationBugs",
-    )
     def test_channels_mono(self, test_wav_str, output_path, source_metrics):
         """Downmix to mono keeps duration and rate."""
         cysox.convert(test_wav_str, output_path, channels=1)
@@ -470,14 +439,29 @@ class TestConversionEffects:
         assert_ratio(m.peak, source_metrics.peak, 0.01, "swap peak")
         assert_ratio(m.mean_abs, source_metrics.mean_abs, 0.01, "swap mean_abs")
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="Remix to fewer channels neither reduces the channel count nor "
-        "preserves duration; see TestSignalNegotiationBugs",
-    )
     def test_remix_left_only(self, test_wav_str, output_path, source_metrics):
-        """Selecting one channel yields a mono file of the same duration."""
+        """Remix selects a channel; the output shape follows convert()'s target.
+
+        The output file's channel count is set by the input, or by an explicit
+        ``channels=``. An in-chain effect that changes the channel count acts
+        on the processing signal, and convert() converts back to the target --
+        exactly as it does for an in-chain ``fx.Rate``. So this yields the left
+        channel duplicated across a stereo file, not a mono file. Pass
+        ``channels=1`` to get mono.
+        """
         cysox.convert(test_wav_str, output_path, effects=[fx.Remix(mix=["1"])])
+        assert_audio(
+            output_path,
+            channels=source_metrics.channels,
+            rate=source_metrics.rate,
+            duration=source_metrics.duration,
+        )
+
+    def test_remix_left_only_to_mono(self, test_wav_str, output_path, source_metrics):
+        """Combining Remix with channels= gives a genuine mono file."""
+        cysox.convert(
+            test_wav_str, output_path, effects=[fx.Remix(mix=["1"])], channels=1
+        )
         assert_audio(
             output_path,
             channels=1,
@@ -592,128 +576,145 @@ class TestCombinedEffects:
         assert_audio(output_path, channels=source_metrics.channels)
 
 
-class TestSignalNegotiationBugs:
-    """Characterisation of convert()'s signal-negotiation defects.
+class TestSignalNegotiationRegression:
+    """Guards the defect that these behavioural tests were written to find.
 
-    Every effect that changes length, rate, or channel count is negotiated by
-    hand in ``audio.py`` (the ``current_signal`` tracking in ``convert()``).
-    One defect runs through all of the cases below: **the conversion ratio is
-    applied twice**, so whenever it is below 1 the output silently loses
-    audio. Verified against file size on disk, not just ``info()``.
+    ``convert()`` used to pass ``input_fmt.signal_view`` -- an alias of the
+    input format's own signal struct -- as the ``in_signal`` of every
+    ``sox_add_effect()`` call. libsox writes the negotiated signal back
+    through that pointer, so each effect rewrote the *input file's* declared
+    length, and the input effect, which bounds its reads by that length,
+    stopped early. Every conversion ratio below 1 lost audio in proportion:
 
-    ===========================  ===========================================
-    ``convert(sample_rate=r)``   frames scale by ``(r/src)**2``; 22050 Hz
-                                 keeps 25% of the audio, 8000 Hz keeps 3%
-    ``convert(channels=1)``      duration halves on a stereo source
-    ``fx.Rate(r)``               same as the keyword form
-    ``fx.Remix`` to fewer ch     channel count unchanged, duration quartered
-    ``fx.Trim(start=S)``         output is S seconds shorter than requested
-    ``fx.Tempo(f)``, f > 1       duration divided by ``f**2`` instead of ``f``
-    ``fx.Pitch(c)``, c < 0       duration scaled by ``2**(c/1200)``; pitch
-                                 must not change duration at all
-    ===========================  ===========================================
+    - ``convert(sample_rate=8000)`` kept 18% of a 44.1 kHz recording
+    - ``convert(sample_rate=22050)`` kept 50%
+    - ``convert(channels=1)`` kept half of a stereo source
+    - ``Trim(start=S)`` lost an extra S seconds
+    - ``Tempo(f>1)`` divided duration by ``f**2``
+    - ``Pitch(c<0)`` scaled duration by ``2**(c/1200)``
 
-    Upward conversions are correct -- upsampling, ``Tempo(f<=1)``,
-    ``Pitch(c>=0)`` and ``Speed`` at any factor all behave. That asymmetry is
-    why this went unnoticed: the affected outputs are valid audio files of a
-    plausible length, and the tests only checked that a file appeared.
+    Ratios above 1 were unaffected -- reads simply hit EOF -- which is what
+    made it look like several unrelated effect bugs instead of one defect.
 
-    Blast radius: ``convert(sample_rate=)`` / ``convert(channels=)`` are the
-    headline API and the ``cysox convert --rate/--channels`` CLI flags;
-    ``batch()`` forwards both; and the ``Telephone``, ``WalkieTalkie`` and
-    ``LoFiHipHop`` presets each embed a downward ``rate``, so they truncate
-    too.
-
-    These tests record the broken behaviour so it cannot drift further
-    unnoticed. The matching correct-behaviour tests above are xfail(strict),
-    so fixing the defect turns them into XPASS failures that point here.
+    The fix threads a private interim ``SignalInfo`` through the chain, as
+    sox's own driver does. These tests fail if anything reintroduces the
+    aliasing.
     """
 
-    def test_trim_start_loses_start_seconds(self, test_wav_str, output_path_factory):
-        for start, end in ((1.0, 3.0), (2.0, 4.0), (0.5, 1.5)):
-            out = output_path_factory(f"trim{start}")
-            cysox.convert(test_wav_str, out, effects=[fx.Trim(start=start, end=end)])
-            got = measure(out).duration
-            expected_correct = end - start
-            assert abs(got - (expected_correct - start)) < 0.02, (
-                f"Trim({start},{end}): expected the buggy {expected_correct - start:.2f}s, "
-                f"got {got:.3f}s -- behaviour changed, re-check the xfail marks"
-            )
-
-    def test_tempo_above_one_is_applied_twice(self, test_wav_str, output_path_factory, source_metrics):
-        for factor in (1.5, 2.0):
-            out = output_path_factory(f"tempo{factor}")
-            cysox.convert(test_wav_str, out, effects=[fx.Tempo(factor=factor)])
-            got = measure(out).duration
-            buggy = source_metrics.duration / (factor**2)
-            assert abs(got - buggy) < 0.05, (
-                f"Tempo({factor}): expected the buggy {buggy:.3f}s, got {got:.3f}s"
-            )
-
-    def test_negative_pitch_changes_duration(self, test_wav_str, output_path_factory, source_metrics):
-        for cents in (-700, -1200):
-            out = output_path_factory(f"pitch{cents}")
-            cysox.convert(test_wav_str, out, effects=[fx.Pitch(cents=cents)])
-            got = measure(out).duration
-            buggy = source_metrics.duration * (2 ** (cents / 1200.0))
-            assert abs(got - buggy) < 0.05, (
-                f"Pitch({cents}): expected the buggy {buggy:.3f}s, got {got:.3f}s"
-            )
-
-    def test_downsampling_applies_the_ratio_twice(
-        self, test_wav_str, output_path_factory, source_metrics
+    @pytest.mark.parametrize("rate", [8000, 22050, 48000, 96000])
+    def test_resampling_preserves_duration(
+        self, rate, test_wav_str, output_path_factory, source_metrics
     ):
-        """The core defect, stated as a formula.
+        """Both directions, since only downward ones used to break."""
+        out = output_path_factory(f"rate{rate}")
+        cysox.convert(test_wav_str, out, sample_rate=rate)
+        m = assert_audio(
+            out,
+            rate=rate,
+            channels=source_metrics.channels,
+            duration=source_metrics.duration,
+            duration_tol=0.02,
+        )
+        assert m.n_samples > 0
 
-        Output frames come out as ``input_frames * (target/source)**2``. One
-        factor is the resample everybody asked for; the second is the bug.
-        """
-        for rate in (22050, 8000):
-            out = output_path_factory(f"kw{rate}")
-            cysox.convert(test_wav_str, out, sample_rate=rate)
-            m = measure(out)
-            ratio = rate / source_metrics.rate
-            buggy = source_metrics.duration * ratio
-            assert m.rate == rate
-            assert abs(m.duration - buggy) < 0.05, (
-                f"convert(sample_rate={rate}): expected the buggy {buggy:.3f}s "
-                f"(= source * {ratio:.4f}), got {m.duration:.3f}s"
-            )
+    @pytest.mark.parametrize("channels", [1, 2])
+    def test_channel_conversion_preserves_duration(
+        self, channels, test_wav_str, output_path_factory, source_metrics
+    ):
+        out = output_path_factory(f"ch{channels}")
+        cysox.convert(test_wav_str, out, channels=channels)
+        assert_audio(
+            out,
+            channels=channels,
+            rate=source_metrics.rate,
+            duration=source_metrics.duration,
+            duration_tol=0.02,
+        )
 
     def test_rate_effect_matches_the_keyword_form(
-        self, test_wav_str, output_path_factory
+        self, test_wav_str, output_path_factory, source_metrics
     ):
-        """fx.Rate(r) and convert(sample_rate=r) are broken identically.
+        """fx.Rate(r) resamples mid-chain; convert() then returns to the target.
 
-        Worth pinning: it means there is one defect to fix, not two.
+        The output file keeps the target rate either way -- an in-chain rate
+        effect changes the interim signal, not the destination -- so the
+        durations must agree.
         """
         via_effect = output_path_factory("via_effect")
         via_kwarg = output_path_factory("via_kwarg")
         cysox.convert(test_wav_str, via_effect, effects=[fx.Rate(sample_rate=8000)])
         cysox.convert(test_wav_str, via_kwarg, sample_rate=8000)
         me, mk = measure(via_effect), measure(via_kwarg)
-        assert abs(me.duration - mk.duration) < 0.02, (
-            f"effect form {me.duration:.3f}s vs keyword form {mk.duration:.3f}s"
+        assert_ratio(me.duration, source_metrics.duration, 0.02, "fx.Rate duration")
+        assert_ratio(mk.duration, source_metrics.duration, 0.02, "sample_rate= duration")
+
+    @pytest.mark.parametrize(
+        "start,end,expected",
+        [(0.0, 1.0, 1.0), (1.0, 3.0, 2.0), (2.0, 4.0, 2.0), (0.5, 1.5, 1.0)],
+    )
+    def test_trim_keeps_exactly_the_requested_window(
+        self, start, end, expected, test_wav_str, output_path_factory
+    ):
+        out = output_path_factory(f"trim{start}_{end}")
+        cysox.convert(test_wav_str, out, effects=[fx.Trim(start=start, end=end)])
+        assert_audio(out, duration=expected, duration_tol=0.03)
+
+    @pytest.mark.parametrize("factor", [0.5, 0.75, 1.25, 1.5, 2.0])
+    def test_tempo_scales_duration_once(
+        self, factor, test_wav_str, output_path_factory, source_metrics
+    ):
+        out = output_path_factory(f"tempo{factor}")
+        cysox.convert(test_wav_str, out, effects=[fx.Tempo(factor=factor)])
+        assert_audio(
+            out, duration=source_metrics.duration / factor, duration_tol=0.03
         )
 
-    def test_downmix_halves_duration(self, test_wav_str, output_path, source_metrics):
-        """convert(channels=1) drops half the audio on a stereo source."""
-        cysox.convert(test_wav_str, output_path, channels=1)
-        m = measure(output_path)
-        assert m.channels == 1
-        buggy = source_metrics.duration / 2
-        assert abs(m.duration - buggy) < 0.05, (
-            f"convert(channels=1): expected the buggy {buggy:.3f}s, got {m.duration:.3f}s"
+    @pytest.mark.parametrize("cents", [-1200, -700, 700, 1200])
+    def test_pitch_never_changes_duration(
+        self, cents, test_wav_str, output_path_factory, source_metrics
+    ):
+        out = output_path_factory(f"pitch{cents}")
+        cysox.convert(test_wav_str, out, effects=[fx.Pitch(cents=cents)])
+        assert_audio(
+            out, duration=source_metrics.duration, duration_tol=0.03
         )
 
-    def test_affected_presets_truncate(self, test_wav_str, output_path_factory, source_metrics):
-        """Presets embedding a downward rate inherit the truncation."""
-        for name, target_rate in (("Telephone", 8000), ("LoFiHipHop", 22050)):
+    def test_affected_presets_keep_their_length(
+        self, test_wav_str, output_path_factory, source_metrics
+    ):
+        """The presets that embedded a downward rate are whole again."""
+        for name in ("Telephone", "WalkieTalkie", "LoFiHipHop"):
             out = output_path_factory(name)
             cysox.convert(test_wav_str, out, effects=[getattr(fx, name)()])
-            m = measure(out)
-            ratio = target_rate / source_metrics.rate
-            assert m.duration < source_metrics.duration * (ratio + 0.05), (
-                f"{name}: expected truncation to about "
-                f"{source_metrics.duration * ratio:.3f}s, got {m.duration:.3f}s"
-            )
+            m = assert_audio(out, rate=source_metrics.rate)
+            assert_ratio(m.duration, source_metrics.duration, 0.02, f"{name} duration")
+
+    def test_input_file_signal_is_not_mutated(self, test_wav_str, output_path):
+        """The direct cause: converting must not rewrite the input's metadata."""
+        before = cysox.info(test_wav_str)
+        cysox.convert(test_wav_str, output_path, sample_rate=8000, channels=1)
+        after = cysox.info(test_wav_str)
+        assert after.samples == before.samples, "input sample count changed"
+        assert after.duration == before.duration, "input duration changed"
+        assert after.sample_rate == before.sample_rate
+        assert after.channels == before.channels
+
+    def test_long_chain_negotiates_end_to_end(
+        self, test_wav_str, output_path, source_metrics
+    ):
+        """Several length- and rate-changing effects in one chain."""
+        cysox.convert(
+            test_wav_str,
+            output_path,
+            effects=[
+                fx.Trim(start=0.5, end=3.5),   # 3.0s
+                fx.Tempo(factor=1.5),          # 2.0s
+                fx.Rate(sample_rate=22050),    # resampled mid-chain
+                fx.Pad(before=0.5),            # 2.5s
+            ],
+            sample_rate=48000,
+            channels=1,
+        )
+        assert_audio(
+            output_path, rate=48000, channels=1, duration=2.5, duration_tol=0.05
+        )

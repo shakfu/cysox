@@ -1,7 +1,6 @@
 """Pytest configuration and fixtures for cysox tests."""
 
 import json
-import os
 import shutil
 from datetime import datetime
 from pathlib import Path

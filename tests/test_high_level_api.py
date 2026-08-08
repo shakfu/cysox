@@ -435,3 +435,64 @@ class TestAutoInit:
         assert hasattr(sox, "Format")
         assert hasattr(sox, "init")
         assert hasattr(sox, "quit")
+
+
+class TestRawEffect:
+    """fx.Raw -- the escape hatch to effects with no typed class."""
+
+    def test_raw_builds_expected_args(self):
+        e = fx.Raw("compand", "0.3,1", "6:-70,-60,-20", -5, -90, 0.2)
+        assert e.name == "compand"
+        assert e.to_args() == ["0.3,1", "6:-70,-60,-20", "-5", "-90", "0.2"]
+
+    def test_raw_with_no_args(self):
+        e = fx.Raw("vad")
+        assert e.name == "vad"
+        assert e.to_args() == []
+
+    def test_raw_requires_a_name(self):
+        with pytest.raises(ValueError):
+            fx.Raw("")
+
+    def test_raw_repr_round_trips(self):
+        assert repr(fx.Raw("gain", -3)) == "Raw('gain', '-3')"
+
+    def test_raw_applies_an_unwrapped_effect(self, test_wav_str, output_path):
+        """compand has no typed class; Raw must reach it."""
+        cysox.convert(test_wav_str, output_path, effects=[
+            fx.Raw("compand", "0.3,1", "6:-70,-60,-20", -5, -90, 0.2),
+        ])
+        info = cysox.info(str(output_path))
+        assert info.samples > 0
+        assert info.sample_rate == cysox.info(test_wav_str).sample_rate
+
+    def test_raw_matches_the_typed_class(self, test_wav_str, output_path_factory):
+        """Raw('vol', '-6dB') must equal Volume(db=-6) byte for byte."""
+        typed = output_path_factory("typed")
+        raw = output_path_factory("raw")
+        cysox.convert(test_wav_str, typed, effects=[fx.Volume(db=-6)])
+        cysox.convert(test_wav_str, raw, effects=[fx.Raw("vol", "-6dB")])
+        assert typed.read_bytes() == raw.read_bytes()
+
+    def test_raw_composes_with_typed_effects(self, test_wav_str, output_path):
+        cysox.convert(test_wav_str, output_path, effects=[
+            fx.HighPass(frequency=100),
+            fx.Raw("phaser", 0.6, 0.66, 3, 0.6, 2, "-t"),
+            fx.Normalize(level=-1),
+        ])
+        assert cysox.info(str(output_path)).samples > 0
+
+    def test_raw_works_inside_a_composite(self, test_wav_str, output_path):
+        """CompositeEffect expansion must handle Raw like any other effect."""
+
+        class Sparkle(fx.CompositeEffect):
+            @property
+            def effects(self):
+                return [fx.Raw("overdrive", 5, 20), fx.Normalize(level=-1)]
+
+        cysox.convert(test_wav_str, output_path, effects=[Sparkle()])
+        assert cysox.info(str(output_path)).samples > 0
+
+    def test_unknown_effect_name_is_reported(self, test_wav_str, output_path):
+        with pytest.raises(ValueError, match="Unknown effect"):
+            cysox.convert(test_wav_str, output_path, effects=[fx.Raw("no_such_effect")])

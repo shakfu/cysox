@@ -2,6 +2,7 @@
 
 from typing import List, Optional
 
+from . import _validate
 from .base import Effect
 
 
@@ -31,7 +32,7 @@ class Rate(Effect):
             raise ValueError(
                 f"quality must be one of: {', '.join(self.QUALITY_FLAGS.keys())}"
             )
-        self.sample_rate = sample_rate
+        self.sample_rate = int(_validate.positive(sample_rate, "sample_rate"))
         self.quality = quality
 
     @property
@@ -82,6 +83,8 @@ class Remix(Effect):
     """
 
     def __init__(self, mix: List[str]):
+        if not mix:
+            raise ValueError("mix must name at least one output channel")
         self.mix = mix
 
     @property

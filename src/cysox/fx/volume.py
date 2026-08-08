@@ -2,6 +2,7 @@
 
 from typing import List
 
+from . import _validate
 from .base import Effect
 
 
@@ -88,7 +89,9 @@ class Normalize(Effect):
     """
 
     def __init__(self, level: float = -1):
-        self.level = level
+        # sox normalises *down* to the target; a positive dBFS target is
+        # above full scale and cannot be reached.
+        self.level = _validate.at_most(level, 0, "level")
 
     @property
     def name(self) -> str:

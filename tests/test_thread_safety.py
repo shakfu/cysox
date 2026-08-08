@@ -5,7 +5,6 @@ Tests concurrent access patterns to verify thread safety of the wrapper.
 
 import os
 import tempfile
-import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pytest

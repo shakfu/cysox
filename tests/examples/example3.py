@@ -13,7 +13,6 @@ Usage: python3 example3.py <input_file>
 
 import sys
 import os
-import platform
 from pathlib import Path
 
 src_dir = Path.cwd() / 'src'

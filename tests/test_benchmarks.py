@@ -21,7 +21,6 @@ import array
 import os
 import tempfile
 import pytest
-import cysox  # For auto-init
 from cysox import sox
 
 

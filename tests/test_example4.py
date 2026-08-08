@@ -100,7 +100,7 @@ def test_example4_concatenate_files():
             input_fmt.close()
             verify_fmt.close()
 
-        except Exception as e:
+        except Exception:
             # Cleanup on error
             if output is not None:
                 output.close()
@@ -116,7 +116,6 @@ def test_example4_mismatched_channels():
     with tempfile.TemporaryDirectory() as tmpdir:
         # Create a mono version of the input for testing
         mono_file = os.path.join(tmpdir, 'mono.wav')
-        output_file = os.path.join(tmpdir, 'output.wav')
 
         # First create a mono file
         in_fmt = sox.Format(input_file)

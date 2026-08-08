@@ -12,7 +12,7 @@ A Python audio processing tool / library which uses [Cython](https://cython.org)
 ## Features
 
 - **Simple API**: Convert, analyze, and play audio with one-liners
-- **Typed Effects**: 27 base effect classes with IDE autocomplete and validation
+- **Typed Effects**: 27 base effect classes with IDE autocomplete and range-checked parameters, plus `fx.Raw` for anything not yet wrapped
 - **53 Effect Presets**: Ready-to-use composite effects for voice, lo-fi, drums, mastering, and more
 - **Sample Processing**: Auto-trim silence, split recordings into one-shots, generate chromatic pitch scales, batch process directories
 - **Drum Loop Tools**: Slice loops by BPM, create stutter effects, apply beat-synced processing
@@ -187,7 +187,8 @@ All input files must have the same sample rate and channel count.
 
 ## Effects Module
 
-The `cysox.fx` module provides 27 base effect classes and 53 composite presets:
+The `cysox.fx` module provides 27 base effect classes and 53 composite presets,
+plus `fx.Raw` for any sox effect without a typed class yet:
 
 ### Volume & Dynamics
 
@@ -245,6 +246,23 @@ fx.Channels(channels=1)            # Change channel count
 fx.Remix(mix=["1,2"])              # Custom channel mixing
 fx.Dither()                        # Add dither
 ```
+
+### Any Other sox Effect
+
+The typed classes cover 27 effects. `fx.Raw` reaches everything else libsox
+provides — `compand`, `vad`, `noisered`, `synth`, `stats`, `phaser`,
+`overdrive`, `tremolo`, `sinc` and the rest — with arguments passed through
+verbatim:
+
+```python
+fx.Raw('compand', '0.3,1', '6:-70,-60,-20', -5, -90, 0.2)   # Compression
+fx.Raw('vad')                                               # Trim leading silence
+fx.Raw('overdrive', 5, 20)                                  # Distortion
+```
+
+You give up the validation and autocomplete a typed class provides, so prefer
+a typed class where one exists. An unknown effect name is reported when the
+chain is built.
 
 ### Composite Effects
 

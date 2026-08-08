@@ -12,7 +12,6 @@ Usage: python3 example0_python.py <input_file> <output_file>
 import sys
 import os
 from pathlib import Path
-import os
 
 src_dir = Path.cwd() / 'src'
 sys.path.append(str(src_dir))

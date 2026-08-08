@@ -20,6 +20,7 @@ from .base import (
     CompositeEffect,
     PythonEffect,
     CEffect,
+    Raw,
 )
 
 # Volume and gain effects
@@ -145,6 +146,7 @@ __all__ = [
     "CompositeEffect",
     "PythonEffect",
     "CEffect",
+    "Raw",
     # Volume
     "Volume",
     "Gain",

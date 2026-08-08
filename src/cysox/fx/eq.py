@@ -2,6 +2,7 @@
 
 from typing import List
 
+from . import _validate
 from .base import Effect
 
 
@@ -20,8 +21,8 @@ class Bass(Effect):
 
     def __init__(self, gain: float, *, frequency: float = 100, width: float = 0.5):
         self.gain = gain
-        self.frequency = frequency
-        self.width = width
+        self.frequency = _validate.positive(frequency, "frequency")
+        self.width = _validate.positive(width, "width")
 
     @property
     def name(self) -> str:
@@ -46,8 +47,8 @@ class Treble(Effect):
 
     def __init__(self, gain: float, *, frequency: float = 3000, width: float = 0.5):
         self.gain = gain
-        self.frequency = frequency
-        self.width = width
+        self.frequency = _validate.positive(frequency, "frequency")
+        self.width = _validate.positive(width, "width")
 
     @property
     def name(self) -> str:
@@ -70,8 +71,8 @@ class Equalizer(Effect):
     """
 
     def __init__(self, frequency: float, width: float, gain: float):
-        self.frequency = frequency
-        self.width = width
+        self.frequency = _validate.positive(frequency, "frequency")
+        self.width = _validate.positive(width, "width")
         self.gain = gain
 
     @property

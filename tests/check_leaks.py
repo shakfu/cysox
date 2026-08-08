@@ -28,8 +28,8 @@ def exercise_encoding_info(n=500):
 
 def exercise_loop_info(n=500):
     for _ in range(n):
-        l = sox.LoopInfo(start=100, length=500, count=3, type=0)
-        del l
+        loop = sox.LoopInfo(start=100, length=500, count=3, type=0)
+        del loop
 
 def exercise_instr_info(n=500):
     for _ in range(n):

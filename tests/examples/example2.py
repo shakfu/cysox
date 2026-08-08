@@ -14,7 +14,6 @@ Example: python3 example2.py song2.au 30.75 1
 
 import sys
 import os
-import math
 from pathlib import Path
 
 src_dir = Path.cwd() / 'src'

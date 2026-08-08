@@ -22,6 +22,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+### Fixed
+
+- **`convert()` silently discarded audio on any downward conversion.** The chain passed `input_fmt.signal_view` — an alias of the input format's own signal struct — as the `in_signal` of every `sox_add_effect()` call. libsox writes the negotiated signal back through that pointer, so each effect rewrote the *input file's* declared length, and the input effect, which bounds its reads by that length, stopped early. Every conversion ratio below 1 lost audio in proportion: `sample_rate=8000` kept 18% of a 44.1 kHz recording, `sample_rate=22050` kept 50%, `channels=1` kept half of a stereo source. `Trim(start=S)` lost an extra S seconds, `Tempo(f>1)` divided duration by `f**2`, and `Pitch(c<0)` scaled duration by `2**(c/1200)`. Upward ratios were unaffected, which is what made it look like several unrelated effect bugs. The `Telephone`, `WalkieTalkie`, `LoFiHipHop` and `HauntedVoice` presets were affected. `convert()` now threads a private interim `SignalInfo` through the chain, as sox's own driver does.
+
+- `slice_loop()`, `stutter()` and `pitch_scale()` now release the input handle via `try/finally` rather than relying on the garbage collector when an error interrupts the loop.
+
+### Added
+
+- `fx.Raw(name, *args)` — escape hatch for sox effects with no typed class, covering `compand`, `vad`, `noisered`, `synth`, `stats`, `phaser`, `overdrive` and the ~28 others a typical build provides.
+
+- Range validation in the typed effect constructors: filter and EQ frequencies and widths must be positive, reverb percentages are bounded to 0–100, `Trim` rejects negative offsets and an `end` before `start`, `Echo` requires matching non-empty delay/decay lists, `Normalize` rejects a level above 0 dBFS.
+
+- `encoding=` on `auto_trim()` and `batch()`, matching the other writers.
+
+- `batch(skip_errors=True, on_error=...)` — continue past a file that fails to convert, and report what was skipped.
+
+### Changed
+
+- `EffectsChain.flow_effects()` no longer raises on `SOX_EOF`; it returns it. libsox reports the same status when an effect ends the flow deliberately (`trim` reaching its end position) and when a callback aborts, so the two cannot be told apart from the return code — raising for an abort necessarily broke `trim`. Callers that need to know whether they cancelled should track it in their own callback state, as `convert()` does to raise `CancelledError`.
+
+- `onset.detect()` reads into an int32 buffer instead of a Python list, cutting peak allocation from ~40 to 4 bytes per sample (about 1.07 GB to 0.106 GB for five minutes of stereo). `detect_onsets()` now accepts any C-contiguous int32 buffer as well as a list.
+
+- `split_by_silence()` scans for peaks via `read_into` and `max`/`min` instead of a per-sample Python loop.
+
 ## [0.1.11]
 
 ### Fixed

@@ -98,6 +98,13 @@ testpaths = ["tests"]
 # Or run only benchmarks with: pytest --benchmark-only
 addopts = "--benchmark-disable"
 
+[tool.ruff.lint.per-file-ignores]
+# tests/examples/*.py are line-by-line ports of the C programs beside them.
+# Keeping the correspondence readable matters more than lint idiom here.
+# E402: they extend sys.path before importing cysox, exactly as a user running
+# the example from a checkout would have to.
+"tests/examples/*.py" = ["F841", "E722", "E741", "E402"]
+
 [tool.mypy]
 python_version = "3.9"
 warn_return_any = true

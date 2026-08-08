@@ -42,7 +42,7 @@ def test_format_write_without_signal():
 def test_format_seek_on_nonseekable():
     """Test seeking on non-seekable format"""
     # Most real files are seekable, but we can test the error handling
-    with sox.Format('tests/data/s00.wav') as f:
+    with sox.Format('tests/data/s00.wav'):
         # Seeking beyond file should fail or return error
         # This is a soft test - behavior depends on libsox
         pass
@@ -137,7 +137,7 @@ def test_effects_chain_without_effects():
     chain = sox.EffectsChain()
     # Running an empty chain should fail or return error
     try:
-        result = chain.flow_effects()
+        chain.flow_effects()
         # If it doesn't fail, that's OK - libsox might handle it
     except sox.SoxEffectError:
         # Expected error
@@ -152,7 +152,7 @@ def test_effects_chain_with_only_input():
     running an effects chain with only an input effect and no output effect.
     This is a known libsox limitation, not a bug in cysox.
     """
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tempfile.TemporaryDirectory():
         in_fmt = sox.Format('tests/data/s00.wav')
         chain = sox.EffectsChain(in_fmt.encoding, in_fmt.encoding)
 
@@ -188,7 +188,7 @@ def test_format_write_to_read_mode():
         # Trying to write to read-mode file should fail
         # libsox might silently ignore this, so we just test it doesn't crash
         try:
-            result = f.write([100, 200, 300])
+            f.write([100, 200, 300])
             # If it doesn't fail, that's OK - libsox might handle it
         except (sox.SoxIOError, sox.SoxFormatError):
             # Expected error

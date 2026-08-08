@@ -12,6 +12,26 @@
 
 ## P1 - High Priority
 
+### Release Gates
+
+*Both must clear before the next wheel publish. Neither is a code defect - they are claims the build makes that nothing has verified yet.*
+
+- [ ] **PRE-PUBLISH GATE: audit sox_ng's bundled source trees**
+
+  - `sox_ng`'s `COPYING` is muddier than upstream's: "SoX is distributed under GPLv2. Most individual source files are distributed under more permissive licenses compatible with the GPLv2." Spot-checking `src/formats.c` showed LGPL-2.1-or-later, same as upstream, but *every* file linked into the library needs classifying - including the bundled `libgsm`, `lpc10`, `libdolbyb` and `libebur128` trees.
+
+  - This is what `NOTICE-THIRD-PARTY.md`'s LGPL claim rests on. It is owed for the macOS wheels already shipping, and the Linux switch doubles the surface.
+
+- [ ] **PRE-PUBLISH GATE: run the sox_ng Linux build in a manylinux container**
+
+  - `scripts/setup.sh`'s `SOX_NG=1` path (mpg123 -> LAME -> libsndfile -> sox_ng, all from source into `/usr/local`) has never executed inside the actual build container. The pinned dependency versions, the AlmaLinux/EPEL package names in `[tool.cibuildwheel.linux] before-all`, and the `--without-libltdl` flag name all need one real `cibuildwheel` run.
+
+  - Two flag bugs were already caught by inspection (`--disable-external-libs=no` was malformed, `--enable-nasm` needed a toolchain that is not installed), which is the kind of thing only a real run finds the rest of.
+
+  - Budget for the aarch64 job: it runs under QEMU emulation and this adds four source builds to it. Native arm64 runners are worth considering if it becomes painful.
+
+  - `scripts/smoke_test.py` runs against the repaired wheel and asserts mp3 decode *and* encode, so a wheel that lost its mp3 handler fails the build rather than shipping.
+
 ### Correctness
 
 - [x] **`convert()` silently changes the sample encoding: float in -> integer out**
@@ -203,7 +223,21 @@
 
   - Fix: `signal`/`encoding` now return owned snapshots (`copy_from_ptr`). `mult` is deep-copied so the two wrappers cannot free each other's memory.
 
-  - **`Format.signal_view` was added for the one caller that genuinely needs aliasing.** `convert()` and `concat()` rely on `sox_add_effect()` writing the negotiated signal back through the pointer they passed; switching them to snapshots silently broke length-changing effects (`trim`, and the drum-slice preset) with `SoxEffectError`. They now use `signal_view` explicitly, which is documented as valid only while the format is open.
+  - **`Format.signal_view` was added for the callers that appeared to need aliasing - and that turned out to be the wrong conclusion.** `convert()` and `play()` relied on `sox_add_effect()` writing the negotiated signal back through the pointer they passed, and switching them to plain snapshots broke length-changing effects (`trim`, and the drum-slice preset). The write-back is genuinely required; what was wrong was letting it land on the *input format's own* struct. Superseded 2026-08-08 by the interim-signal fix below; neither function uses `signal_view` any more, and nothing in `src/` does.
+
+- [x] **`convert()` silently discarded audio on every downward conversion** - fixed 2026-08-08.
+
+  - `convert()` passed `input_fmt.signal_view` - an alias of the input format's own signal struct - as the `in_signal` of every `sox_add_effect()` call. libsox writes the negotiated signal back through that pointer so the next effect learns its input format, so each effect rewrote the **input file's declared length**; the input effect bounds its reads by that length and stopped early. Every conversion ratio below 1 lost audio in exact proportion.
+
+  - **Measured, and verified against file size on disk rather than just `info()`:** `convert(sample_rate=8000)` kept 18% of a 44.1 kHz recording, `sample_rate=22050` kept 50%, `channels=1` kept half of a stereo source. `Trim(start=S)` lost an extra S seconds, `Tempo(f>1)` divided duration by `f**2`, `Pitch(c<0)` scaled duration by `2**(c/1200)`. The `Telephone`, `WalkieTalkie`, `LoFiHipHop` and `HauntedVoice` presets inherited it - `Telephone`, which the README leads with, kept 18%.
+
+  - Upward ratios were unaffected, because a longer declared length simply runs into EOF. That asymmetry is why this looked like several unrelated effect bugs for so long, and why every affected output was a valid audio file of a plausible length.
+
+  - **Fix:** one interim `SignalInfo` of our own, threaded through the chain as `in_signal` for every effect, with the output file's signal as the const `out_signal` target - which is what sox's own driver does. The per-effect special-casing for `rate` and `channels` disappeared with it. `play()` had the same defect and got the same treatment.
+
+  - **Why it went unnoticed:** the fx test suites asserted only `assert output_path.exists()`. `audio.py` even carried a comment reading "direct read/write (trim effect has issues)" - the symptom was known and worked around rather than diagnosed. Replacing those assertions with behavioural ones (duration, level, spectral tilt) surfaced it immediately; `tests/test_fx_outputs.py::TestSignalNegotiationRegression` now guards it, including a check that converting does not mutate the input file's metadata.
+
+  - **Follow-on API change:** `flow_effects()` no longer raises on `SOX_EOF`. libsox returns that status both when an effect ends the flow deliberately (`trim` reaching its end position) and when a callback aborts, so raising for the abort case necessarily broke `trim`. Callers track their own cancellation - `convert()`/`play()` do, to raise `CancelledError`.
 
 - [ ] **`EffectsChain` holds libsox's encoding pointers without owning the objects.**
 
@@ -266,6 +300,14 @@
 ## P2 - Medium Priority
 
 ### Testing
+
+- [ ] **Deepen the remaining exists-only test assertions**
+
+  - The two `fx` suites now assert behaviour (duration, level, spectral tilt) rather than `assert output_path.exists()`, which is what surfaced the `convert()` signal-negotiation bug. The same treatment has not been applied elsewhere.
+
+  - Remaining, by count of `assert ... exists()`: `tests/test_slice_outputs.py` (15), `tests/test_audiohit_features.py` (~14), `tests/test_cli.py` (7), `tests/test_high_level_api.py` (5).
+
+  - The slice and audiohit suites are the most valuable: they cover `slice_loop`/`split_by_silence`, which do their own duration arithmetic and could hide the same class of bug. `tests/audio_metrics.py` provides the measurement helpers.
 
 - [ ] **Integrate ASAN into CI** (requires custom Python build)
 
@@ -333,6 +375,73 @@
 ---
 
 ## P3 - Low Priority
+
+### Performance
+
+- [ ] **Release the GIL around blocking libsox calls**
+
+  - There is no `with nogil` anywhere in `src/cysox/sox.pyx`: `sox_read`, `sox_write` and `sox_flow_effects` all run holding the GIL.
+
+  - The docs advertise concurrent processing on separate `Format` objects (`docs/dev/known_limitations.md` §3, `docs/dev/architecture.md`), and `tests/test_thread_safety.py` exercises it, but threads cannot actually overlap file I/O or effect flow. The claim is only true in the sense that it does not crash.
+
+  - `flow_effects` needs care: the progress callback re-acquires the GIL via `_flow_effects_callback_wrapper`, which is already correct, so the release has to wrap the call without breaking that path.
+
+- [ ] **Move the `split_by_silence` peak scan into Cython**
+
+  - The per-sample Python loop is gone (now `read_into` + `max`/`min`), but the reduction is still Python-level: measured 1.6x faster, x222 -> x356 realtime on the scan alone for a 57s file.
+
+  - Remaining cost is the `max`/`min` pass, which is the floor without Cython or numpy. Block reads were tried and made no difference - `read_into` is not the bottleneck.
+
+  - Worth doing only if profiling of a real workload says so; the pathological case is already fixed.
+
+### API / Usability
+
+- [ ] **Wrap the high-value effects that only `fx.Raw` reaches**
+
+  - `fx.Raw(name, *args)` now makes all of them usable, so this is ergonomics rather than capability.
+
+  - Best candidates, by how often they are load-bearing: `compand` (the standard dynamics tool - the mastering presets currently approximate it with `gain`/`norm`), `vad` (voice activity detection, directly relevant to `auto_trim`), `noisered` (the cleanup preset category), `stats` (analysis), `synth` (test-tone generation).
+
+  - 27 of 66 effects in a typical build have typed classes. Full list of the unwrapped ones is in `docs/api/effects.md` under "Raw - Untyped Effects".
+
+- [ ] **Decide whether a trailing `Remix`/`Channels` should set the output channel count**
+
+  - Today it does not: `convert()` opens the output file *before* negotiating the chain, so its channel count comes from the input or from `channels=`, and an in-chain effect that changes channel count is converted back to that target. `fx.Remix(mix=["1"])` therefore yields the left channel duplicated across a stereo file, not a mono file.
+
+  - This is consistent with how an in-chain `fx.Rate` behaves, is lossless, and is documented in `convert()`'s docstring and in `tests/test_fx_outputs.py::TestConversionEffects::test_remix_left_only`. `channels=1` is the documented way to get mono.
+
+  - Changing it means opening the output after the chain is negotiated, which is what sox's own driver does but needs restructuring: `sox.EffectsChain` requires the output encoding at construction.
+
+- [ ] **Implement or remove `PythonEffect` and `CEffect`**
+
+  - Both are exported from `cysox.fx` and appear in the architecture diagram, but `PythonEffect.process()` is never called by `convert()`/`play()` (raises `NotImplementedError`) and `CEffect.register()` raises because the low-level API has no `register_effect_handler`.
+
+  - Declared-but-unimplemented classes in a public namespace read as features. Either wire them up or drop them to a design note.
+
+### Code Structure
+
+- [ ] **Extract the shared segment-write path in `audio.py`**
+
+  - `slice_loop`, `stutter` and `split_by_silence` each do: open input -> compute sample ranges -> read segment -> optional temp-file effects hop -> write. That is roughly 100 lines of triplicated logic.
+
+  - A shared `_write_segment(input_fmt, start, end, out_path, effects, encoding)` would give the encoding handling a single place to live - it currently has to be kept correct in three.
+
+- [ ] **Split `audio.py` (1600+ lines) and `sox.pyx` (2500+ lines)**
+
+  - `audio.py` holds twelve top-level functions of 60-210 lines each in one module.
+
+  - `sox.pyx` would read better split along the struct boundaries `sox.pxd` already draws.
+
+  - Cosmetic; do it when touching these files for another reason.
+
+### Build System
+
+- [ ] **Tag-triggered wheel publishing with PyPI trusted publishing**
+
+  - `.github/workflows/build-wheel.yml` is `workflow_dispatch`-only (the push/tag triggers are commented out) and there is no publish job, so releases go out via a manual `make publish`.
+
+  - Wire it to tags and use PyPI trusted publishing before the release cadence picks up.
+
 
 ### Features
 

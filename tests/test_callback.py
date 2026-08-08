@@ -137,9 +137,15 @@ def test_callback_abort():
         output_effect.set_options([out_fmt])
         chain.add_effect(output_effect, in_fmt.signal, out_fmt.signal)
 
-        # Flow with abort callback - should raise SoxEffectError
-        with pytest.raises(sox.SoxEffectError):
-            chain.flow_effects(callback=abort_callback)
+        # An aborting callback ends the flow with SOX_EOF, which is a normal
+        # return, not an error. libsox reports the same status when an effect
+        # ends the flow deliberately (trim reaching its end position), so the
+        # two cannot be told apart from the return code -- raising for an
+        # abort would necessarily break trim. Callers that need to know
+        # whether they cancelled track it in their own callback state, as
+        # cysox.convert() does to raise CancelledError.
+        result = chain.flow_effects(callback=abort_callback)
+        assert result == sox.EOF
 
         in_fmt.close()
         out_fmt.close()

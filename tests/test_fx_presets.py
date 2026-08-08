@@ -434,11 +434,6 @@ class TestAllPresetOutputs:
         kind = duration_class(preset)
         if kind == "changes":
             pytest.skip(f"{name} contains a deliberately time-changing effect")
-        if name in NEGOTIATION_AFFECTED:
-            pytest.skip(
-                f"{name} is hit by the signal-negotiation defect; covered in "
-                "TestPresetsAffectedByNegotiationBug"
-            )
 
         out = output_path_factory(name)
         cysox.convert(test_wav_str, out, effects=[preset])
@@ -545,55 +540,30 @@ class TestPresetBehaviour:
         )
 
 
-class TestPresetsAffectedByNegotiationBug:
-    """Presets damaged by convert()'s signal negotiation.
+class TestPresetsFormerlyBrokenByNegotiation:
+    """Presets that the signal-negotiation defect used to damage.
 
-    Four of the 53 inherit the defect characterised in
-    ``test_fx_outputs.TestSignalNegotiationBugs``:
-
-    - ``Telephone``, ``WalkieTalkie``, ``LoFiHipHop`` embed a downward
-      ``rate`` and are truncated to roughly ``target_rate / source_rate`` of
-      their proper length. Telephone -- the preset the README leads with --
-      keeps about 18% of the audio.
-    - ``HauntedVoice`` uses ``pitch -500``, which shortens by
-      ``2 ** (-500/1200)`` when pitch should not affect duration at all.
-    - ``DoubleTime`` uses ``tempo 2.0``, applied twice.
-
-    Nothing here is preset-specific: fix the negotiation and all four come
-    right, which is why these are xfail(strict) rather than adjusted
-    expectations.
+    Before the fix, four presets came out truncated: Telephone, WalkieTalkie
+    and LoFiHipHop embed a downward `rate`, and HauntedVoice a negative
+    `pitch`. Telephone -- the preset the README leads with -- kept 18% of the
+    audio. See test_fx_outputs.TestSignalNegotiationRegression for the cause.
     """
 
     @pytest.mark.parametrize("name", sorted(RATE_TRUNCATED))
-    @pytest.mark.xfail(
-        strict=True,
-        reason="preset embeds a downward rate; convert() truncates instead of "
-        "resampling. See test_fx_outputs.TestSignalNegotiationBugs",
-    )
     def test_rate_preset_preserves_duration(
         self, name, test_wav_str, output_path_factory, source_metrics
     ):
+        """An embedded rate change must not shorten the output."""
         out = output_path_factory(name)
         cysox.convert(test_wav_str, out, effects=[getattr(fx, name)()])
-        assert_audio(out, duration=source_metrics.duration, duration_tol=0.05)
-
-    @pytest.mark.parametrize("name", sorted(RATE_TRUNCATED))
-    def test_rate_preset_truncation_is_stable(
-        self, name, test_wav_str, output_path_factory, source_metrics
-    ):
-        """Pin the current damage so it cannot silently get worse."""
-        out = output_path_factory(name)
-        cysox.convert(test_wav_str, out, effects=[getattr(fx, name)()])
-        m = measure(out)
-        expected = source_metrics.duration * (RATE_TRUNCATED[name] / source_metrics.rate)
-        assert abs(m.duration - expected) < 0.1, (
-            f"{name}: expected the buggy {expected:.3f}s, got {m.duration:.3f}s"
+        assert_audio(
+            out,
+            rate=source_metrics.rate,
+            channels=source_metrics.channels,
+            duration=source_metrics.duration,
+            duration_tol=0.02,
         )
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="DoubleTime uses tempo 2.0, which convert() applies twice",
-    )
     def test_double_time_halves_duration(
         self, test_wav_str, output_path, source_metrics
     ):
@@ -602,33 +572,17 @@ class TestPresetsAffectedByNegotiationBug:
             output_path, duration=source_metrics.duration / 2, duration_tol=0.03
         )
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="HauntedVoice uses pitch -500; convert() shortens instead of "
-        "preserving duration. See test_fx_outputs.TestSignalNegotiationBugs",
-    )
     def test_haunted_voice_preserves_duration(
         self, test_wav_str, output_path, source_metrics
     ):
-        """Pitch and reverb/echo tails may lengthen it -- never shorten it."""
+        """Pitch must not shorten; the reverb/echo tail may lengthen a little."""
         cysox.convert(test_wav_str, output_path, effects=[fx.HauntedVoice()])
         m = measure(output_path)
         assert m.duration >= source_metrics.duration - 0.02, (
             f"HauntedVoice shortened to {m.duration:.3f}s from "
             f"{source_metrics.duration:.3f}s"
         )
-
-    def test_haunted_voice_shortening_is_stable(
-        self, test_wav_str, output_path, source_metrics
-    ):
-        """Pin the damage: pitch shortening, partly offset by the echo tail."""
-        cysox.convert(test_wav_str, output_path, effects=[fx.HauntedVoice()])
-        m = measure(output_path)
-        pitched = source_metrics.duration * (2 ** (PITCH_SHORTENED["HauntedVoice"] / 1200.0))
-        assert pitched < m.duration < source_metrics.duration, (
-            f"HauntedVoice: expected between the pitch-shortened {pitched:.3f}s and "
-            f"the source {source_metrics.duration:.3f}s, got {m.duration:.3f}s"
-        )
+        assert m.duration <= source_metrics.duration + 2.0
 
 
 class TestPresetChaining:
@@ -687,3 +641,72 @@ class TestPresetChaining:
         cysox.convert(test_wav_str, both, effects=[fx.SmallRoom(), fx.LargeHall()])
         m1, m2 = measure(one), measure(both)
         assert m2.mean_abs > m1.mean_abs, "second reverb added nothing"
+
+
+class TestPresetRegistrySync:
+    """The CLI's preset table must match what `cysox.fx` actually exports.
+
+    `__main__.PRESET_CATEGORIES` is maintained by hand. A preset added to
+    `fx` but not to that table is silently unreachable from
+    `cysox preset apply`; one listed but not exported makes the CLI raise
+    AttributeError. Nothing enforced either direction before this test.
+    """
+
+    def _exported_composites(self):
+        import inspect
+
+        return {
+            name
+            for name in dir(fx)
+            if inspect.isclass(getattr(fx, name))
+            and issubclass(getattr(fx, name), CompositeEffect)
+            and getattr(fx, name) is not CompositeEffect
+            and not inspect.isabstract(getattr(fx, name))
+        }
+
+    def test_cli_list_matches_fx_exports(self):
+        exported = self._exported_composites()
+        listed = set(ALL_PRESETS)
+
+        missing_from_cli = exported - listed
+        missing_from_fx = listed - exported
+
+        assert not missing_from_cli, (
+            f"presets exported by cysox.fx but absent from "
+            f"__main__.PRESET_CATEGORIES (unreachable from the CLI): "
+            f"{sorted(missing_from_cli)}"
+        )
+        assert not missing_from_fx, (
+            f"presets listed in __main__.PRESET_CATEGORIES but not exported by "
+            f"cysox.fx (the CLI would raise AttributeError): {sorted(missing_from_fx)}"
+        )
+
+    def test_no_duplicate_entries(self):
+        """A preset must appear in exactly one category."""
+        from cysox.__main__ import PRESET_CATEGORIES
+
+        seen = {}
+        for category, names in PRESET_CATEGORIES.items():
+            for name in names:
+                assert name not in seen, (
+                    f"{name} appears in both {seen[name]!r} and {category!r}"
+                )
+                seen[name] = category
+        assert len(seen) == len(ALL_PRESETS)
+
+    def test_every_listed_preset_resolves(self):
+        """get_preset_class() must find every advertised preset."""
+        from cysox.__main__ import get_preset_class
+
+        for name in ALL_PRESETS:
+            cls = get_preset_class(name)
+            assert cls is not None, f"get_preset_class({name!r}) returned None"
+            assert cls is getattr(fx, name)
+            # Lookup is documented as case-insensitive.
+            assert get_preset_class(name.lower()) is cls
+            assert get_preset_class(name.upper()) is cls
+
+    def test_presets_are_exported_in_all(self):
+        """Every preset must be in fx.__all__, or `from cysox.fx import *` misses it."""
+        missing = self._exported_composites() - set(fx.__all__)
+        assert not missing, f"presets missing from fx.__all__: {sorted(missing)}"

@@ -2,6 +2,7 @@
 
 from typing import List, Optional
 
+from . import _validate
 from .base import Effect
 
 
@@ -31,7 +32,15 @@ class Trim(Effect):
     ):
         if end is not None and duration is not None:
             raise ValueError("Cannot specify both 'end' and 'duration'")
-        self.start = start
+        self.start = _validate.non_negative(start, "start")
+        if end is not None:
+            _validate.non_negative(end, "end")
+            if end <= start:
+                raise ValueError(
+                    f"end must be greater than start, got start={start!r}, end={end!r}"
+                )
+        if duration is not None:
+            _validate.positive(duration, "duration")
         self.end = end
         self.duration = duration
 
@@ -62,8 +71,8 @@ class Pad(Effect):
     """
 
     def __init__(self, before: float = 0, after: float = 0):
-        self.before = before
-        self.after = after
+        self.before = _validate.non_negative(before, "before")
+        self.after = _validate.non_negative(after, "after")
 
     @property
     def name(self) -> str:

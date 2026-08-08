@@ -1,4 +1,3 @@
-from cysox import sox
 
 
 # Test OutOfBand class

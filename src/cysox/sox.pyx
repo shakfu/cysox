@@ -2096,7 +2096,12 @@ cdef class EffectsChain:
             # No callback, call with NULL
             result = sox_flow_effects(self.ptr, NULL, NULL)
 
-        if result != SOX_SUCCESS:
+        # SOX_EOF is not a failure here. sox_flow_effects() returns it when an
+        # effect ended the flow deliberately -- `trim` reaching its end
+        # position, or a callback asking to stop -- which is exactly how those
+        # effects are meant to finish. sox's own driver treats it as a normal
+        # end, and so do we; only genuine error codes raise.
+        if result != SOX_SUCCESS and result != SOX_EOF:
             raise SoxEffectError(f"Failed to flow effects: {strerror(result)}")
         return result
 
