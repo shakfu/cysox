@@ -23,9 +23,31 @@ case "$(uname -s)" in
             exit 1
         fi
 
+        # Check the libsox version. Two things can go wrong here and both are
+        # much cheaper to catch now than as a C compile error later.
+        SOX_VERSION=$(pkg-config --modversion sox 2>/dev/null)
+        SOX_MAJOR=${SOX_VERSION%%.*}
+        SOX_REST=${SOX_VERSION#*.}
+        SOX_MINOR=${SOX_REST%%.*}
+
+        if [ -z "$SOX_VERSION" ]; then
+            echo "Warning: could not determine libsox version; continuing"
+        elif [ "$SOX_MAJOR" -lt 14 ] || { [ "$SOX_MAJOR" -eq 14 ] && [ "$SOX_MINOR" -lt 4 ]; }; then
+            echo "Error: libsox $SOX_VERSION is too old; cysox needs 14.4 or later"
+            exit 1
+        elif [ "$SOX_MAJOR" -gt 14 ] || [ "$SOX_MINOR" -ge 5 ]; then
+            echo "Warning: detected libsox $SOX_VERSION (SoX_ng)."
+            echo "  cysox targets the original libsox 14.4.x. It builds and"
+            echo "  largely works against SoX_ng, with one known difference:"
+            echo "  SoX_ng inserted values into the sox_encoding_t enum, so the"
+            echo "  encoding names reported by cysox.info() are shifted (MP3"
+            echo "  reads as 'amr-wb'). A few tests in tests/test_sox_encoding.py"
+            echo "  and tests/test_sox_format.py fail for this reason."
+        fi
+
         # Create placeholder for Makefile target
         touch "$LIB_DIR/libsox.a"
-        echo "Setup complete - system libraries will be used via pkg-config"
+        echo "Setup complete - using system libsox ${SOX_VERSION:-(unknown version)} via pkg-config"
         ;;
 
     Darwin)

@@ -21,6 +21,25 @@ def test_version_info():
     assert isinstance(info["version"], str) or info["version"] is None
 
 
+def test_version_info_time_is_none():
+    """The build-time field is deliberately not read.
+
+    SoX_ng 14.7 removed ``sox_version_info_t.time`` for reproducible builds.
+    Declaring it in sox.pxd made cysox fail to compile against the libsox that
+    Debian/Ubuntu now ship, so the field is no longer declared or read. Do not
+    "fix" this by restoring it: the key is reported as None on every version.
+    """
+    assert sox.version_info()["time"] is None
+
+
+def test_version_info_other_fields_survive():
+    """Dropping `time` must not disturb the neighbouring fields."""
+    info = sox.version_info()
+    for key in ("size", "flags", "version_code", "version", "arch"):
+        assert key in info
+    assert info["version_code"] > 0
+
+
 # def test_format_init_and_quit():
 #     """Test format_init and format_quit functions"""
 #     # These functions should not raise exceptions

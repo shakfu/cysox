@@ -95,21 +95,59 @@ class Remix(Effect):
 class Dither(Effect):
     """Apply dithering for bit-depth reduction.
 
+    sox's ``dither`` effect offers exactly three noise shapes, selected by
+    ``-S``, ``-s``, or nothing at all, plus ``-f`` to name a shaping filter.
+    Earlier versions of this class advertised 'rectangular', 'triangular' and
+    'gaussian' and emitted ``-r``/``-t``/``-g``, none of which sox accepts.
+
     Args:
-        type: Dither type - 'rectangular', 'triangular', 'gaussian',
-              or 'shaped' (default: 'shaped').
-        precision: Target precision in bits (optional).
+        type: Noise shape:
+
+            - ``'tpdf'`` (or its alias ``'triangular'``) - plain TPDF, sox's
+              default, emitted as no flag at all.
+            - ``'sloped-tpdf'`` - sloped TPDF without noise shaping (``-S``).
+            - ``'shaped'`` - noise-shaped with a Shibata filter (``-s``,
+              the default here).
+
+        filter: Name a shaping filter explicitly (``-f``), e.g. 'shibata',
+            'lipshitz', 'f-weighted'. Mutually exclusive with ``type``;
+            supplying it overrides the noise shape.
+        auto: Turn dithering on and off as needed (``-a``). Use with caution.
+        precision: Target precision in bits (``-p``).
 
     Example:
-        >>> fx.Dither()                      # Default shaped dither
-        >>> fx.Dither(type='triangular')     # TPDF dither
+        >>> fx.Dither()                       # Shaped (Shibata) dither
+        >>> fx.Dither(type='tpdf')            # Plain TPDF
+        >>> fx.Dither(type='sloped-tpdf')     # Sloped TPDF, no shaping
+        >>> fx.Dither(filter='f-weighted')    # Explicit shaping filter
+        >>> fx.Dither(precision=16)
     """
 
-    def __init__(self, *, type: str = "shaped", precision: Optional[int] = None):
-        valid_types = ("rectangular", "triangular", "gaussian", "shaped")
-        if type not in valid_types:
-            raise ValueError(f"type must be one of: {', '.join(valid_types)}")
+    #: Maps the public type name onto the sox flags it emits.
+    TYPE_FLAGS = {
+        "tpdf": [],
+        "triangular": [],  # alias: TPDF *is* the triangular distribution
+        "sloped-tpdf": ["-S"],
+        "shaped": ["-s"],
+    }
+
+    def __init__(
+        self,
+        *,
+        type: str = "shaped",
+        filter: Optional[str] = None,
+        auto: bool = False,
+        precision: Optional[int] = None,
+    ):
+        if type not in self.TYPE_FLAGS:
+            raise ValueError(
+                f"type must be one of: {', '.join(sorted(self.TYPE_FLAGS))}"
+            )
+        if precision is not None and precision < 1:
+            raise ValueError("precision must be at least 1 bit")
         self.type = type
+        self.filter = filter
+        self.auto = auto
         self.precision = precision
 
     @property
@@ -117,7 +155,13 @@ class Dither(Effect):
         return "dither"
 
     def to_args(self) -> List[str]:
-        args = [f"-{self.type[0]}"]  # First letter
+        # -S, -s and -f are mutually exclusive in sox; an explicit filter wins.
+        if self.filter is not None:
+            args = ["-f", self.filter]
+        else:
+            args = list(self.TYPE_FLAGS[self.type])
+        if self.auto:
+            args.append("-a")
         if self.precision is not None:
             args.extend(["-p", str(self.precision)])
         return args

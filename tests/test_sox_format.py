@@ -50,7 +50,10 @@ def test_sox_format_mp3():
 
     assert f.encoding.bits_per_sample == 0
     assert f.encoding.compression == math.inf
-    assert f.encoding.encoding == 22
+    # Compared symbolically: sox_encoding_t's integer values come from whichever
+    # libsox is linked. SoX_ng inserted MP1 and MP2, moving MP3 from 22 to 24,
+    # so a literal here fails against anything but the original libsox 14.4.x.
+    assert f.encoding.encoding == sox.sox_encoding_t.SOX_ENCODING_MP3
     assert sox.ENCODINGS[f.encoding.encoding] == ("MP3", "MP3 compression")
     assert f.encoding.opposite_endian == 0
     assert f.encoding.reverse_bits == 0

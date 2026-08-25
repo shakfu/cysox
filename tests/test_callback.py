@@ -137,9 +137,13 @@ def test_callback_abort():
         output_effect.set_options([out_fmt])
         chain.add_effect(output_effect, in_fmt.signal, out_fmt.signal)
 
-        # Flow with abort callback - should raise SoxEffectError
-        with pytest.raises(sox.SoxEffectError):
-            chain.flow_effects(callback=abort_callback)
+        # An aborting callback ends the chain early, which libsox reports as
+        # SOX_EOF -- the same status a length-limiting effect like `trim`
+        # returns on normal completion. flow_effects() therefore returns the
+        # status rather than raising; raising here used to make a correct
+        # `trim` look like a failure and truncated its output.
+        result = chain.flow_effects(callback=abort_callback)
+        assert result == sox.EOF
 
         in_fmt.close()
         out_fmt.close()

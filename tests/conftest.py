@@ -113,6 +113,113 @@ def setup_test_environment():
     # Currently we preserve all outputs for inspection
 
 
+# =============================================================================
+# Audio content measurement
+#
+# Effect tests that only assert the output file exists cannot distinguish a
+# working effect from one libsox silently refused to configure. These helpers
+# measure what is actually in the file so tests can assert a direction and a
+# rough magnitude.
+# =============================================================================
+
+# Full-scale value for sox_sample_t (signed 32-bit).
+SAMPLE_FULL_SCALE = 2147483648.0
+
+
+class AudioStats:
+    """Amplitude measurements for one audio file."""
+
+    __slots__ = ("peak", "rms", "samples", "sample_rate", "channels", "duration")
+
+    def __init__(self, peak, rms, samples, sample_rate, channels, duration):
+        self.peak = peak
+        self.rms = rms
+        self.samples = samples
+        self.sample_rate = sample_rate
+        self.channels = channels
+        self.duration = duration
+
+    @property
+    def peak_db(self) -> float:
+        """Peak level in dBFS. -inf for digital silence."""
+        return _to_db(self.peak)
+
+    @property
+    def rms_db(self) -> float:
+        """RMS level in dBFS. -inf for digital silence."""
+        return _to_db(self.rms)
+
+    def __repr__(self) -> str:
+        return (
+            f"AudioStats(peak_db={self.peak_db:.2f}, rms_db={self.rms_db:.2f}, "
+            f"samples={self.samples}, duration={self.duration:.3f})"
+        )
+
+
+def _to_db(linear: float) -> float:
+    """Convert a linear 0..1 amplitude to dBFS."""
+    import math
+
+    if linear <= 0.0:
+        return float("-inf")
+    return 20.0 * math.log10(linear)
+
+
+def measure(path) -> AudioStats:
+    """Measure peak and RMS of an audio file, normalised to 0..1.
+
+    Reads through ``cysox.stream()`` so it exercises the same buffer path the
+    library gives users, and needs no optional dependency.
+    """
+    import cysox
+
+    info = cysox.info(str(path))
+    peak = 0
+    total_sq = 0.0
+    count = 0
+    for chunk in cysox.stream(str(path)):
+        for value in chunk:
+            magnitude = value if value >= 0 else -value
+            if magnitude > peak:
+                peak = magnitude
+            total_sq += float(value) * float(value)
+            count += 1
+
+    rms = (total_sq / count) ** 0.5 / SAMPLE_FULL_SCALE if count else 0.0
+    return AudioStats(
+        peak=peak / SAMPLE_FULL_SCALE,
+        rms=rms,
+        samples=count,
+        sample_rate=info.sample_rate,
+        channels=info.channels,
+        duration=info.duration,
+    )
+
+
+def read_samples(path, limit=None) -> list:
+    """Read raw int32 samples from a file as a list, optionally truncated."""
+    import cysox
+
+    out = []
+    for chunk in cysox.stream(str(path)):
+        out.extend(chunk)
+        if limit is not None and len(out) >= limit:
+            return out[:limit]
+    return out
+
+
+@pytest.fixture(scope="session")
+def measure_audio():
+    """Fixture exposing :func:`measure`."""
+    return measure
+
+
+@pytest.fixture(scope="session")
+def read_audio_samples():
+    """Fixture exposing :func:`read_samples`."""
+    return read_samples
+
+
 @pytest.fixture(scope="session")
 def all_test_wavs(test_data_dir) -> list:
     """List of all WAV files in the test data directory."""
