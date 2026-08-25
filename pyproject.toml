@@ -101,6 +101,19 @@ warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
 
+[tool.ruff.lint]
+# Chosen explicitly rather than inherited. Without this the project gets
+# whatever ruff's defaults happen to be, and those changed between releases:
+# the same unmodified tree passed under ruff 0.14.14 and reported 354
+# diagnostics under 0.16.4, which is what turned the CI lint job red.
+#
+# This is ruff's classic default set. Widening it is a deliberate follow-up,
+# not a side effect of a tool upgrade. Note that the largest group on offer
+# (UP006, `List[str]` -> `list[str]`) is not a free autofix here:
+# requires-python is >=3.9, where the builtin generics need
+# `from __future__ import annotations` added first.
+select = ["E4", "E7", "E9", "F"]
+
 [tool.cibuildwheel]
 # Skip Windows and musllinux (Alpine uses apk, sox packaging is problematic)
 skip = "*-win* *-musllinux_*"

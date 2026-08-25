@@ -137,9 +137,11 @@ jobs:
         python-version: "3.11"
 
     - name: Install lint tools
+      # Pinned deliberately. Unpinned, this job's verdict is decided by
+      # whichever linter released most recently rather than by the code.
       run: |
         python -m pip install --upgrade pip
-        pip install ruff mypy
+        pip install ruff==0.16.4 mypy==2.3.1
 
     - name: Lint with ruff
       run: |
