@@ -144,13 +144,13 @@ def test_effects_chain_without_effects():
         pass
 
 
-@pytest.mark.skip(reason="libsox segfaults when running chain with only input effect")
 def test_effects_chain_with_only_input():
-    """Test running chain with only input effect (no output)
+    """A chain with only an input effect must raise, not crash.
 
-    Note: This test is skipped because libsox crashes (segfault) when
-    running an effects chain with only an input effect and no output effect.
-    This is a known libsox limitation, not a bug in cysox.
+    libsox reads from the first effect and writes to the last, so one effect
+    cannot serve as both. This was reported to segfault on libsox 14.4.x, and
+    the test was skipped for it. flow_effects() now rejects such a chain up
+    front, so the behaviour no longer depends on which libsox is linked.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         in_fmt = sox.Format('tests/data/s00.wav')

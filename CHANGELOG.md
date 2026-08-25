@@ -22,112 +22,57 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+## [0.2.0]
+
 ### Changed
 
-Four changes alter behaviour that existing code may depend on. Each exists to
-fix a defect described under Fixed below.
+Four changes alter behaviour that existing code may depend on. Each exists to fix a defect described under Fixed below.
 
-- **`Format.signal` returns an independent snapshot rather than a live view.**
-  It previously aliased the open format's own signal struct. Two consequences
-  for callers: the returned object no longer tracks later changes to the
-  format, so read the property again instead of holding the result; and
-  assigning to its fields no longer alters the format. The alias was not a
-  convenience but a hazard, because `sox_add_effect()` treats its input signal
-  as an in/out parameter and wrote effect output back through it.
+- **`Format.signal` returns an independent snapshot rather than a live view.** It previously aliased the open format's own signal struct. Two consequences for callers: the returned object no longer tracks later changes to the format, so read the property again instead of holding the result; and assigning to its fields no longer alters the format. The alias was not a convenience but a hazard, because `sox_add_effect()` treats its input signal as an in/out parameter and wrote effect output back through it.
 
-- **`EffectsChain.flow_effects()` returns its status instead of raising on
-  `SOX_EOF`.** It raises only for statuses other than `SOX_SUCCESS` and
-  `SOX_EOF`. `SOX_EOF` means the chain ended early, which happens both when a
-  length-limiting effect such as `trim` reaches the end of its window and when
-  a callback aborts; libsox reports the two identically, so treating it as a
-  failure made a correct `trim` look like an error. Code that relied on an
-  exception to detect a cancelled callback must check the return value or
-  record the abort in the callback itself. `convert()` and `play()` do the
-  latter, so `CancelledError` behaves as before.
+- **`EffectsChain.flow_effects()` returns its status instead of raising on `SOX_EOF`.** It raises only for statuses other than `SOX_SUCCESS` and `SOX_EOF`. `SOX_EOF` means the chain ended early, which happens both when a length-limiting effect such as `trim` reaches the end of its window and when a callback aborts; libsox reports the two identically, so treating it as a failure made a correct `trim` look like an error. Code that relied on an exception to detect a cancelled callback must check the return value or record the abort in the callback itself. `convert()` and `play()` do the latter, so `CancelledError` behaves as before.
 
-- **`Effect.set_options()` raises `SoxEffectError` when libsox rejects the
-  arguments.** It previously discarded the error return, leaving the effect
-  unconfigured and the failure visible only as libsox text on stderr, which
-  Python cannot capture. Malformed effect arguments now raise instead of
-  producing an output file with the effect silently absent.
+- **`Effect.set_options()` raises `SoxEffectError` when libsox rejects the arguments.** It previously discarded the error return, leaving the effect unconfigured and the failure visible only as libsox text on stderr, which Python cannot capture. Malformed effect arguments now raise instead of producing an output file with the effect silently absent.
 
-- **`convert()` and `play()` derive the output rate and channel count from the
-  effects chain.** They previously took both from keyword arguments alone and
-  then appended their own conversion to reach that target, which undid any
-  `fx.Rate`, `fx.Channels` or `fx.Remix` the caller supplied. An explicit
-  `sample_rate=` or `channels=` still takes precedence. Effects that move the
-  rate as an implementation detail, such as `speed`, `pitch` and `tempo`, are
-  deliberately not counted, so the output file keeps its rate and changes
-  duration as before.
+- **`convert()` and `play()` derive the output rate and channel count from the effects chain.** They previously took both from keyword arguments alone and then appended their own conversion to reach that target, which undid any `fx.Rate`, `fx.Channels` or `fx.Remix` the caller supplied. An explicit `sample_rate=` or `channels=` still takes precedence. Effects that move the rate as an implementation detail, such as `speed`, `pitch` and `tempo`, are deliberately not counted, so the output file keeps its rate and changes duration as before.
 
 Smaller interface changes:
 
-- **`fx.Volume`** emits `vol <gain> dB [limitergain]`. The gain and its unit are
-  separate arguments in sox, and the limiter takes a number rather than the
-  literal string `limiter`. A `limiter_gain` parameter sets it explicitly;
-  `limiter=True` uses 0.05.
+- **`fx.Volume`** emits `vol <gain> dB [limitergain]`. The gain and its unit are separate arguments in sox, and the limiter takes a number rather than the literal string `limiter`. A `limiter_gain` parameter sets it explicitly; `limiter=True` uses 0.05.
 
-- **`fx.Dither`** accepts only the noise shapes sox implements: `tpdf` (with
-  `triangular` as an alias), `sloped-tpdf` and `shaped`. `rectangular` and
-  `gaussian` now raise `ValueError` at construction; sox has no option for
-  them. Adds `filter=` for an explicit shaping filter and `auto=`.
+- **`fx.Dither`** accepts only the noise shapes sox implements: `tpdf` (with `triangular` as an alias), `sloped-tpdf` and `shaped`. `rectangular` and `gaussian` now raise `ValueError` at construction; sox has no option for them. Adds `filter=` for an explicit shaping filter and `auto=`.
 
-- **`sox.ENCODINGS` and `info().encoding`** are derived from the linked
-  libsox's own enum rather than from hardcoded indices. `sox.ENCODINGS` is now
-  as long as the library's encoding list, with `UNRECOGNISED` entries for
-  values cysox does not declare.
+- **`sox.ENCODINGS` and `info().encoding`** are derived from the linked libsox's own enum rather than from hardcoded indices. `sox.ENCODINGS` is now as long as the library's encoding list, with `UNRECOGNISED` entries for values cysox does not declare.
 
-- **`VersionInfo.time` and `version_info()["time"]`** always report `None`.
-  SoX_ng 14.7 removed the underlying field, and reading it prevented cysox
-  compiling against the libsox that current Debian and Ubuntu ship.
+- **`VersionInfo.time` and `version_info()["time"]`** always report `None`. SoX_ng 14.7 removed the underlying field, and reading it prevented cysox compiling against the libsox that current Debian and Ubuntu ship.
 
 ### Fixed
 
-- **Use-after-close crashed the interpreter.** Accessors and I/O methods on a
-  closed `Format` dereferenced a null pointer. They now raise `SoxIOError`.
+- **Use-after-close crashed the interpreter.** Accessors and I/O methods on a closed `Format` dereferenced a null pointer. They now raise `SoxIOError`.
 
-- **`Effect.delete()` caused a double free.** It left the freed pointer in
-  place for the destructor to free again. It now clears the pointer, is
-  idempotent, and later access raises `SoxEffectError`.
+- **`Effect.delete()` caused a double free.** It left the freed pointer in place for the destructor to free again. It now clears the pointer, is idempotent, and later access raises `SoxEffectError`.
 
-- **Borrowed wrappers outlived their owner.** Objects such as the signal or
-  encoding taken from a `Format` held no reference to it, so a temporary owner
-  could be collected while the wrapper still pointed into its memory.
+- **Borrowed wrappers outlived their owner.** Objects such as the signal or encoding taken from a `Format` held no reference to it, so a temporary owner could be collected while the wrapper still pointed into its memory.
 
-- **`EffectsChain` did not retain its encodings.** libsox stores the pointers,
-  so encodings passed as temporaries were collected out from under the chain.
+- **`EffectsChain` did not retain its encodings.** libsox stores the pointers, so encodings passed as temporaries were collected out from under the chain.
 
-- **Effects that outlived a libsox shutdown crashed on collection.** A format
-  still open when `sox_quit()` ran was closed through freed handler tables when
-  it was eventually collected. This aborted the whole test suite, taking
-  pytest's summary and exit code with it. Formats and chains now record the
-  initialization they belong to and skip cleanup that is no longer safe.
+- **Effects that outlived a libsox shutdown crashed on collection.** A format still open when `sox_quit()` ran was closed through freed handler tables when it was eventually collected. This aborted the whole test suite, taking pytest's summary and exit code with it. Formats and chains now record the initialization they belong to and skip cleanup that is no longer safe.
 
-- **`fx.Trim` produced half the requested audio**, and effects corrupted the
-  input file's metadata, both consequences of the aliasing described above.
+- **`fx.Trim` produced half the requested audio**, and effects corrupted the input file's metadata, both consequences of the aliasing described above.
 
-- **`fx.Rate`, `fx.Channels` and `fx.Remix` had no effect** through `convert()`
-  and `play()`.
+- **`fx.Rate`, `fx.Channels` and `fx.Remix` had no effect** through `convert()` and `play()`.
 
-- **Encodings past MP3 were mislabelled** against any libsox that has inserted
-  an encoding. SoX_ng added MP1 and MP2, so an MP3 file was reported as
-  `amr-wb`.
+- **Encodings past MP3 were mislabelled** against any libsox that has inserted an encoding. SoX_ng added MP1 and MP2, so an MP3 file was reported as `amr-wb`.
 
-- **The build failed against SoX_ng 14.7**, the version current Debian and
-  Ubuntu ship as `libsox-dev`.
+- **The build failed against SoX_ng 14.7**, the version current Debian and Ubuntu ship as `libsox-dev`.
 
 ### Added
 
-- **`scripts/setup.sh` checks the libsox version**, failing below 14.4 and
-  warning on 14.5 and later that encoding names may differ.
+- **`scripts/setup.sh` checks the libsox version**, failing below 14.4 and warning on 14.5 and later that encoding names may differ.
 
-- **Content-level effect tests** (`tests/test_fx_audio_content.py`) measuring
-  peak and RMS of the output, and **memory-safety tests**
-  (`tests/test_memory_safety.py`) covering the crashes listed above.
+- **Content-level effect tests** (`tests/test_fx_audio_content.py`) measuring peak and RMS of the output, and **memory-safety tests** (`tests/test_memory_safety.py`) covering the crashes listed above.
 
-- **Explicit ruff rule selection** in `pyproject.toml` and pinned linter
-  versions in CI, so lint results depend on the code rather than on which
-  linter released most recently. `make qa` no longer rewrites source files.
+- **Explicit ruff rule selection** in `pyproject.toml` and pinned linter versions in CI, so lint results depend on the code rather than on which linter released most recently. `make qa` no longer rewrites source files.
 
 ## [0.1.11]
 

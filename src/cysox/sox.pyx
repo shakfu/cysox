@@ -2258,8 +2258,9 @@ cdef class EffectsChain:
             (see ``cysox.convert``'s handling of ``CancelledError``).
 
         Raises:
-            SoxEffectError: If the chain fails with any status other than
-                ``SOX_SUCCESS`` or ``SOX_EOF``.
+            SoxEffectError: If the chain holds fewer than two effects, or
+                fails with any status other than ``SOX_SUCCESS`` or
+                ``SOX_EOF``.
 
         Example:
             >>> def progress_callback(all_done, user_data):
@@ -2275,6 +2276,25 @@ cdef class EffectsChain:
         """
         cdef int result
         cdef uintptr_t chain_id
+
+        if self.ptr is NULL:
+            raise SoxEffectError("Operation on a deleted EffectsChain")
+
+        # libsox reads from the first effect and writes to the last, so a chain
+        # needs at least a source and a sink. One effect cannot be both, and
+        # running such a chain has been reported to segfault -- see
+        # tests/test_error_handling.py::test_effects_chain_with_only_input.
+        #
+        # The report is against libsox 14.4.x; it does not reproduce on
+        # SoX_ng 14.7, where the same chain returns normally. The guard is kept
+        # regardless: the behaviour is undefined either way, and a Python-level
+        # call should raise rather than depend on which libsox is linked.
+        if self.ptr.length < 2:
+            raise SoxEffectError(
+                f"Effects chain has {self.ptr.length} effect(s); at least two "
+                "are required (an input effect and an output effect). Running "
+                "a chain without both is undefined in libsox."
+            )
 
         if callback is not None:
             # Register the callback via the runtime singleton (thread-safe)

@@ -5,7 +5,7 @@ The full changelog is maintained in the repository at
 
 ## Recent Releases
 
-### Unreleased
+### v0.2.0
 
 Behaviour changes that existing code may depend on:
 

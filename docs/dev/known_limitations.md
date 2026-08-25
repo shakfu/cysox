@@ -103,23 +103,32 @@ if __name__ == '__main__':
 
 ### Impact on Testing
 
-The cysox test suite uses a module-scoped fixture to initialize sox once per test module:
+The test suite does not manage the lifecycle itself. It relies on the
+high-level API auto-initializing on first use, and on the `atexit` handler
+registered by `SoxRuntime` to shut down once at process exit. `tests/conftest.py`
+has no init/quit fixture.
 
-```python
-@pytest.fixture(scope="module")
-def sox_initialized():
-    sox.init()
-    yield
-    sox.quit()
-```
+Tests that genuinely need a shutdown run it in a subprocess, so each cycle gets
+a fresh interpreter. `tests/test_memory_safety.py::TestShutdownSafety` does
+this. Doing it inline is not merely untidy: an earlier version of those tests
+called `force_quit()` and `ensure_init()` in-process and crashed the whole
+suite inside `sox_find_format()`, which is this limitation biting exactly as
+described above.
 
-Tests requiring repeated init/quit cycles are skipped:
+Tests that would require repeated init/quit cycles in one process are skipped:
 
 ```python
 @pytest.mark.skip(reason="libsox does not support repeated init/quit cycles safely")
 def test_operations_between_init_quit(self):
     ...
 ```
+
+One consequence reaches beyond tests. An object still open when `sox_quit()`
+runs cannot be closed afterwards, because `sox_close()` dispatches through
+handler tables that shutdown has freed, and re-initializing builds a fresh
+table rather than restoring the old one. `Format` and `EffectsChain` record
+the initialization generation they were created in and skip cleanup when it no
+longer matches. See the Memory Ownership Model in the architecture document.
 
 ### Upstream Status
 
@@ -133,37 +142,44 @@ No upstream fix is expected, as changing this behavior would require significant
 
 ### Summary
 
-The memory-based I/O functions (`open_mem_read`, `open_mem_write`, `open_memstream_write`) have platform-specific issues and do not work reliably.
-
-### Affected Functions
-
-- `sox.open_mem_read()` - Read audio from memory buffer
-
-- `sox.open_mem_write()` - Write audio to memory buffer
-
-- `sox.open_memstream_write()` - Write audio to dynamically-sized memory stream
-
-### Symptoms
-
-- Functions may return `None` or raise exceptions
-
-- Written data may be truncated or corrupted
-
-- Platform-dependent behavior (works on some systems, fails on others)
+The memory-based I/O functions (`open_mem_read`, `open_mem_write`,
+`open_memstream_write`) do not work.
 
 ### Root Cause
 
-libsox's memory I/O implementation relies on platform-specific features (`fmemopen`, `open_memstream`) that have inconsistent behavior across operating systems:
+**This is a defect in cysox, not in libsox.** An earlier version of this
+document attributed it to platform differences in `fmemopen` and
+`open_memstream`; that was wrong, and the misattribution is why the functions
+stayed broken -- the diagnosis stopped at the wrong layer and nobody looked at
+the wrapper.
 
-- **macOS**: `fmemopen` available but has quirks with binary modes
+`sox.pyx` passes the buffer as `<void*>buffer`, where `buffer` is a Python
+object. Casting a Python object to `void*` in Cython reinterprets the
+**`PyObject*` itself**, not the payload. Compiling the construct in isolation
+and reading the generated C shows it plainly:
 
-- **Linux**: Generally works but has edge cases with buffer sizing
+```c
+__pyx_t_1 = __Pyx_PyBytes_GET_SIZE(__pyx_v_buffer);
+takes(((void *)__pyx_v_buffer), __pyx_t_1);
+```
 
-- **Windows**: Functions not available (would require custom implementation)
+libsox is handed the address of the object header and told it is `len(buffer)`
+bytes of audio.
 
-### Workaround
+`open_memstream_write` is separately broken: it returns its buffer pointer and
+size by value at call time, but `sox_open_memstream_write()` only fills them in
+when the format is closed. The pointer is still NULL at return, and Cython
+converts a NULL `char*` to `None`.
 
-Use temporary files instead of memory buffers:
+### Fix
+
+Use `PyBytes_AS_STRING` or `PyObject_GetBuffer` to obtain the data pointer. For
+`open_memstream_write`, keep the `char**` and `size_t*` alive on the `Format`
+wrapper and read the buffer back after `close()`.
+
+### Workaround until then
+
+Use temporary files:
 
 ```python
 import tempfile
@@ -179,7 +195,6 @@ def process_in_memory(input_bytes):
         tmp_out_path = tmp_out.name
 
     try:
-        # Process using file-based API
         with sox.Format(tmp_in_path) as input_fmt:
             with sox.Format(tmp_out_path, signal=input_fmt.signal, mode='w') as output_fmt:
                 # ... effects chain ...
@@ -194,13 +209,9 @@ def process_in_memory(input_bytes):
 
 ### Tests
 
-Memory I/O tests are skipped in the test suite:
-
-```python
-@pytest.mark.skip(reason="Memory I/O not functional - libsox upstream issue")
-def test_memory_write():
-    ...
-```
+The memory I/O tests in `tests/test_example5.py` are skipped. Their skip
+reasons still blame libsox and should be corrected when the functions are
+fixed.
 
 ---
 
@@ -224,15 +235,20 @@ While cysox supports concurrent operations on separate `Format` objects and effe
 
 ### Unsafe Operations (Not Thread-Safe)
 
-- Calling `init()` or `quit()` from multiple threads
-
 - Sharing a single `Format` object across threads without synchronization
 
 - Sharing a single `EffectsChain` across threads
 
+Concurrent `init()` calls are safe. `SoxRuntime.ensure_init()` guards
+initialization with double-checked locking, so racing callers get one
+`sox_init()` between them. `quit()` is a documented no-op; the real shutdown
+happens once, from the `atexit` handler. `_force_quit()` is not thread-safe and
+is not intended for general use.
+
 ### Recommendations
 
-1. Call `init()` and `quit()` only from the main thread
+1. Let the high-level API initialize on first use rather than calling
+   `init()` yourself
 
 2. Create separate `Format` and `EffectsChain` objects per thread
 

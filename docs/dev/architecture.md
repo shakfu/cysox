@@ -92,20 +92,21 @@ Five detection algorithms are implemented: HFC, Flux, Energy, Complex, and Super
 
 ## Memory Ownership Model
 
-cysox uses an **owner flag pattern** for all Cython wrapper classes. Every object wrapping a C pointer tracks whether it owns (allocated) the memory or merely borrows a reference into a parent structure.
+Wrapper objects hold raw C pointers, so every one of them has to answer three
+questions: who frees this memory, how long does it stay valid, and is it still
+safe to hand back to libsox. cysox answers them with three separate mechanisms.
 
 ![Memory Ownership](../assets/diagrams/memory-ownership.svg)
 
-### The Owner Flag Pattern
+### 1. The owner flag
+
+Each wrapper records whether it allocated the memory it points at. Only an
+owning wrapper frees:
 
 ```cython
 cdef class SignalInfo:
     cdef sox_signalinfo_t* ptr
-    cdef bint owner  # True = we allocated, we free
-
-    def __cinit__(self):
-        self.ptr = NULL
-        self.owner = False
+    cdef bint owner          # True = we allocated, we free
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner:
@@ -113,53 +114,103 @@ cdef class SignalInfo:
             self.ptr = NULL
 ```
 
-### Three Ownership Categories
+### 2. The keepalive reference
 
-**1. Owning (owner=True)** -- The object allocated the memory and is responsible for freeing it in `__dealloc__`:
+A non-owning wrapper points into memory that belongs to some other object, so
+the flag alone is not enough: it says nothing about *lifetime*. Every wrapper
+therefore also holds a strong reference to whatever owns the memory it borrows.
+
+Without it, an expression as ordinary as `sox.Format(path).signal` frees the
+`Format` at the end of the statement while the returned wrapper still points
+into its struct.
+
+### 3. The init generation
+
+A `sox_format_t` carries a by-value copy of its format handler, whose function
+pointers refer to tables that `sox_quit()` frees. An object that outlives a
+shutdown therefore cannot be closed, and re-initialising does not rescue it:
+`sox_init()` builds a *fresh* table, so the old pointers stay dangling while
+libsox looks perfectly healthy again.
+
+`Format` and `EffectsChain` record the initialization generation they were
+created in and skip cleanup when it no longer matches. That leaks one struct at
+process exit, which the OS reclaims; calling into a freed handler table does not
+fail so gracefully.
+
+### Ownership categories
+
+**Owning** -- allocated by the wrapper, freed in `__dealloc__`:
 
 | Class | Allocator | Deallocator |
 |-------|-----------|-------------|
 | `SignalInfo` | `calloc(1, sizeof(...))` | `free(ptr.mult); free(ptr)` |
 | `EncodingInfo` | `calloc(1, sizeof(...))` | `free(ptr)` |
 | `OutOfBand` | `calloc(1, sizeof(...))` | `sox_delete_comments(); free(ptr)` |
-| `Format` | `sox_open_read/write()` | `sox_close()` |
+| `Format` | `sox_open_read/write()` | `sox_close()`, if the generation still matches |
 | `Effect` | `sox_create_effect()` | `free(ptr)` |
-| `EffectsChain` | `sox_create_effects_chain()` | `sox_delete_effects_chain()` |
+| `EffectsChain` | `sox_create_effects_chain()` | `sox_delete_effects_chain()`, if the generation still matches |
 
-**2. Borrowed (owner=False)** -- The pointer references memory inside a parent object. No deallocation. Valid only while the parent is alive:
+**Snapshot** -- an owning copy taken from another object's memory, valid
+independently of it:
 
-- `format.signal` -> points to `&format_ptr->signal` (inside `sox_format_t`)
+- `format.signal` returns a fresh `SignalInfo` holding the values at the time
+  of the call. It does not track later changes to the format, so read the
+  property again rather than holding the result.
 
-- `format.encoding` -> points to `&format_ptr->encoding`
+  This is a copy rather than a view for a specific reason. `sox_add_effect()`
+  treats its input signal as an in/out parameter and writes the effect's output
+  signal back through it. Handing it a view of the format's own struct let
+  effects overwrite the input file's metadata: adding a `trim` rewrote `length`
+  from 502840 to 88200, after which the reader stopped halfway and produced half
+  the requested audio. libsox's own examples pass a scratch signal for exactly
+  this reason; returning a copy makes that the default instead of something
+  every caller has to know.
 
-- `chain.effects[i]` -> points into the chain's effects table
+**Borrowed** -- points into a parent structure, keeps that parent alive:
 
-!!! warning Borrowed references become dangling after the parent is closed or freed. Always use `Format` as a context manager to ensure borrowed `SignalInfo` and `EncodingInfo` references remain valid.
+- `format.encoding` -> `&format_ptr->encoding`, inside `sox_format_t`
 
-**3. Static (owner=False, never freed)** -- Pointers to libsox's internal static data that persists for the program lifetime:
+- `chain.effects[i]` -> the chain's effects table
+
+- `effect.in_signal` / `effect.out_signal` -> inside `sox_effect_t`
+
+!!! warning
+    The keepalive stops the owner being *collected*, but it cannot stop it
+    being *closed*. A borrowed `EncodingInfo` taken before `Format.close()`
+    still points into freed memory afterwards, and reads stale values rather
+    than raising. Take what you need before closing, or use `Format` as a
+    context manager and stay inside the block.
+
+**Static** -- libsox's own data, never freed:
 
 - `EffectHandler` from `sox_find_effect()`
 
 - `Globals` from `sox_get_globals()`
 
-### The `from_ptr()` Factory
+### The `from_ptr()` factory
 
-Every Cython class provides a `from_ptr()` static factory method:
+Every Cython class provides a `from_ptr()` static factory that sets all three
+fields at once:
 
 ```cython
 @staticmethod
-cdef SignalInfo from_ptr(sox_signalinfo_t* ptr, bint owner=False):
+cdef SignalInfo from_ptr(sox_signalinfo_t* ptr, bint owner=False,
+                         object keepalive=None):
     cdef SignalInfo wrapper = SignalInfo.__new__(SignalInfo)
     wrapper.ptr = ptr
     wrapper.owner = owner
+    wrapper._keepalive = keepalive
     return wrapper
 ```
 
-This is used internally to create borrowed wrappers (e.g., `Format.signal` returns `SignalInfo.from_ptr(&self.ptr.signal, owner=False)`).
+Borrowed wrappers pass the owner as the third argument, for example
+`EncodingInfo.from_ptr(&self.ptr.encoding, False, self)`.
 
-### Allocation Safety
+### Allocation safety
 
-All struct allocations use `calloc` (not `malloc`) to zero-initialize memory. This prevents use-after-free bugs where a `__dealloc__` method checks a field that was never initialized (e.g., `OutOfBand.comments` containing garbage that looks truthy).
+All struct allocations use `calloc` rather than `malloc` to zero-initialize
+memory. This prevents bugs where `__dealloc__` checks a field that was never
+initialized, such as `OutOfBand.comments` holding garbage that looks truthy.
 
 ---
 
@@ -173,27 +224,33 @@ The `convert()` function is the core of the high-level API. It bridges typed Pyt
 
 1. **Initialization**: `SoxRuntime.ensure_init()` calls `sox_init()` once (double-checked locking for thread safety).
 
-2. **Open files**: Create `Format` objects for input (read) and output (write). The output signal is derived from the input, with optional overrides for sample rate, channels, or bit depth.
+2. **Predict the output signal**: Before anything is opened for writing, scan the expanded effect list for effects that redefine the stream's format -- `rate`, `channels` and `remix` -- to work out what the chain will actually deliver. An explicit `sample_rate=` or `channels=` argument takes precedence over what the effects imply.
 
-3. **Build effects chain**: Create an `EffectsChain` with the input and output encodings.
+    Effects that move the rate as an implementation detail, such as `speed`, `pitch` and `tempo`, are deliberately not counted. sox expects the original rate to be restored after them, and counting them would change the output file's rate and so the pitch of the result.
 
-4. **Add input effect**: The special `"input"` effect reads samples from the input `Format`.
+3. **Open files**: Create `Format` objects for input (read) and output (write). The output is opened with the predicted rate and channel count, so an `fx.Rate()` or `fx.Channels()` in the effect list is reflected in the file rather than being undone by step 6.
 
-5. **Expand and add user effects**:
+4. **Build effects chain**: Create an `EffectsChain` with the input and output encodings.
+
+5. **Add input effect**: The special `"input"` effect reads samples from the input `Format`.
+
+6. **Expand and add user effects**:
 
     - `_expand_effects()` recursively flattens `CompositeEffect` instances
 
     - For each base effect: look up the sox handler by `effect.name`, create a `sox.Effect`, set options via `effect.to_args()`, add to chain
 
-    - **Signal tracking**: After each effect, check if the output signal changed (e.g., `Pitch` or `Speed` alter the sample rate). If so, update `current_signal` for the next effect in the chain.
+    - **Signal tracking**: After each effect, check whether the output signal changed (`pitch` and `speed` alter the sample rate). If so, update `current_signal` for the next effect in the chain. Note that `current_signal` starts as a *snapshot* of the input format's signal, not a view of it -- see the Memory Ownership Model above for why that distinction matters.
 
-6. **Implicit conversions**: If the final signal doesn't match the target sample rate or channel count, automatically insert `rate` and/or `channels` effects.
+7. **Implicit conversions**: If the chain's final signal does not match the target from step 2, insert `rate` and/or `channels` effects to close the gap. This is what restores the rate after `speed`, `pitch` and `tempo`; it does not fire for an explicit `fx.Rate()`, because step 2 already accounted for one.
 
-7. **Add output effect**: The special `"output"` effect writes samples to the output `Format`.
+8. **Add output effect**: The special `"output"` effect writes samples to the output `Format`.
 
-8. **Flow**: `chain.flow_effects()` pushes all samples through the pipeline. If `on_progress` was provided, a callback is registered with `SoxRuntime` and invoked from C via the GIL.
+9. **Flow**: `chain.flow_effects()` pushes all samples through the pipeline. If `on_progress` was provided, a callback is registered with `SoxRuntime` and invoked from C via the GIL.
 
-9. **Cleanup**: Close both `Format` objects in a `finally` block.
+    `flow_effects()` returns `SOX_EOF` when the chain ends early, which covers both a length-limiting effect finishing and a cancelled callback -- libsox reports the two identically. `convert()` therefore checks the callback's own recorded state to tell them apart, on both the success and the failure path.
+
+10. **Cleanup**: Close both `Format` objects in a `finally` block.
 
 ---
 
