@@ -53,5 +53,6 @@ nav:
     - Architecture: dev/architecture.md
     - High-Level API: dev/high_level_api.md
     - Known Limitations: dev/known_limitations.md
+    - Licensing Decisions: dev/licensing-decisions.md
     - Contributing: contributing.md
     - Changelog: changelog.md

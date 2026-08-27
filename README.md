@@ -1,9 +1,6 @@
 # cysox
 
-[![PyPI](https://img.shields.io/pypi/v/cysox)](https://pypi.org/project/cysox/)
-[![Python](https://img.shields.io/pypi/pyversions/cysox)](https://pypi.org/project/cysox/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Docs](https://img.shields.io/badge/docs-online-blue)](https://shakfu.github.io/cysox/)
+[![PyPI](https://img.shields.io/pypi/v/cysox)](https://pypi.org/project/cysox/) [![Python](https://img.shields.io/pypi/pyversions/cysox)](https://pypi.org/project/cysox/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://shakfu.github.io/cysox/)
 
 A Python audio processing tool / library which uses [Cython](https://cython.org) to wrap [libsox](https://github.com/chirlu/sox).
 
@@ -12,12 +9,19 @@ A Python audio processing tool / library which uses [Cython](https://cython.org)
 ## Features
 
 - **Simple API**: Convert, analyze, and play audio with one-liners
+
 - **Typed Effects**: 27 base effect classes with IDE autocomplete and range-checked parameters, plus `fx.Raw` for anything not yet wrapped
+
 - **53 Effect Presets**: Ready-to-use composite effects for voice, lo-fi, drums, mastering, and more
+
 - **Sample Processing**: Auto-trim silence, split recordings into one-shots, generate chromatic pitch scales, batch process directories
+
 - **Drum Loop Tools**: Slice loops by BPM, create stutter effects, apply beat-synced processing
+
 - **High Performance**: Direct C bindings through Cython, KissFFT-accelerated onset detection
+
 - **Zero Configuration**: Auto-initialization, no manual setup required
+
 - **Cross-Platform**: macOS, Linux (Windows placeholder)
 
 ## Installation
@@ -120,8 +124,7 @@ cysox.play('audio.wav', effects=[fx.Volume(db=-6)])
 
 ### `cysox.info(path) -> AudioInfo`
 
-Get audio file metadata. Returns an `AudioInfo` object supporting both attribute
-access and dict-style access:
+Get audio file metadata. Returns an `AudioInfo` object supporting both attribute access and dict-style access:
 
 ```python
 info = cysox.info('audio.wav')
@@ -187,8 +190,7 @@ All input files must have the same sample rate and channel count.
 
 ## Effects Module
 
-The `cysox.fx` module provides 27 base effect classes and 53 composite presets,
-plus `fx.Raw` for any sox effect without a typed class yet:
+The `cysox.fx` module provides 27 base effect classes and 53 composite presets, plus `fx.Raw` for any sox effect without a typed class yet:
 
 ### Volume & Dynamics
 
@@ -249,10 +251,7 @@ fx.Dither()                        # Add dither
 
 ### Any Other sox Effect
 
-The typed classes cover 27 effects. `fx.Raw` reaches everything else libsox
-provides — `compand`, `vad`, `noisered`, `synth`, `stats`, `phaser`,
-`overdrive`, `tremolo`, `sinc` and the rest — with arguments passed through
-verbatim:
+The typed classes cover 27 effects. `fx.Raw` reaches everything else libsox provides — `compand`, `vad`, `noisered`, `synth`, `stats`, `phaser`, `overdrive`, `tremolo`, `sinc` and the rest — with arguments passed through verbatim:
 
 ```python
 fx.Raw('compand', '0.3,1', '6:-70,-60,-20', -5, -90, 0.2)   # Compression
@@ -260,9 +259,7 @@ fx.Raw('vad')                                               # Trim leading silen
 fx.Raw('overdrive', 5, 20)                                  # Distortion
 ```
 
-You give up the validation and autocomplete a typed class provides, so prefer
-a typed class where one exists. An unknown effect name is reported when the
-chain is built.
+You give up the validation and autocomplete a typed class provides, so prefer a typed class where one exists. An unknown effect name is reported when the chain is built.
 
 ### Composite Effects
 
@@ -430,15 +427,25 @@ slices = cysox.slice_loop('drums.wav', 'output_dir/',
 **Parameters:**
 
 - `path`: Input audio file
+
 - `output_dir`: Directory for slice files (created if needed)
+
 - `slices`: Number of equal slices (default: 4)
+
 - `bpm`: Calculate slice duration from BPM (overrides `slices`)
+
 - `beats_per_slice`: Beats per slice when using BPM (default: 1)
+
 - `beat_duration`: Explicit duration per slice in seconds
+
 - `threshold`: Onset detection threshold 0.0-1.0 (enables automatic transient slicing)
+
 - `sensitivity`: Onset detection sensitivity 1.0-3.0 (default: 1.5)
+
 - `onset_method`: Detection method - 'hfc', 'flux', 'energy', 'complex', or 'superflux'
+
 - `output_format`: Output format (default: "wav")
+
 - `effects`: Effects to apply to each slice
 
 **Returns:** List of created file paths
@@ -489,33 +496,53 @@ onsets = onset.detect('drums.wav',
 **Detection Methods:**
 
 - **`hfc`** (default) - High-Frequency Content
+
   - Weights frequency bins by their index, emphasizing high frequencies
+
   - High frequencies are prominent in transient attacks (the "click" of a drum hit)
+
   - Best for: drums, percussion, plucked instruments
+
   - Fast and reliable for most percussive material
 
 - **`flux`** - Spectral Flux
+
   - Measures the change in spectral energy between consecutive frames
+
   - Detects when the frequency content changes significantly
+
   - Best for: mixed material, melodic instruments, detecting note changes
+
   - Good all-around choice when HFC misses softer onsets
 
 - **`energy`** - Energy-based
+
   - Simply measures the RMS energy (loudness) of each frame
+
   - Fastest method, minimal computation
+
   - Best for: very clean recordings, isolated drums, quick processing
+
   - May miss onsets that are spectrally distinct but similar in volume
 
 - **`complex`** - Complex Domain
+
   - Analyzes both magnitude AND phase of the spectrum
+
   - Detects deviations from expected phase trajectories
+
   - Best for: maximum accuracy, subtle onsets, research applications
+
   - Slowest method but catches onsets other methods miss
 
 - **`superflux`** - Superflux (Boeck & Widmer, DAFx 2013)
+
   - Mel-scaled spectral flux with vibrato suppression
+
   - Maximum filter along frequency axis to reject false onsets from frequency modulation
+
   - Backtracking from peaks to nearest local minimum for precise transient placement
+
   - Best for: polyphonic material, vibrato-heavy sources, maximum precision
 
 **Understanding threshold vs sensitivity:**
@@ -523,23 +550,35 @@ onsets = onset.detect('drums.wav',
 `threshold` (0.0-1.0) and `sensitivity` (1.0-3.0) control different stages:
 
 - **threshold** - Global minimum floor
+
   - Sets the absolute minimum level a peak must reach
+
   - Applied to the normalized detection function (0-1 scale)
+
   - Lower values = more sensitive, catches quieter transients
+
   - `threshold=0.3` means peaks must reach at least 30% of max energy
+
   - Think of it as: "ignore everything below this level"
 
 - **sensitivity** - Adaptive peak picking strictness
+
   - Controls how much a peak must exceed the *local average*
+
   - Uses a moving median filter to compute the local baseline
+
   - Higher values = stricter, only picks prominent peaks
+
   - `sensitivity=1.5` means a peak must be 1.5x the local median
+
   - Think of it as: "how much must a peak stand out from neighbors"
 
 **Typical combinations:**
 
 - Drums with clear hits: `threshold=0.3, sensitivity=1.5` (defaults)
+
 - Subtle transients: `threshold=0.2, sensitivity=1.2`
+
 - Only loud hits: `threshold=0.5, sensitivity=2.0`
 
 ### `cysox.stutter()` - Create Stutter Effects
@@ -571,10 +610,15 @@ cysox.stutter('drums.wav', 'stutter_punchy.wav',
 **Parameters:**
 
 - `path`: Input audio file
+
 - `output_path`: Output file path
+
 - `segment_start`: Start position in seconds (default: 0)
+
 - `segment_duration`: Length of segment in seconds (default: 0.125)
+
 - `repeats`: Total times segment plays (default: 8)
+
 - `effects`: Effects to apply after stuttering
 
 ### Practical Examples
@@ -636,14 +680,11 @@ cysox.convert('drums.wav', 'processed.wav', effects=[
 
 ## Sample Processing
 
-cysox includes sample processing utilities ported from
-[AudioHit](https://github.com/icaroferre/AudioHit) for preparing audio samples
-for software and hardware samplers.
+cysox includes sample processing utilities ported from [AudioHit](https://github.com/icaroferre/AudioHit) for preparing audio samples for software and hardware samplers.
 
 ### `cysox.auto_trim()` - Trim Silence
 
-Detect and remove silence from the beginning and end of audio based on
-amplitude threshold:
+Detect and remove silence from the beginning and end of audio based on amplitude threshold:
 
 ```python
 # Basic silence trimming
@@ -665,18 +706,24 @@ cysox.auto_trim('raw.wav', 'trimmed.wav', effects=[fx.Normalize()])
 **Parameters:**
 
 - `path`: Input audio file
+
 - `output_path`: Output audio file
+
 - `threshold_db`: Amplitude threshold in dB (default: -48dB)
+
 - `min_silence`: Minimum non-silence duration in seconds (default: 0.1)
+
 - `fade_in`: Fade-in duration in milliseconds (default: 0)
+
 - `fade_out`: Fade-out duration in milliseconds (default: 0)
+
 - `speed_factor`: Playback speed multiplier (default: None)
+
 - `effects`: Additional effects to apply after trimming
 
 ### `cysox.split_by_silence()` - Split at Silence Gaps
 
-Split a continuous recording into separate one-shot samples at silence
-boundaries:
+Split a continuous recording into separate one-shot samples at silence boundaries:
 
 ```python
 # Split at default threshold
@@ -699,22 +746,30 @@ segments = cysox.split_by_silence('recording.wav', 'one_shots/',
 **Parameters:**
 
 - `path`: Input audio file
+
 - `output_dir`: Directory for segment files (created if needed)
+
 - `threshold_db`: Amplitude threshold in dB (default: -48dB)
+
 - `min_silence`: Minimum silence duration to trigger split, in seconds (default: 0.25)
+
 - `min_segment`: Minimum segment duration, in seconds (default: 0.25)
+
 - `fade_in`: Fade-in per segment in milliseconds (default: 0)
+
 - `fade_out`: Fade-out per segment in milliseconds (default: 0)
+
 - `speed_factor`: Playback speed multiplier (default: None)
+
 - `output_format`: Output format (default: "wav")
+
 - `effects`: Effects to apply to each segment
 
 **Returns:** List of created file paths
 
 ### `cysox.pitch_scale()` - Generate Chromatic Pitch Variants
 
-Create multiple pitch-shifted copies of a sample at semitone intervals,
-useful for building playable melodic sample libraries:
+Create multiple pitch-shifted copies of a sample at semitone intervals, useful for building playable melodic sample libraries:
 
 ```python
 # Generate one octave (12 semitones) of chromatic variations
@@ -733,10 +788,15 @@ files = cysox.pitch_scale('sample.wav', 'scale/',
 **Parameters:**
 
 - `path`: Input audio file
+
 - `output_dir`: Directory for pitch-shifted files (created if needed)
+
 - `semitones`: Number of copies to generate (default: 12)
+
 - `offset`: Starting semitone offset (default: 0)
+
 - `output_format`: Output format (default: "wav")
+
 - `effects`: Effects to apply to each copy after pitch shifting
 
 **Returns:** List of created file paths
@@ -766,13 +826,21 @@ cysox.batch('raw/', 'done/',
 **Parameters:**
 
 - `input_dir`: Directory containing audio files
+
 - `output_dir`: Directory for processed files (created if needed)
+
 - `effects`: Effects to apply to each file
+
 - `sample_rate`: Target sample rate in Hz
+
 - `channels`: Target number of channels
+
 - `bits`: Target bits per sample
+
 - `recursive`: Process subdirectories (default: True)
+
 - `output_format`: Output format (None keeps original)
+
 - `on_file`: Callback called after each file `(input_path, output_path)`
 
 **Returns:** List of processed output file paths
@@ -840,6 +908,7 @@ Comprehensive test suite covering all functionality. All libsox C examples porte
 ## Known Issues
 
 - **Memory I/O**: libsox memory I/O functions have platform issues (tests skipped)
+
 - **Init/Quit Cycles**: Use high-level API to avoid init/quit issues (handled automatically)
 
 See [KNOWN_LIMITATIONS.md](https://github.com/shakfu/cysox/blob/main/KNOWN_LIMITATIONS.md) for details.
@@ -847,7 +916,9 @@ See [KNOWN_LIMITATIONS.md](https://github.com/shakfu/cysox/blob/main/KNOWN_LIMIT
 ## Platform Support
 
 - **macOS**: Full support
+
 - **Linux**: Full support
+
 - **Windows**: Placeholder (contributions welcome)
 
 ## Building Documentation
@@ -862,26 +933,17 @@ make docs-serve    # Live preview at http://localhost:8000
 
 cysox's own source code is **MIT** (see `LICENSE`).
 
-**Binary wheels are not pure MIT.** They bundle native libraries — statically
-linked on macOS, vendored by `auditwheel` on Linux — and each keeps its own
-licence inside the distributed artifact:
+**Binary wheels are not pure MIT.** They bundle native libraries — statically linked on macOS, vendored by `auditwheel` on Linux — and each keeps its own licence inside the distributed artifact:
 
 - **LGPL-2.1**: libsox/sox_ng, libsndfile, libmpg123, LAME, libsoxr, libltdl
+
 - **BSD / permissive**: KissFFT, FLAC, Ogg, Vorbis, Opus, libmagic, libgsm, zlib, libpng
-- **Deliberately absent**: libmad and libid3tag (GPL-2.0-or-later). Excluding them
-  is enforced by the build, not by convention — `scripts/setup.sh` aborts if
-  sox_ng configures with MAD, and `scripts/check_licenses.py` fails the build if
-  a denylisted or unaudited library reaches the wheel. mp3 read and write both
-  still work (libsndfile/libmpg123 in, LAME out).
 
-Because the LGPL components are statically linked on macOS, **redistributing the
-wheels carries LGPL obligations** — notice, corresponding source, and the ability
-to relink. Full details and upstream source links are in
-[`NOTICE-THIRD-PARTY.md`](NOTICE-THIRD-PARTY.md), which ships inside every wheel
-at `cysox-*.dist-info/licenses/`.
+- **Deliberately absent**: libmad and libid3tag (GPL-2.0-or-later). Excluding them is enforced by the build, not by convention — `scripts/setup.sh` aborts if sox_ng configures with MAD, and `scripts/check_licenses.py` fails the build if a denylisted or unaudited library reaches the wheel. mp3 read and write both still work (libsndfile/libmpg123 in, LAME out).
 
-Building from source against your own system libraries bundles nothing, and only
-the MIT licence applies.
+Because the LGPL components are statically linked on macOS, **redistributing the wheels carries LGPL obligations** — notice, corresponding source, and the ability to relink. Full details and upstream source links are in [`NOTICE-THIRD-PARTY.md`](NOTICE-THIRD-PARTY.md), which ships inside every wheel at `cysox-*.dist-info/licenses/`.
+
+Building from source against your own system libraries bundles nothing, and only the MIT licence applies.
 
 To audit a wheel yourself:
 

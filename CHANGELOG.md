@@ -26,6 +26,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 - **`convert()` silently discarded audio on any downward conversion.** The chain passed `input_fmt.signal_view` — an alias of the input format's own signal struct — as the `in_signal` of every `sox_add_effect()` call. libsox writes the negotiated signal back through that pointer, so each effect rewrote the *input file's* declared length, and the input effect, which bounds its reads by that length, stopped early. Every conversion ratio below 1 lost audio in proportion: `sample_rate=8000` kept 18% of a 44.1 kHz recording, `sample_rate=22050` kept 50%, `channels=1` kept half of a stereo source. `Trim(start=S)` lost an extra S seconds, `Tempo(f>1)` divided duration by `f**2`, and `Pitch(c<0)` scaled duration by `2**(c/1200)`. Upward ratios were unaffected, which is what made it look like several unrelated effect bugs. The `Telephone`, `WalkieTalkie`, `LoFiHipHop` and `HauntedVoice` presets were affected. `convert()` now threads a private interim `SignalInfo` through the chain, as sox's own driver does.
 
+- **Writers silently changed the sample encoding: float in, integer out.** `convert()`, `slice_loop()`, `stutter()` and `split_by_silence()` opened their output with no `encoding=`, so libsox picked the format handler's default for the given precision - `SIGN2` for a 32-bit WAV, not `FLOAT`. A float WAV came back as valid 32-bit *integer* PCM with numerically reasonable samples, which is the combination a consumer is least likely to notice. `concat()` propagated the encoding by hand but without checking the format could write it, so float to mp3 took the same silent-substitution path. All five now route through `_build_output_encoding()`, which probes the `(encoding, bits)` pair jointly with `format_supports_encoding` - a pair the format rejects makes libsox discard the *width*, so testing them separately reintroduces the bug for explicit `bits=`. The intermediate WAV that `slice_loop`/`stutter`/`split_by_silence` write keeps the input's encoding, so an explicit `encoding=` cannot degrade resolution before the effects chain runs.
+
+- **Use-after-free in `Format.signal` and `Format.encoding`.** Both returned non-owning wrappers around `&ft->signal` / `&ft->encoding`, which `sox_close()` frees, so `signal = f.signal` outside a `with` block - which `info()` and several tests do - read freed memory, returning values like `1.0e-70` after close. Both now return owned snapshots, with `mult` deep-copied so the two wrappers cannot free each other's memory.
+
 - `slice_loop()`, `stutter()` and `pitch_scale()` now release the input handle via `try/finally` rather than relying on the garbage collector when an error interrupts the loop.
 
 ### Added
@@ -38,6 +42,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 - `batch(skip_errors=True, on_error=...)` — continue past a file that fails to convert, and report what was skipped.
 
+- `encoding=` on `convert()`, `slice_loop()`, `stutter()`, `split_by_silence()` and `concat()`, taking the names `info()` returns (`'float'`, `'signed-integer'`, ...). An explicit encoding the output format cannot write raises `ValueError` instead of being silently substituted.
+
+- `NOTICE-THIRD-PARTY.md`, shipped inside every wheel at `dist-info/licenses/`, naming each bundled native library and its licence, and `scripts/check_licenses.py`, which fails the build if a denylisted or unaudited library reaches the link graph or the repaired wheel.
+
 ### Changed
 
 - `EffectsChain.flow_effects()` no longer raises on `SOX_EOF`; it returns it. libsox reports the same status when an effect ends the flow deliberately (`trim` reaching its end position) and when a callback aborts, so the two cannot be told apart from the return code — raising for an abort necessarily broke `trim`. Callers that need to know whether they cancelled should track it in their own callback state, as `convert()` does to raise `CancelledError`.
@@ -45,6 +53,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 - `onset.detect()` reads into an int32 buffer instead of a Python list, cutting peak allocation from ~40 to 4 bytes per sample (about 1.07 GB to 0.106 GB for five minutes of stereo). `detect_onsets()` now accepts any C-contiguous int32 buffer as well as a list.
 
 - `split_by_silence()` scans for peaks via `read_into` and `max`/`min` instead of a per-sample Python loop.
+
+### Removed
+
+- **libmad (GPL-2.0-or-later) is no longer bundled.** The macOS wheels statically linked it as sox's mp3 decoder, which made the distributed artifact GPL while its metadata claimed MIT. Both platforms now build `sox_ng` 14.8.0.1 from source with `--without-mad`; its mp3 handler then decodes through libsndfile/libmpg123 and still encodes through LAME, all LGPL-2.1, so mp3 read and write are unaffected. Linux wheels no longer build against the distro libsox at all - it delivers mp3 as a `dlopen`'d plugin that `auditwheel` cannot vendor, so `--without-libltdl` compiles every handler in and removes the dynamic-module path. Rejected alternatives are recorded in `docs/dev/licensing-decisions.md`.
 
 ## [0.1.11]
 
