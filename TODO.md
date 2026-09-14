@@ -1,22 +1,10 @@
 # TODO
 
-**Legend:**
+## Critical
 
-- `[ ]` Not started
-
-- `[~]` In progress
-
-- `[!]` Blocked
-
-Completed work is recorded in [CHANGELOG.md](CHANGELOG.md), not here.
-
----
-
-## P1 - High Priority
+## High
 
 ### Release Gates
-
-*Both must clear before the next wheel publish. Neither is a code defect - they are claims the build makes that nothing has verified yet.*
 
 - [ ] **PRE-PUBLISH GATE: audit sox_ng's in-tree codec sources**
 
@@ -84,9 +72,7 @@ Completed work is recorded in [CHANGELOG.md](CHANGELOG.md), not here.
 
   - Debug mode usage
 
----
-
-## P2 - Medium Priority
+## Medium
 
 ### Testing
 
@@ -155,9 +141,7 @@ Completed work is recorded in [CHANGELOG.md](CHANGELOG.md), not here.
 
   - isort import sorting
 
----
-
-## P3 - Low Priority
+## Low
 
 ### Performance
 
@@ -225,7 +209,7 @@ Completed work is recorded in [CHANGELOG.md](CHANGELOG.md), not here.
 
   - Requires: Callback mechanism for playlist entries
 
-- [!] **Fix memory I/O functions** (BLOCKED)
+- [ ] **Fix memory I/O functions** (BLOCKED) #blocked
 
   - Functions: `open_mem_read()`, `open_mem_write()`, `open_memstream_write()`
 
@@ -233,24 +217,10 @@ Completed work is recorded in [CHANGELOG.md](CHANGELOG.md), not here.
 
   - Tracking: Documented in Known Limitations
 
----
-
-## Backlog
+### Backlog
 
 - [ ] Async/await support for effects processing
 
 - [ ] NumPy-native array returns (optional dependency)
 
 - [ ] Audio visualization helpers (waveform, spectrogram)
-
----
-
-## References
-
-- [CHANGELOG.md](CHANGELOG.md) - Version history
-
-- [docs/dev/licensing-decisions.md](docs/dev/licensing-decisions.md) - Why the wheels bundle sox_ng built without libmad
-
-- [docs/dev/high_level_api.md](docs/dev/high_level_api.md) - High-level API documentation and extension guide
-
-- [libsox documentation](https://sourceforge.net/p/sox/code/ci/master/tree/src/sox.h)
