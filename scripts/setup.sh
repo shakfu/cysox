@@ -128,6 +128,7 @@ case "$(uname -s)" in
             --prefix="$SOX_NG_PREFIX" \
             --enable-replace \
             --without-mad \
+            --without-fftw \
             --enable-shared \
             --disable-static \
             --with-pic \
@@ -247,6 +248,7 @@ case "$(uname -s)" in
                 --prefix="$SOX_PREFIX" \
                 --enable-replace \
                 --without-mad \
+                --without-fftw \
                 --enable-static \
                 --disable-shared \
                 --with-pic \

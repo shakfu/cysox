@@ -58,9 +58,11 @@ def test_sox_format_mp3():
     # routed through the sndfile/libmpg123 handler, which reports its own.
     assert f.encoding.bits_per_sample in (0, 16)
     assert f.encoding.compression == math.inf
-    # Compare by name, not by enum value: sox_ng inserted MP1/MP2 ahead of MP3,
-    # so the numeric value differs between builds.
+    # Compared symbolically: sox_encoding_t values differ across libsox builds
+    # (sox_ng inserted MP1/MP2 ahead of MP3).
+    assert f.encoding.encoding == sox.sox_encoding_t.SOX_ENCODING_MP3
     assert sox.ENCODING_NAMES[f.encoding.encoding] == "mp3"
+    assert sox.ENCODINGS[f.encoding.encoding] == ("MP3", "MP3 compression")
     assert f.encoding.opposite_endian == 0
     assert f.encoding.reverse_bits == 0
     assert f.encoding.reverse_bytes == 0

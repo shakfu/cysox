@@ -10,23 +10,58 @@ from libc.stdint cimport uintptr_t
 cimport cysox.sox
 
 
+# C-level mirror of SoxRuntime._initialized.
+#
+# __dealloc__ needs to know whether libsox is still up, and it cannot ask the
+# Python singleton: deallocation runs during garbage collection and at
+# interpreter teardown, when module globals may already be gone. A C flag is
+# always readable. See Format.__dealloc__ for why this matters.
+cdef bint _libsox_up = False
+
+# Bumped on every sox_init(). A sox_format_t carries a by-value copy of its
+# format handler, whose function pointers refer to code sox_quit() tears down.
+# Re-initialising builds a fresh handler table, so a format opened before a
+# quit/init cycle stays permanently unusable even though libsox is "up" again.
+# Comparing generations is the only way to tell such a stale format apart from
+# a live one; a plain boolean reports it as safe to close, and closing it jumps
+# through a dangling pointer.
+cdef unsigned long _libsox_generation = 0
+
+
 # Internal C-level init/quit helpers (cdef not allowed inside Python classes)
 def _do_sox_init():
     """Call sox_init(). Raises SoxInitError on failure."""
+    global _libsox_up, _libsox_generation
     cdef int result = sox_init()
     if result != SOX_SUCCESS:
         raise SoxInitError(
             f"Failed to initialize SoX library: {strerror(result)}"
         )
+    _libsox_up = True
+    _libsox_generation += 1
 
 
 def _do_sox_quit():
     """Call sox_quit(). Raises SoxInitError on failure."""
+    global _libsox_up
+    # Cleared first: after sox_quit() the format handler tables are gone
+    # whether or not it reported success.
+    _libsox_up = False
     cdef int result = sox_quit()
     if result != SOX_SUCCESS:
         raise SoxInitError(
             f"Failed to cleanup SoX library: {strerror(result)}"
         )
+
+
+def _libsox_is_up() -> bool:
+    """Whether libsox is currently initialized (test/diagnostic helper)."""
+    return _libsox_up
+
+
+def _libsox_generation_id() -> int:
+    """Current libsox init generation (test/diagnostic helper)."""
+    return _libsox_generation
 
 
 class SoxRuntime:
@@ -202,11 +237,16 @@ _ENCODING_TABLE = (
     (CYSOX_ENCODING_DSD,      "DSD",        "dsd",              "Direct Stream Digital (sox_ng only)"),
 )
 
-# (member, description) for every encoding this libsox knows about, in enum order.
-ENCODINGS = [
-    (member, desc)
-    for value, member, _slug, desc in sorted(_ENCODING_TABLE)
+# Index-addressable view so ENCODINGS[encoding_value] works. Values the linked
+# libsox defines but this table does not declare read as UNRECOGNISED.
+_ENCODING_BY_VALUE = {
+    value: (member, desc)
+    for value, member, _slug, desc in _ENCODING_TABLE
     if value >= 0
+}
+ENCODINGS = [
+    _ENCODING_BY_VALUE.get(i, ("UNRECOGNISED", "not declared by this build of cysox"))
+    for i in range(<int>SOX_ENCODINGS)
 ]
 
 # enum value -> slug, for callers translating a sox_encoding_t to a name.
@@ -328,10 +368,15 @@ cdef class SignalInfo:
     """
     cdef sox_signalinfo_t* ptr
     cdef bint owner
+    # Strong reference to the object that owns the memory `ptr` points
+    # into, for non-owning wrappers. Without it, `Format(p).signal` frees
+    # the Format while the SignalInfo still points into its struct.
+    cdef object _keepalive
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._keepalive = None
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
@@ -354,10 +399,11 @@ cdef class SignalInfo:
         self.owner = True
 
     @staticmethod
-    cdef SignalInfo from_ptr(sox_signalinfo_t* ptr, bint owner=False):
+    cdef SignalInfo from_ptr(sox_signalinfo_t* ptr, bint owner=False, object keepalive=None):
         cdef SignalInfo wrapper = SignalInfo.__new__(SignalInfo)
         wrapper.ptr = ptr
         wrapper.owner = owner
+        wrapper._keepalive = keepalive
         return wrapper
 
     @staticmethod
@@ -491,10 +537,15 @@ class EncodingsInfo:
 cdef class EncodingInfo:
     cdef sox_encodinginfo_t* ptr
     cdef bint owner
+    # Strong reference to the object that owns the memory `ptr` points
+    # into, for non-owning wrappers. Without it, `Format(p).signal` frees
+    # the Format while the SignalInfo still points into its struct.
+    cdef object _keepalive
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._keepalive = None
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
@@ -518,10 +569,11 @@ cdef class EncodingInfo:
         self.owner = True
 
     @staticmethod
-    cdef EncodingInfo from_ptr(const sox_encodinginfo_t* ptr, bint owner=False):
+    cdef EncodingInfo from_ptr(const sox_encodinginfo_t* ptr, bint owner=False, object keepalive=None):
         cdef EncodingInfo wrapper = EncodingInfo.__new__(EncodingInfo)
         wrapper.ptr = <sox_encodinginfo_t*>ptr
         wrapper.owner = owner
+        wrapper._keepalive = keepalive
         return wrapper
 
     @staticmethod
@@ -635,10 +687,15 @@ cdef class EncodingInfo:
 cdef class LoopInfo:
     cdef sox_loopinfo_t* ptr
     cdef bint owner
+    # Strong reference to the object that owns the memory `ptr` points
+    # into, for non-owning wrappers. Without it, `Format(p).signal` frees
+    # the Format while the SignalInfo still points into its struct.
+    cdef object _keepalive
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._keepalive = None
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
@@ -655,10 +712,11 @@ cdef class LoopInfo:
         self.owner = True
 
     @staticmethod
-    cdef LoopInfo from_ptr(sox_loopinfo_t* ptr, bint owner=False):
+    cdef LoopInfo from_ptr(sox_loopinfo_t* ptr, bint owner=False, object keepalive=None):
         cdef LoopInfo wrapper = LoopInfo.__new__(LoopInfo)
         wrapper.ptr = ptr
         wrapper.owner = owner
+        wrapper._keepalive = keepalive
         return wrapper
 
     @property
@@ -717,10 +775,15 @@ cdef class LoopInfo:
 cdef class InstrInfo:
     cdef sox_instrinfo_t* ptr
     cdef bint owner
+    # Strong reference to the object that owns the memory `ptr` points
+    # into, for non-owning wrappers. Without it, `Format(p).signal` frees
+    # the Format while the SignalInfo still points into its struct.
+    cdef object _keepalive
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._keepalive = None
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
@@ -738,10 +801,11 @@ cdef class InstrInfo:
         self.owner = True
 
     @staticmethod
-    cdef InstrInfo from_ptr(sox_instrinfo_t* ptr, bint owner=False):
+    cdef InstrInfo from_ptr(sox_instrinfo_t* ptr, bint owner=False, object keepalive=None):
         cdef InstrInfo wrapper = InstrInfo.__new__(InstrInfo)
         wrapper.ptr = ptr
         wrapper.owner = owner
+        wrapper._keepalive = keepalive
         return wrapper
 
     @property
@@ -793,10 +857,15 @@ cdef class InstrInfo:
 cdef class FileInfo:
     cdef sox_fileinfo_t* ptr
     cdef bint owner
+    # Strong reference to the object that owns the memory `ptr` points
+    # into, for non-owning wrappers. Without it, `Format(p).signal` frees
+    # the Format while the SignalInfo still points into its struct.
+    cdef object _keepalive
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._keepalive = None
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
@@ -818,10 +887,11 @@ cdef class FileInfo:
         self.owner = True
 
     @staticmethod
-    cdef FileInfo from_ptr(sox_fileinfo_t* ptr, bint owner=False):
+    cdef FileInfo from_ptr(sox_fileinfo_t* ptr, bint owner=False, object keepalive=None):
         cdef FileInfo wrapper = FileInfo.__new__(FileInfo)
         wrapper.ptr = ptr
         wrapper.owner = owner
+        wrapper._keepalive = keepalive
         return wrapper
 
     @property
@@ -867,10 +937,15 @@ cdef class FileInfo:
 cdef class OutOfBand:
     cdef sox_oob_t* ptr
     cdef bint owner
+    # Strong reference to the object that owns the memory `ptr` points
+    # into, for non-owning wrappers. Without it, `Format(p).signal` frees
+    # the Format while the SignalInfo still points into its struct.
+    cdef object _keepalive
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._keepalive = None
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
@@ -885,10 +960,11 @@ cdef class OutOfBand:
         self.owner = True
 
     @staticmethod
-    cdef OutOfBand from_ptr(sox_oob_t* ptr, bint owner=False):
+    cdef OutOfBand from_ptr(sox_oob_t* ptr, bint owner=False, object keepalive=None):
         cdef OutOfBand wrapper = OutOfBand.__new__(OutOfBand)
         wrapper.ptr = ptr
         wrapper.owner = owner
+        wrapper._keepalive = keepalive
         return wrapper
 
     def num_comments(self) -> int:
@@ -925,24 +1001,29 @@ cdef class OutOfBand:
     @property
     def instr(self) -> InstrInfo:
         """Instrument specification"""
-        return InstrInfo.from_ptr(&self.ptr.instr, False)
+        return InstrInfo.from_ptr(&self.ptr.instr, False, self)
 
     @property
     def loops(self) -> list:
         """Looping specification"""
         result = []
         for i in range(8):
-            result.append(LoopInfo.from_ptr(&self.ptr.loops[i], False))
+            result.append(LoopInfo.from_ptr(&self.ptr.loops[i], False, self))
         return result
 
 
 cdef class VersionInfo:
     cdef sox_version_info_t* ptr
     cdef bint owner
+    # Strong reference to the object that owns the memory `ptr` points
+    # into, for non-owning wrappers. Without it, `Format(p).signal` frees
+    # the Format while the SignalInfo still points into its struct.
+    cdef object _keepalive
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._keepalive = None
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
@@ -950,10 +1031,11 @@ cdef class VersionInfo:
             self.ptr = NULL
 
     @staticmethod
-    cdef VersionInfo from_ptr(sox_version_info_t* ptr, bint owner=False):
+    cdef VersionInfo from_ptr(sox_version_info_t* ptr, bint owner=False, object keepalive=None):
         cdef VersionInfo wrapper = VersionInfo.__new__(VersionInfo)
         wrapper.ptr = ptr
         wrapper.owner = owner
+        wrapper._keepalive = keepalive
         return wrapper
 
     @property
@@ -1021,10 +1103,15 @@ cdef class VersionInfo:
 cdef class Globals:
     cdef sox_globals_t* ptr
     cdef bint owner
+    # Strong reference to the object that owns the memory `ptr` points
+    # into, for non-owning wrappers. Without it, `Format(p).signal` frees
+    # the Format while the SignalInfo still points into its struct.
+    cdef object _keepalive
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._keepalive = None
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
@@ -1038,10 +1125,11 @@ cdef class Globals:
             raise MemoryError
 
     @staticmethod
-    cdef Globals from_ptr(sox_globals_t* ptr, bint owner=False):
+    cdef Globals from_ptr(sox_globals_t* ptr, bint owner=False, object keepalive=None):
         cdef Globals wrapper = Globals.__new__(Globals)
         wrapper.ptr = ptr
         wrapper.owner = owner
+        wrapper._keepalive = keepalive
         return wrapper
 
     def as_dict(self):
@@ -1154,10 +1242,15 @@ cdef class Globals:
 cdef class EffectsGlobals:
     cdef sox_effects_globals_t* ptr
     cdef bint owner
+    # Strong reference to the object that owns the memory `ptr` points
+    # into, for non-owning wrappers. Without it, `Format(p).signal` frees
+    # the Format while the SignalInfo still points into its struct.
+    cdef object _keepalive
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._keepalive = None
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
@@ -1169,10 +1262,11 @@ cdef class EffectsGlobals:
         self.owner = False # never owned
 
     @staticmethod
-    cdef EffectsGlobals from_ptr(sox_effects_globals_t* ptr, bint owner=False):
+    cdef EffectsGlobals from_ptr(sox_effects_globals_t* ptr, bint owner=False, object keepalive=None):
         cdef EffectsGlobals wrapper = EffectsGlobals.__new__(EffectsGlobals)
         wrapper.ptr = ptr
         wrapper.owner = owner
+        wrapper._keepalive = keepalive
         return wrapper
 
     @property
@@ -1189,7 +1283,7 @@ cdef class EffectsGlobals:
         """Pointer to associated SoX globals"""
         if self.ptr.global_info == NULL:
             return None
-        return Globals.from_ptr(self.ptr.global_info, False)
+        return Globals.from_ptr(self.ptr.global_info, False, self)
 
 
 cdef class Format:
@@ -1228,14 +1322,37 @@ cdef class Format:
     """
     cdef sox_format_t* ptr
     cdef bint owner
+    # Strong reference to the object that owns the memory `ptr` points
+    # into, for non-owning wrappers. Without it, `Format(p).signal` frees
+    # the Format while the SignalInfo still points into its struct.
+    cdef object _keepalive
+    # libsox init generation this format was opened in; see _libsox_generation.
+    cdef unsigned long _generation
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._keepalive = None
+        self._generation = _libsox_generation
+
+    cdef inline bint _closeable(self) noexcept:
+        """Whether sox_close() can safely be called on this format.
+
+        False once libsox has been shut down, and false for a format that
+        outlived a quit/init cycle: its handler's function pointers refer to
+        the previous generation's tables, which sox_quit() freed.
+        """
+        return _libsox_up and self._generation == _libsox_generation
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
-            sox_close(self.ptr)
+            # sox_close() dispatches through ft->handler.stopread/stopwrite.
+            # If libsox has been shut down -- or re-initialised since this
+            # format was opened -- those point into freed handler tables and
+            # calling it jumps through a dangling pointer. Skipping leaks one
+            # sox_format_t, which the OS reclaims at exit; a crash does not.
+            if self._closeable():
+                sox_close(self.ptr)
             self.ptr = NULL
 
     def __init__(self, str filename, SignalInfo signal = None,
@@ -1304,11 +1421,22 @@ cdef class Format:
         self.owner = True
 
     @staticmethod
-    cdef Format from_ptr(sox_format_t* ptr, bint owner=False):
+    cdef Format from_ptr(sox_format_t* ptr, bint owner=False, object keepalive=None):
         cdef Format wrapper = Format.__new__(Format)
         wrapper.ptr = ptr
         wrapper.owner = owner
+        wrapper._keepalive = keepalive
         return wrapper
+
+    cdef inline int _check_open(self) except -1:
+        """Raise if the underlying sox_format_t has been closed.
+
+        ``close()`` sets ``ptr`` to NULL. Without this guard every accessor
+        below would dereference NULL and take down the interpreter.
+        """
+        if self.ptr is NULL:
+            raise SoxIOError("Operation on a closed Format")
+        return 0
 
     def read(self, length: int) -> list:
         """Read samples from the file into a Python list.
@@ -1323,6 +1451,7 @@ cdef class Format:
             For better performance with large data, use read_buffer() to get
             a memory view, or read_into() to read into a pre-allocated buffer.
         """
+        self._check_open()
         cdef size_t samples_read = 0
         cdef sox_sample_t* buffer = <sox_sample_t*>malloc(length * sizeof(sox_sample_t))
         if buffer == NULL:
@@ -1353,6 +1482,7 @@ cdef class Format:
             ...     buf = f.read_buffer(1024)
             ...     arr = np.asarray(buf, dtype=np.int32)
         """
+        self._check_open()
         cdef size_t samples_read = 0
         cdef sox_sample_t* buffer = <sox_sample_t*>malloc(length * sizeof(sox_sample_t))
         if buffer == NULL:
@@ -1391,6 +1521,7 @@ cdef class Format:
             ...     n = f.read_into(arr)
             ...     print(f"Read {n} samples")
         """
+        self._check_open()
         cdef Py_buffer pybuf
         cdef int flags = PyBUF_WRITABLE | PyBUF_C_CONTIGUOUS
         cdef size_t max_samples
@@ -1423,6 +1554,7 @@ cdef class Format:
             >>> with sox.Format('output.wav', signal=..., mode='w') as f:
             ...     f.write(arr)
         """
+        self._check_open()
         cdef size_t length
         cdef sox_sample_t* buffer
         cdef size_t samples_written
@@ -1457,6 +1589,7 @@ cdef class Format:
 
     def seek(self, offset: int, whence: int = SOX_SEEK_SET) -> int:
         """Seek to a specific sample position."""
+        self._check_open()
         cdef int result = sox_seek(self.ptr, offset, whence)
         if result != SOX_SUCCESS:
             raise SoxIOError(f"Failed to seek: {strerror(result)}")
@@ -1466,6 +1599,13 @@ cdef class Format:
         """Closes an encoding or decoding session."""
         if self.ptr is NULL:
             # Already closed, return success
+            return <int>SOX_SUCCESS
+
+        if not self._closeable():
+            # libsox is down, or was re-initialised since this format was
+            # opened; closing now would dispatch through a freed handler
+            # table. Drop the pointer and report success.
+            self.ptr = NULL
             return <int>SOX_SUCCESS
 
         cdef int result = sox_close(self.ptr)
@@ -1516,16 +1656,26 @@ cdef class Format:
     @property
     def filename(self) -> str:
         """Path to the audio file."""
+        self._check_open()
         return self.ptr.filename.decode()
 
     @property
     def signal(self) -> SignalInfo:
         """Signal information (sample rate, channels, precision, length).
 
-        A snapshot: libsox owns the underlying struct and frees it in
-        ``close()``, so handing out a view would dangle the moment the caller
-        did the very natural ``signal = f.signal`` outside a ``with`` block.
+        Returns an independent **snapshot**, not a live view into the open
+        format. This matters because ``sox_add_effect()`` treats its ``in``
+        argument as in/out and writes the effect's output signal back through
+        it. Handing it this format's own struct let effects overwrite the
+        input file's metadata. libsox also frees the struct in ``close()``, so
+        a view would dangle after the natural ``signal = f.signal`` outside a
+        ``with`` block.
+
+        The returned object does not track later changes to the format; read
+        the property again rather than holding on to the result. For chain
+        construction that needs write-back, use :attr:`signal_view`.
         """
+        self._check_open()
         return SignalInfo.copy_from_ptr(&self.ptr.signal)
 
     @property
@@ -1534,6 +1684,7 @@ cdef class Format:
 
         A snapshot, for the same reason as :attr:`signal`.
         """
+        self._check_open()
         return EncodingInfo.copy_from_ptr(&self.ptr.encoding)
 
     @property
@@ -1549,11 +1700,13 @@ cdef class Format:
         after :meth:`close` is a use-after-free. Prefer :attr:`signal` unless
         you specifically need the write-back.
         """
-        return SignalInfo.from_ptr(&self.ptr.signal)
+        self._check_open()
+        return SignalInfo.from_ptr(&self.ptr.signal, False, self)
 
     @property
     def filetype(self) -> str:
         """File type identifier (e.g., 'wav', 'mp3', 'flac')."""
+        self._check_open()
         if self.ptr.filetype == NULL:
             return None
         return self.ptr.filetype.decode()
@@ -1561,46 +1714,55 @@ cdef class Format:
     @property
     def seekable(self) -> bool:
         """Can seek on this file"""
+        self._check_open()
         return self.ptr.seekable
 
     @property
     def mode(self) -> str:
         """Read or write mode ('r' or 'w')"""
+        self._check_open()
         return chr(self.ptr.mode)
 
     @property
     def olength(self) -> int:
         """Samples * chans written to file"""
+        self._check_open()
         return self.ptr.olength
 
     @property
     def clips(self) -> int:
         """Incremented if clipping occurs"""
+        self._check_open()
         return self.ptr.clips
 
     @property
     def sox_errno(self) -> int:
         """Failure error code"""
+        self._check_open()
         return self.ptr.sox_errno
 
     @property
     def sox_errstr(self) -> str:
         """Failure error text"""
+        self._check_open()
         return self.ptr.sox_errstr.decode()
 
     @property
     def io_type(self) -> int:
         """Stores whether this is a file, pipe or URL"""
+        self._check_open()
         return self.ptr.io_type
 
     @property
     def tell_off(self) -> int:
         """Current offset within file"""
+        self._check_open()
         return self.ptr.tell_off
 
     @property
     def data_start(self) -> int:
         """Offset at which headers end and sound data begins"""
+        self._check_open()
         return self.ptr.data_start
 
 
@@ -1608,10 +1770,15 @@ cdef class FormatHandler:
     """Handler structure defined by each format."""
     cdef sox_format_handler_t* ptr
     cdef bint owner
+    # Strong reference to the object that owns the memory `ptr` points
+    # into, for non-owning wrappers. Without it, `Format(p).signal` frees
+    # the Format while the SignalInfo still points into its struct.
+    cdef object _keepalive
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._keepalive = None
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
@@ -1626,10 +1793,11 @@ cdef class FormatHandler:
             raise SoxFormatError(f"Failed to find format handler for path: {path}")
 
     @staticmethod
-    cdef FormatHandler from_ptr(sox_format_handler_t* ptr, bint owner=False):
+    cdef FormatHandler from_ptr(sox_format_handler_t* ptr, bint owner=False, object keepalive=None):
         cdef FormatHandler wrapper = FormatHandler.__new__(FormatHandler)
         wrapper.ptr = ptr
         wrapper.owner = owner
+        wrapper._keepalive = keepalive
         return wrapper
 
     @staticmethod
@@ -1688,10 +1856,15 @@ cdef class FormatTab:
     format."""
     cdef sox_format_tab_t* ptr
     cdef bint owner
+    # Strong reference to the object that owns the memory `ptr` points
+    # into, for non-owning wrappers. Without it, `Format(p).signal` frees
+    # the Format while the SignalInfo still points into its struct.
+    cdef object _keepalive
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._keepalive = None
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
@@ -1710,10 +1883,11 @@ cdef class FormatTab:
         self.owner = True
 
     @staticmethod
-    cdef FormatTab from_ptr(sox_format_tab_t* ptr, bint owner=False):
+    cdef FormatTab from_ptr(sox_format_tab_t* ptr, bint owner=False, object keepalive=None):
         cdef FormatTab wrapper = FormatTab.__new__(FormatTab)
         wrapper.ptr = ptr
         wrapper.owner = owner
+        wrapper._keepalive = keepalive
         return wrapper
 
     @property
@@ -1738,10 +1912,15 @@ cdef class EffectHandler:
     """Effect handler information."""
     cdef sox_effect_handler_t* ptr
     cdef bint owner
+    # Strong reference to the object that owns the memory `ptr` points
+    # into, for non-owning wrappers. Without it, `Format(p).signal` frees
+    # the Format while the SignalInfo still points into its struct.
+    cdef object _keepalive
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._keepalive = None
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
@@ -1749,10 +1928,11 @@ cdef class EffectHandler:
             self.ptr = NULL
 
     @staticmethod
-    cdef EffectHandler from_ptr(sox_effect_handler_t* ptr, bint owner=False):
+    cdef EffectHandler from_ptr(sox_effect_handler_t* ptr, bint owner=False, object keepalive=None):
         cdef EffectHandler wrapper = EffectHandler.__new__(EffectHandler)
         wrapper.ptr = ptr
         wrapper.owner = owner
+        wrapper._keepalive = keepalive
         return wrapper
 
     @staticmethod
@@ -1797,10 +1977,15 @@ cdef class Effect:
     """Effect structure."""
     cdef sox_effect_t* ptr
     cdef bint owner
+    # Strong reference to the object that owns the memory `ptr` points
+    # into, for non-owning wrappers. Without it, `Format(p).signal` frees
+    # the Format while the SignalInfo still points into its struct.
+    cdef object _keepalive
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._keepalive = None
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
@@ -1815,26 +2000,60 @@ cdef class Effect:
         self.owner = True
 
     @staticmethod
-    cdef Effect from_ptr(sox_effect_t* ptr, bint owner=False):
+    cdef Effect from_ptr(sox_effect_t* ptr, bint owner=False, object keepalive=None):
         cdef Effect wrapper = Effect.__new__(Effect)
         wrapper.ptr = ptr
         wrapper.owner = owner
+        wrapper._keepalive = keepalive
         return wrapper
 
+    cdef inline int _check_live(self) except -1:
+        """Raise if this effect has already been deleted."""
+        if self.ptr is NULL:
+            raise SoxEffectError("Operation on a deleted Effect")
+        return 0
+
     def delete(self):
-        """Shut down and delete an effect."""
+        """Shut down and delete an effect.
+
+        ``sox_delete_effect()`` frees the effect struct itself, so the pointer
+        is cleared and ownership dropped here. Leaving them set would let
+        ``__dealloc__`` free the same pointer a second time; glibc reports
+        that as "free(): double free detected in tcache 2".
+
+        The Effect is unusable afterwards; further calls raise SoxEffectError.
+        """
+        if self.ptr is NULL:
+            return
         sox_delete_effect(self.ptr)
+        self.ptr = NULL
+        self.owner = False
+        self._keepalive = None
 
     def set_options(self, options):
         """Applies the command-line options to the effect.
 
-        Returns the number of arguments consumed."""
+        Args:
+            options: Sequence of str arguments, or a Format for the
+                ``input``/``output`` effects.
+
+        Returns:
+            The number of arguments consumed.
+
+        Raises:
+            SoxEffectError: If libsox rejects the arguments. libsox reports
+                this by returning SOX_EOF (-1); a successful call returns the
+                (non-negative) count of arguments consumed, so the check is
+                against SOX_EOF rather than SOX_SUCCESS.
+        """
+        self._check_live()
         cdef int argc = len(options) if options else 0
         cdef char** argv = <char**>malloc(argc * sizeof(char*)) if argc > 0 else NULL
         if argc > 0 and argv == NULL:
             raise SoxMemoryError("Failed to allocate argument array")
 
         cdef list byte_strings = []
+        cdef int result = SOX_EOF
         try:
             for i in range(argc):
                 option = options[i]
@@ -1848,10 +2067,37 @@ cdef class Effect:
                     argv[i] = <char*>byte_str
                 else:
                     raise TypeError(f"Unsupported option type: {type(option)}")
-            return sox_effect_options(self.ptr, argc, argv)
+            result = sox_effect_options(self.ptr, argc, argv)
         finally:
             if argv != NULL:
                 free(argv)
+
+        if result == SOX_EOF:
+            # libsox writes its own "sox FAIL <effect>: usage: ..." to stderr,
+            # which Python cannot capture. Without this check the effect stays
+            # unconfigured and silently does nothing to the audio.
+            raise SoxEffectError(
+                f"Effect {self._name_or_unknown()!r} rejected options "
+                f"{self._describe_options(options)}"
+            )
+        return result
+
+    def _name_or_unknown(self):
+        """Effect handler name, or '<unknown>' if unavailable."""
+        if self.ptr is NULL or self.ptr.handler.name == NULL:
+            return "<unknown>"
+        return self.ptr.handler.name.decode()
+
+    @staticmethod
+    def _describe_options(options):
+        """Render options for an error message, naming Formats by filename."""
+        parts = []
+        for option in (options or ()):
+            if isinstance(option, Format):
+                parts.append(f"<Format {(<Format>option).filename!r}>")
+            else:
+                parts.append(repr(option))
+        return "[" + ", ".join(parts) + "]"
 
     def stop(self) -> int:
         """Shuts down an effect (calls stop on each of its flows).
@@ -1875,52 +2121,61 @@ cdef class Effect:
     @property
     def global_info(self):
         """global effect parameters"""
+        self._check_live()
         if self.ptr.global_info == NULL:
             return None
-        return EffectsGlobals.from_ptr(self.ptr.global_info, False)
+        return EffectsGlobals.from_ptr(self.ptr.global_info, False, self)
 
     @property
     def in_signal(self) -> SignalInfo:
         """Information about the incoming data stream"""
-        return SignalInfo.from_ptr(&self.ptr.in_signal, False)
+        self._check_live()
+        return SignalInfo.from_ptr(&self.ptr.in_signal, False, self)
 
     @property
     def out_signal(self) -> SignalInfo:
         """Information about the outgoing data stream"""
-        return SignalInfo.from_ptr(&self.ptr.out_signal, False)
+        self._check_live()
+        return SignalInfo.from_ptr(&self.ptr.out_signal, False, self)
 
     @property
     def in_encoding(self) -> EncodingInfo:
         """Information about the incoming data encoding"""
+        self._check_live()
         if self.ptr.in_encoding == NULL:
             return None
-        return EncodingInfo.from_ptr(self.ptr.in_encoding, False)
+        return EncodingInfo.from_ptr(self.ptr.in_encoding, False, self)
 
     @property
     def out_encoding(self) -> EncodingInfo:
         """Information about the outgoing data encoding"""
+        self._check_live()
         if self.ptr.out_encoding == NULL:
             return None
-        return EncodingInfo.from_ptr(self.ptr.out_encoding, False)
+        return EncodingInfo.from_ptr(self.ptr.out_encoding, False, self)
 
     @property
     def handler(self) -> EffectHandler:
         """The handler for this effect"""
-        return EffectHandler.from_ptr(&self.ptr.handler, False)
+        self._check_live()
+        return EffectHandler.from_ptr(&self.ptr.handler, False, self)
 
     @property
     def clips(self) -> sox_uint64_t:
         """increment if clipping occurs"""
+        self._check_live()
         return self.ptr.clips
 
     @property
     def flows(self) -> int:
         """1 if MCHAN, number of chans otherwise"""
+        self._check_live()
         return self.ptr.flows
 
     @property
     def flow(self) -> int:
         """flow number"""
+        self._check_live()
         return self.ptr.flow
 
     @property
@@ -1999,24 +2254,39 @@ cdef class EffectsChain:
     cdef bint owner
     # libsox stores the two encodinginfo pointers and dereferences them during
     # flow_effects(), so the chain must outlive whatever owns those structs.
-    # Hold the Python objects to keep them alive.
     cdef object _in_encoding
     cdef object _out_encoding
+    # Strong reference for non-owning wrappers from from_ptr().
+    cdef object _keepalive
+    # libsox init generation this chain was created in.
+    cdef unsigned long _generation
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
         self._in_encoding = None
         self._out_encoding = None
+        self._keepalive = None
+        self._generation = _libsox_generation
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
-            sox_delete_effects_chain(self.ptr)
+            # Same hazard as Format.__dealloc__: deleting a chain runs each
+            # effect's stop/kill handler, which sox_quit() has already freed.
+            if _libsox_up and self._generation == _libsox_generation:
+                sox_delete_effects_chain(self.ptr)
             self.ptr = NULL
 
     def __init__(self, in_encoding: EncodingInfo = None,
                        out_encoding: EncodingInfo = None):
-        """Initialize an effects chain with optional input and output encodings."""
+        """Initialize an effects chain with optional input and output encodings.
+
+        The encodings are retained for the chain's lifetime.
+        ``sox_create_effects_chain()`` stores the *pointers*, not copies, so
+        without a reference here a temporary would be collected and the chain
+        left holding freed memory -- ``EffectsChain(EncodingInfo(...),
+        EncodingInfo(...))`` then reported ``bits_per_sample`` as 0.
+        """
         self.ptr = sox_create_effects_chain(
             in_encoding.ptr if in_encoding else NULL,
             out_encoding.ptr if out_encoding else NULL)
@@ -2025,12 +2295,14 @@ cdef class EffectsChain:
         self._in_encoding = in_encoding
         self._out_encoding = out_encoding
         self.owner = True
+        self._keepalive = (in_encoding, out_encoding)
 
     @staticmethod
-    cdef EffectsChain from_ptr(sox_effects_chain_t* ptr, bint owner=False):
+    cdef EffectsChain from_ptr(sox_effects_chain_t* ptr, bint owner=False, object keepalive=None):
         cdef EffectsChain wrapper = EffectsChain.__new__(EffectsChain)
         wrapper.ptr = ptr
         wrapper.owner = owner
+        wrapper._keepalive = keepalive
         return wrapper
 
     def add_effect(self, effect: Effect, in_signal: SignalInfo,
@@ -2057,10 +2329,18 @@ cdef class EffectsChain:
             client_data: Optional user data passed to the callback
 
         Returns:
-            SOX_SUCCESS if successful
+            ``SOX_SUCCESS`` when the chain ran to completion, or ``SOX_EOF``
+            when it terminated early -- either because a length-limiting
+            effect such as ``trim`` reached the end of its window, or because
+            the callback aborted. Both are normal outcomes and the output
+            written so far is complete; libsox does not distinguish them, so
+            a caller that installed a callback must record its own aborts
+            (see ``cysox.convert``'s handling of ``CancelledError``).
 
         Raises:
-            SoxEffectError: If the effects chain fails to run
+            SoxEffectError: If the chain holds fewer than two effects, or
+                fails with any status other than ``SOX_SUCCESS`` or
+                ``SOX_EOF``.
 
         Example:
             >>> def progress_callback(all_done, user_data):
@@ -2076,6 +2356,25 @@ cdef class EffectsChain:
         """
         cdef int result
         cdef uintptr_t chain_id
+
+        if self.ptr is NULL:
+            raise SoxEffectError("Operation on a deleted EffectsChain")
+
+        # libsox reads from the first effect and writes to the last, so a chain
+        # needs at least a source and a sink. One effect cannot be both, and
+        # running such a chain has been reported to segfault -- see
+        # tests/test_error_handling.py::test_effects_chain_with_only_input.
+        #
+        # The report is against libsox 14.4.x; it does not reproduce on
+        # SoX_ng 14.7, where the same chain returns normally. The guard is kept
+        # regardless: the behaviour is undefined either way, and a Python-level
+        # call should raise rather than depend on which libsox is linked.
+        if self.ptr.length < 2:
+            raise SoxEffectError(
+                f"Effects chain has {self.ptr.length} effect(s); at least two "
+                "are required (an input effect and an output effect). Running "
+                "a chain without both is undefined in libsox."
+            )
 
         if callback is not None:
             # Register the callback via the runtime singleton (thread-safe)
@@ -2096,11 +2395,11 @@ cdef class EffectsChain:
             # No callback, call with NULL
             result = sox_flow_effects(self.ptr, NULL, NULL)
 
-        # SOX_EOF is not a failure here. sox_flow_effects() returns it when an
-        # effect ended the flow deliberately -- `trim` reaching its end
-        # position, or a callback asking to stop -- which is exactly how those
-        # effects are meant to finish. sox's own driver treats it as a normal
-        # end, and so do we; only genuine error codes raise.
+        # SOX_EOF is normal completion, not a failure. A length-limiting
+        # effect such as `trim` ends the chain by signalling end-of-stream,
+        # and libsox reports that the same way it reports a callback abort.
+        # Callers that need to tell cancellation from normal termination must
+        # track it in their callback -- SOX_EOF alone cannot distinguish them.
         if result != SOX_SUCCESS and result != SOX_EOF:
             raise SoxEffectError(f"Failed to flow effects: {strerror(result)}")
         return result
@@ -2145,7 +2444,7 @@ cdef class EffectsChain:
         result = []
         for i in range(self.ptr.length):
             if self.ptr.effects[i] != NULL:
-                result.append(Effect.from_ptr(self.ptr.effects[i], False))
+                result.append(Effect.from_ptr(self.ptr.effects[i], False, self))
         return result
 
     @property
@@ -2156,21 +2455,21 @@ cdef class EffectsChain:
     @property
     def global_info(self) -> EffectsGlobals:
         """Copy of global effects settings"""
-        return EffectsGlobals.from_ptr(&self.ptr.global_info, False)
+        return EffectsGlobals.from_ptr(&self.ptr.global_info, False, self)
 
     @property
     def in_enc(self) -> EncodingInfo:
         """Input encoding"""
         if self.ptr.in_enc == NULL:
             return None
-        return EncodingInfo.from_ptr(self.ptr.in_enc, False)
+        return EncodingInfo.from_ptr(self.ptr.in_enc, False, self)
 
     @property
     def out_enc(self) -> EncodingInfo:
         """Output encoding"""
         if self.ptr.out_enc == NULL:
             return None
-        return EncodingInfo.from_ptr(self.ptr.out_enc, False)
+        return EncodingInfo.from_ptr(self.ptr.out_enc, False, self)
 
     @property
     def table_size(self) -> int:

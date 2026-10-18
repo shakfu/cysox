@@ -350,7 +350,10 @@ cdef extern from "sox.h":
         sox_uint32_t version_code   # version number = 0x140400
         const char * version        # version string = sox_version(), for example, "14.4.0"
         const char * version_extra  # version extra info or null = "PACKAGE_EXTRA", for example, "beta"
-        # NOTE: `time` is deliberately absent - sox_ng dropped it (see cysox_version_info_time below).
+        # NOTE: `const char * time` (build time = "__DATE__ __TIME__") was
+        # declared here, but SoX_ng 14.7 removed the field for reproducible
+        # builds. Declaring it makes cysox fail to compile against any libsox
+        # that has dropped it. See cysox_version_info_time below.
         const char * distro         # distro or null = "DISTRO", for example, "Debian"
         const char * compiler       # compiler info or null, for example, "msvc 160040219"
         const char * arch           # arch, for example, "1248 48 44 L OMP"

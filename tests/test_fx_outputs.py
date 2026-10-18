@@ -440,19 +440,16 @@ class TestConversionEffects:
         assert_ratio(m.mean_abs, source_metrics.mean_abs, 0.01, "swap mean_abs")
 
     def test_remix_left_only(self, test_wav_str, output_path, source_metrics):
-        """Remix selects a channel; the output shape follows convert()'s target.
+        """Remix to a single channel opens a mono output (0.2.0+).
 
-        The output file's channel count is set by the input, or by an explicit
-        ``channels=``. An in-chain effect that changes the channel count acts
-        on the processing signal, and convert() converts back to the target --
-        exactly as it does for an in-chain ``fx.Rate``. So this yields the left
-        channel duplicated across a stereo file, not a mono file. Pass
-        ``channels=1`` to get mono.
+        ``convert()`` derives the output channel count from the effects chain
+        unless ``channels=`` is given, so ``fx.Remix(mix=["1"])`` yields a
+        mono file rather than the left channel duplicated across stereo.
         """
         cysox.convert(test_wav_str, output_path, effects=[fx.Remix(mix=["1"])])
         assert_audio(
             output_path,
-            channels=source_metrics.channels,
+            channels=1,
             rate=source_metrics.rate,
             duration=source_metrics.duration,
         )
@@ -682,11 +679,21 @@ class TestSignalNegotiationRegression:
     def test_affected_presets_keep_their_length(
         self, test_wav_str, output_path_factory, source_metrics
     ):
-        """The presets that embedded a downward rate are whole again."""
-        for name in ("Telephone", "WalkieTalkie", "LoFiHipHop"):
+        """Presets that embed a downward Rate keep full duration at that rate.
+
+        Since 0.2.0, ``convert()`` opens the output at the rate the chain
+        delivers, so Telephone/WalkieTalkie land at 8 kHz rather than being
+        resampled back to the source rate.
+        """
+        expected_rate = {
+            "Telephone": 8000,
+            "WalkieTalkie": 8000,
+            "LoFiHipHop": 22050,
+        }
+        for name, rate in expected_rate.items():
             out = output_path_factory(name)
             cysox.convert(test_wav_str, out, effects=[getattr(fx, name)()])
-            m = assert_audio(out, rate=source_metrics.rate)
+            m = assert_audio(out, rate=rate)
             assert_ratio(m.duration, source_metrics.duration, 0.02, f"{name} duration")
 
     def test_input_file_signal_is_not_mutated(self, test_wav_str, output_path):

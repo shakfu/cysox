@@ -146,10 +146,15 @@ class TestFxClasses:
         """Volume effect creates correct args."""
         v = fx.Volume(db=3)
         assert v.name == "vol"
-        assert v.to_args() == ["3dB"]
+        # sox takes the gain and its unit as separate arguments: "vol 3 dB".
+        assert v.to_args() == ["3", "dB"]
 
+        # The limiter is a numeric third argument, not the literal "limiter".
         v = fx.Volume(db=-6, limiter=True)
-        assert v.to_args() == ["-6dB", "limiter"]
+        assert v.to_args() == ["-6", "dB", "0.05"]
+
+        v = fx.Volume(db=-6, limiter_gain=0.02)
+        assert v.to_args() == ["-6", "dB", "0.02"]
 
     def test_bass_effect(self):
         """Bass effect creates correct args."""

@@ -24,7 +24,7 @@ import tempfile
 from array import array
 from pathlib import Path
 from types import TracebackType
-from typing import Callable, Iterator, List, Optional, Union
+from typing import Callable, Dict, Iterator, List, Optional, Union
 
 from . import sox
 from .fx.base import Effect, CompositeEffect, PythonEffect
@@ -171,6 +171,65 @@ def _make_flow_callback(total_samples, user_callback):
     return callback, state
 
 
+def _predict_chain_output(effects: List[Effect], in_signal) -> tuple:
+    """Rate and channel count the effects chain will hand to the output file.
+
+    Only effects that redefine the stream's output format are counted. ``speed``,
+    ``pitch`` and ``tempo`` also move the rate mid-chain, but they do so as an
+    implementation detail - sox expects the original rate to be restored
+    afterwards - so counting them would change the output file's rate and alter
+    the pitch of the result. They are deliberately excluded.
+
+    Returns:
+        ``(rate, channels)`` as floats/ints.
+    """
+    rate = in_signal.rate
+    channels = in_signal.channels
+    for effect in effects:
+        name = effect.name
+        if name == "rate":
+            # Rate.to_args() is [quality_flag, rate]; the rate is always last.
+            rate = float(effect.to_args()[-1])
+        elif name == "channels":
+            channels = int(effect.to_args()[0])
+        elif name == "remix":
+            # One argument per output channel.
+            channels = len(effect.to_args())
+    return rate, channels
+
+
+def _check_flow_outcome(flow_state, label: str) -> None:
+    """Re-raise whatever a flow callback reported out of band.
+
+    libsox collapses "the callback cancelled", "the callback raised" and "a
+    length-limiting effect ended the chain" into a single SOX_EOF return, so
+    the callback's own recorded state is the only way to tell them apart.
+    Called on both the success and the failure path for that reason.
+    """
+    if flow_state["cancelled"]:
+        raise CancelledError(f"{label} cancelled by progress callback")
+    exc_info = sox.get_last_callback_exception()
+    if exc_info is not None:
+        tb = exc_info[2] if isinstance(exc_info[2], TracebackType) else None
+        raise exc_info[1].with_traceback(tb)
+
+
+def _filetype_hint(path: str) -> Optional[str]:
+    """Return an extension-based filetype when libsox knows that format.
+
+    sox_ng registers an ``act`` ffmpeg pseudo-handler that can claim some
+    WAV files during content autodetection, leaving ``signal.length`` at 0
+    so :func:`info` reports a zero duration for a perfectly valid file.
+    Preferring the path extension when the handler exists avoids that.
+    """
+    ext = Path(path).suffix.lstrip(".").lower()
+    if not ext:
+        return None
+    if sox.find_format(ext, True) is None:
+        return None
+    return ext
+
+
 def info(path: Union[str, Path]) -> AudioInfo:
     """Get audio file metadata.
 
@@ -199,7 +258,7 @@ def info(path: Union[str, Path]) -> AudioInfo:
     _ensure_init()
 
     path = str(path)
-    with sox.Format(path) as f:
+    with sox.Format(path, filetype=_filetype_hint(path)) as f:
         signal = f.signal
         encoding = f.encoding
 
@@ -380,22 +439,46 @@ def convert(
     output_path = str(output_path)
 
     # Open input
-    input_fmt = sox.Format(input_path)
+    input_fmt = sox.Format(input_path, filetype=_filetype_hint(input_path))
     output_fmt = None
 
     try:
-        # Build output signal info
+        in_signal = input_fmt.signal
+
+        expanded = _expand_effects(effects) if effects else []
+        for effect in expanded:
+            if isinstance(effect, PythonEffect):
+                raise NotImplementedError(
+                    "PythonEffect not yet supported in convert(). "
+                    "Use stream() for custom Python processing."
+                )
+
+        # Work out what the chain will actually produce *before* opening the
+        # output, so the file is created with the rate and channel count the
+        # effects deliver. Building out_signal from the keyword arguments alone
+        # meant a user's fx.Rate()/fx.Channels() was silently undone by the
+        # gap-filling conversions added further down.
+        chain_rate, chain_channels = _predict_chain_output(expanded, in_signal)
+
+        # An explicit keyword argument always wins over what the effects imply.
+        target_rate = float(sample_rate) if sample_rate is not None else chain_rate
+        target_channels = channels if channels is not None else chain_channels
+
         out_signal = sox.SignalInfo(
-            rate=sample_rate or input_fmt.signal.rate,
-            channels=channels or input_fmt.signal.channels,
-            precision=bits or input_fmt.signal.precision,
+            rate=target_rate,
+            channels=target_channels,
+            precision=bits or in_signal.precision,
         )
 
         # Open output. Without an explicit encoding libsox picks the handler
         # default for the precision, which drops the input's encoding type.
         out_encoding = _build_output_encoding(output_path, input_fmt, encoding, bits)
         output_fmt = sox.Format(
-            output_path, signal=out_signal, encoding=out_encoding, mode="w"
+            output_path,
+            signal=out_signal,
+            encoding=out_encoding,
+            mode="w",
+            filetype=_filetype_hint(output_path),
         )
 
         # Create effects chain
@@ -407,25 +490,27 @@ def convert(
         # in_signal pointer, so the next effect learns what it will receive.
         # That write-back is required -- it is how length-changing effects
         # such as trim propagate -- but it must land on a struct of our own,
-        # *not* on input_fmt's signal via signal_view. libsox would otherwise
-        # rewrite the input file's declared length mid-negotiation, and the
-        # input effect, which bounds its reads by that length, would stop
-        # early. Every conversion ratio below 1 then lost audio in proportion:
-        # 44.1k -> 8k kept 18% of the recording, stereo -> mono kept half.
-        # Ratios above 1 were unaffected because reads simply hit EOF, which
-        # is why this looked like an effect-specific bug rather than one
-        # defect. See tests/test_fx_outputs.py::TestSignalNegotiationBugs.
-        #
-        # This mirrors what sox's own driver does: one interim signal passed
-        # as in_signal to every effect, with the output file's signal passed
-        # as the (const) out_signal target throughout.
+        # *not* on input_fmt's signal. libsox would otherwise rewrite the
+        # input file's declared length mid-negotiation, and the input effect,
+        # which bounds its reads by that length, would stop early.
+        # See tests/test_fx_outputs.py::TestSignalNegotiationBugs.
         interim = sox.SignalInfo(
             rate=input_fmt.signal.rate,
             channels=input_fmt.signal.channels,
             precision=input_fmt.signal.precision,
             length=input_fmt.signal.length,
         )
-        target_signal = output_fmt.signal
+        # Negotiation target: rate/channels/precision from the opened output,
+        # but length from the input. Handing output_fmt.signal (length 0) made
+        # the input effect clear interim.length, after which effects such as
+        # pad rejected their arguments ("positions must be in ascending order").
+        # The Format itself keeps length 0 so writers are not capped.
+        target_signal = sox.SignalInfo(
+            rate=output_fmt.signal.rate,
+            channels=output_fmt.signal.channels,
+            precision=output_fmt.signal.precision,
+            length=input_fmt.signal.length,
+        )
 
         # Add input effect
         e = sox.Effect(sox.find_effect("input"))
@@ -434,17 +519,10 @@ def convert(
 
         # Process effects. libsox negotiates each effect's output format and
         # updates `interim`, so rate- and channel-changing effects need no
-        # special casing here.
-        if effects:
-            expanded = _expand_effects(effects)
-
+        # special casing here. `expanded` was computed before opening the
+        # output so `_predict_chain_output` could size the file correctly.
+        if expanded:
             for effect in expanded:
-                if isinstance(effect, PythonEffect):
-                    raise NotImplementedError(
-                        "PythonEffect not yet supported in convert(). "
-                        "Use stream() for custom Python processing."
-                    )
-
                 handler = sox.find_effect(effect.name)
                 if handler is None:
                     raise ValueError(f"Unknown effect: {effect.name}")
@@ -454,7 +532,8 @@ def convert(
                 chain.add_effect(e, interim, target_signal)
 
         # libsox does not insert format conversions for us, so add whatever
-        # is still needed to reach the output format.
+        # is still needed to reach the output format. This also restores the
+        # rate after speed/pitch/tempo, which move it mid-chain.
         target_rate = target_signal.rate
         if interim.rate != target_rate:
             e = sox.Effect(sox.find_effect("rate"))
@@ -483,22 +562,12 @@ def convert(
             try:
                 chain.flow_effects(callback=flow_cb)
             except Exception:
-                if flow_state["cancelled"]:
-                    raise CancelledError("convert() cancelled by progress callback")
-                exc_info = sox.get_last_callback_exception()
-                if exc_info is not None:
-                    tb = exc_info[2] if isinstance(exc_info[2], TracebackType) else None
-                    raise exc_info[1].with_traceback(tb)
+                _check_flow_outcome(flow_state, "convert()")
                 raise
-            # A cancelling callback stops the flow via SOX_EOF, which is a
-            # normal return rather than an error, so the cancellation has to
-            # be detected here as well as in the except branch above.
-            if flow_state["cancelled"]:
-                raise CancelledError("convert() cancelled by progress callback")
+            # SOX_EOF is a normal return; detect cancel/exception via callback state.
+            _check_flow_outcome(flow_state, "convert()")
         else:
-            # flow_effects() raises on genuine failure; SOX_EOF is a normal
-            # end (trim reaching its end position), so there is nothing to
-            # check on the return value.
+            # flow_effects() raises on genuine failure; SOX_EOF is a normal end.
             chain.flow_effects()
 
     finally:
@@ -535,7 +604,7 @@ def stream(
     _ensure_init()
 
     path = str(path)
-    with sox.Format(path) as f:
+    with sox.Format(path, filetype=_filetype_hint(path)) as f:
         while True:
             buf = f.read_buffer(chunk_size)
             if len(buf) == 0:
@@ -586,21 +655,39 @@ def play(
         raise NotImplementedError(f"Playback not supported on {system}")
 
     # Open input
-    input_fmt = sox.Format(path)
+    input_fmt = sox.Format(path, filetype=_filetype_hint(path))
     output_fmt = None
 
     try:
+        in_signal = input_fmt.signal
+
+        expanded = _expand_effects(effects) if effects else []
+        for effect in expanded:
+            if isinstance(effect, PythonEffect):
+                raise NotImplementedError("PythonEffect not supported in play()")
+
+        # Open the device at the rate and channel count the effects will
+        # deliver, not the input's. Opening at the input's meant fx.Rate() or
+        # fx.Channels() resampled the data while the device kept the old
+        # format, so playback ran at the wrong speed.
+        device_rate, device_channels = _predict_chain_output(expanded, in_signal)
+        device_signal = sox.SignalInfo(
+            rate=device_rate,
+            channels=device_channels,
+            precision=in_signal.precision,
+        )
+
         # Open audio output
         try:
             output_fmt = sox.Format(
-                "default", signal=input_fmt.signal, filetype=output_type, mode="w"
+                "default", signal=device_signal, filetype=output_type, mode="w"
             )
         except Exception:
             # Try alsa as fallback on Linux
             if system == "Linux":
                 output_type = "alsa"
                 output_fmt = sox.Format(
-                    "default", signal=input_fmt.signal, filetype=output_type, mode="w"
+                    "default", signal=device_signal, filetype=output_type, mode="w"
                 )
             else:
                 raise
@@ -616,7 +703,14 @@ def play(
             precision=input_fmt.signal.precision,
             length=input_fmt.signal.length,
         )
-        device_signal = output_fmt.signal
+        # Same length discipline as convert(): do not use output_fmt.signal
+        # (length 0) as the negotiation target.
+        device_signal = sox.SignalInfo(
+            rate=output_fmt.signal.rate,
+            channels=output_fmt.signal.channels,
+            precision=output_fmt.signal.precision,
+            length=input_fmt.signal.length,
+        )
 
         # Add input effect
         e = sox.Effect(sox.find_effect("input"))
@@ -624,19 +718,15 @@ def play(
         chain.add_effect(e, interim, device_signal)
 
         # Add user effects
-        if effects:
-            expanded = _expand_effects(effects)
-            for effect in expanded:
-                if isinstance(effect, PythonEffect):
-                    raise NotImplementedError("PythonEffect not supported in play()")
+        for effect in expanded:
+            handler = sox.find_effect(effect.name)
+            if handler is None:
+                raise ValueError(f"Unknown effect: {effect.name}")
 
-                handler = sox.find_effect(effect.name)
-                if handler is None:
-                    raise ValueError(f"Unknown effect: {effect.name}")
+            e = sox.Effect(handler)
+            e.set_options(effect.to_args())
 
-                e = sox.Effect(handler)
-                e.set_options(effect.to_args())
-                chain.add_effect(e, interim, device_signal)
+            chain.add_effect(e, interim, device_signal)
 
         # Reach the device format if an effect changed rate or channel count.
         if interim.rate != device_signal.rate:
@@ -661,20 +751,11 @@ def play(
             try:
                 chain.flow_effects(callback=flow_cb)
             except Exception:
-                if flow_state["cancelled"]:
-                    raise CancelledError("play() cancelled by progress callback")
-                exc_info = sox.get_last_callback_exception()
-                if exc_info is not None:
-                    tb = exc_info[2] if isinstance(exc_info[2], TracebackType) else None
-                    raise exc_info[1].with_traceback(tb)
+                _check_flow_outcome(flow_state, "play()")
                 raise
-            # See convert(): a cancelling callback ends the flow with SOX_EOF,
-            # which no longer raises.
-            if flow_state["cancelled"]:
-                raise CancelledError("play() cancelled by progress callback")
+            _check_flow_outcome(flow_state, "play()")
         else:
-            # See convert(): flow_effects() raises on real errors, and
-            # SOX_EOF is a normal end.
+            # flow_effects() raises on real errors; SOX_EOF is a normal end.
             chain.flow_effects()
 
     finally:
@@ -738,7 +819,7 @@ def concat(
 
     try:
         for i, input_path in enumerate(inputs):
-            input_fmt = sox.Format(input_path)
+            input_fmt = sox.Format(input_path, filetype=_filetype_hint(input_path))
 
             if i == 0:
                 # First file: capture reference signal and open output
@@ -754,7 +835,8 @@ def concat(
                     output_path, input_fmt, encoding, None
                 )
                 output_fmt = sox.Format(
-                    output_path, signal=out_signal, encoding=out_encoding, mode="w"
+                    output_path, signal=out_signal, encoding=out_encoding, mode="w",
+                    filetype=_filetype_hint(str(output_path)),
                 )
             else:
                 # Subsequent files: verify compatibility
@@ -943,7 +1025,7 @@ def slice_loop(
     # Open input file
     # try/finally so an error mid-loop still releases the input handle
     # rather than leaving it to the garbage collector.
-    input_fmt = sox.Format(path)
+    input_fmt = sox.Format(path, filetype=_filetype_hint(path))
     try:
         precision = input_fmt.signal.precision
 
@@ -994,6 +1076,7 @@ def slice_loop(
                         signal=out_signal,
                         encoding=_build_output_encoding(temp_path, input_fmt, None, None),
                         mode="w",
+                        filetype=_filetype_hint(str(temp_path)),
                     )
                     temp_fmt.write(segment)
                     temp_fmt.close()
@@ -1012,6 +1095,7 @@ def slice_loop(
                         str(slice_path), input_fmt, encoding, None
                     ),
                     mode="w",
+                    filetype=_filetype_hint(str(slice_path)),
                 )
                 output_fmt.write(segment)
                 output_fmt.close()
@@ -1073,7 +1157,7 @@ def stutter(
     # Get audio info
     # try/finally so an error mid-loop still releases the input handle
     # rather than leaving it to the garbage collector.
-    input_fmt = sox.Format(path)
+    input_fmt = sox.Format(path, filetype=_filetype_hint(path))
     try:
         rate = input_fmt.signal.rate
         channels = input_fmt.signal.channels
@@ -1102,7 +1186,8 @@ def stutter(
         temp_path = os.path.join(tmpdir, "segment.wav")
         out_signal = sox.SignalInfo(rate=rate, channels=channels, precision=precision)
         temp_fmt = sox.Format(
-            temp_path, signal=out_signal, encoding=temp_encoding, mode="w"
+            temp_path, signal=out_signal, encoding=temp_encoding, mode="w",
+            filetype=_filetype_hint(str(temp_path)),
         )
         temp_fmt.write(segment)
         temp_fmt.close()
@@ -1293,7 +1378,7 @@ def split_by_silence(
     min_segment_windows = max(1, int(min_segment * rate * channels / window_samples))
 
     # Pass 1: scan audio to build silence map
-    input_fmt = sox.Format(path)
+    input_fmt = sox.Format(path, filetype=_filetype_hint(path))
     precision = input_fmt.signal.precision
 
     # Scan window by window into one reused buffer. `read_into` writes the
@@ -1366,7 +1451,7 @@ def split_by_silence(
     # Pass 2: re-read and write segments
     # try/finally so an error mid-loop still releases the input handle
     # rather than leaving it to the garbage collector.
-    input_fmt = sox.Format(path)
+    input_fmt = sox.Format(path, filetype=_filetype_hint(path))
     try:
         current_sample = 0
         output_paths: List[str] = []
@@ -1409,6 +1494,7 @@ def split_by_silence(
                         signal=out_signal,
                         encoding=_build_output_encoding(temp_path, input_fmt, None, None),
                         mode="w",
+                        filetype=_filetype_hint(str(temp_path)),
                     )
                     temp_fmt.write(segment)
                     temp_fmt.close()
@@ -1426,6 +1512,7 @@ def split_by_silence(
                         str(seg_path), input_fmt, encoding, None
                     ),
                     mode="w",
+                    filetype=_filetype_hint(str(seg_path)),
                 )
                 output_fmt.write(segment)
                 output_fmt.close()

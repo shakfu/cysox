@@ -14,14 +14,14 @@ owns: "Owning Objects (owner=True)" {
     shape: class
     style.fill: "#c8e6c9"
     "alloc: sox_open_read() / sox_open_write()"
-    "dealloc: sox_close()"
+    "dealloc: sox_close() if generation matches"
   }
 
   EffectsChain: "EffectsChain" {
     shape: class
     style.fill: "#c8e6c9"
     "alloc: sox_create_effects_chain()"
-    "dealloc: sox_delete_effects_chain()"
+    "dealloc: sox_delete_effects_chain() if generation matches"
   }
 
   Effect: "Effect" {
@@ -53,31 +53,40 @@ owns: "Owning Objects (owner=True)" {
   }
 }
 
-borrows: "Borrowed References (owner=False)" {
+snapshot: "Snapshots (owner=True, copied out)" {
+  style: {
+    fill: "#e3f2fd"
+    stroke: "#1565C0"
+  }
+
+  sig_s: "SignalInfo (snapshot)" {
+    shape: class
+    style.fill: "#bbdefb"
+    "format.signal copies the values out"
+    "Independent of the Format; does not track it"
+    "A view here let effects overwrite the input"
+  }
+}
+
+borrows: "Borrowed References (owner=False, keepalive held)" {
   style: {
     fill: "#fff3e0"
     stroke: "#E65100"
-  }
-
-  sig_b: "SignalInfo (borrowed)" {
-    shape: class
-    style.fill: "#ffe0b2"
-    "ptr = &format.signal (inside sox_format_t)"
-    "Valid only while parent Format is open"
   }
 
   enc_b: "EncodingInfo (borrowed)" {
     shape: class
     style.fill: "#ffe0b2"
     "ptr = &format.encoding (inside sox_format_t)"
-    "Valid only while parent Format is open"
+    "Keepalive stops the Format being collected"
+    "But NOT stale after Format.close()"
   }
 
   eff_b: "Effect (borrowed)" {
     shape: class
     style.fill: "#ffe0b2"
     "ptr from chain's effects table"
-    "Valid only while parent chain exists"
+    "Keepalive holds the parent chain"
   }
 }
 
@@ -110,13 +119,16 @@ factory: "from_ptr() Factory Pattern" {
   }
   desc: |md
     Every Cython class provides:
-    `ClassName.from_ptr(ptr, owner=False)`
+    `ClassName.from_ptr(ptr, owner=False, keepalive=None)`
     - owner=True: we allocated, we free
     - owner=False: borrowed, no dealloc
+    - keepalive: strong ref to whoever owns the memory
+    Plus an init generation on Format and EffectsChain,
+    so objects outliving sox_quit() skip cleanup.
   |
 }
 
-owns.Format -> borrows.sig_b: "format.signal creates" {
+owns.Format -> snapshot.sig_s: "format.signal copies" {
   style.stroke-dash: 4
 }
 owns.Format -> borrows.enc_b: "format.encoding creates" {

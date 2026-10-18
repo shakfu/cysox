@@ -33,6 +33,17 @@ def effect_names(preset):
     return {e.name for e in _expand_effects([preset])}
 
 
+def expected_output_rate(preset, source_rate: float) -> float:
+    """Rate ``convert()`` will open the output at for this preset (0.2.0+)."""
+    from types import SimpleNamespace
+
+    from cysox.audio import _expand_effects, _predict_chain_output
+
+    return _predict_chain_output(
+        _expand_effects([preset]), SimpleNamespace(rate=source_rate, channels=2)
+    )[0]
+
+
 def duration_class(preset):
     """'exact', 'tail', or 'changes' -- how a preset may affect duration."""
     names = effect_names(preset)
@@ -404,12 +415,13 @@ class TestAllPresetOutputs:
     def test_preset_produces_valid_audio(
         self, name, test_wav_str, output_path_factory, source_metrics
     ):
-        """No preset may emit silence, change the rate, or drop a channel."""
+        """No preset may emit silence or drop a channel."""
+        preset = getattr(fx, name)()
         out = output_path_factory(name)
-        cysox.convert(test_wav_str, out, effects=[getattr(fx, name)()])
+        cysox.convert(test_wav_str, out, effects=[preset])
         m = assert_audio(
             out,
-            rate=source_metrics.rate,
+            rate=expected_output_rate(preset, source_metrics.rate),
             channels=source_metrics.channels,
             min_peak=0.001,
         )
@@ -553,12 +565,16 @@ class TestPresetsFormerlyBrokenByNegotiation:
     def test_rate_preset_preserves_duration(
         self, name, test_wav_str, output_path_factory, source_metrics
     ):
-        """An embedded rate change must not shorten the output."""
+        """An embedded rate change must not shorten the output.
+
+        Since 0.2.0 the output file is opened at the preset's target rate
+        rather than being resampled back to the source rate.
+        """
         out = output_path_factory(name)
         cysox.convert(test_wav_str, out, effects=[getattr(fx, name)()])
         assert_audio(
             out,
-            rate=source_metrics.rate,
+            rate=RATE_TRUNCATED[name],
             channels=source_metrics.channels,
             duration=source_metrics.duration,
             duration_tol=0.02,

@@ -1,5 +1,13 @@
 # TODO
 
+**Legend:**
+
+- `[ ]` Not started
+
+- `[~]` In progress
+
+- `[!]` Blocked
+
 ## Critical
 
 ## High
@@ -213,7 +221,7 @@
 
   - Functions: `open_mem_read()`, `open_mem_write()`, `open_memstream_write()`
 
-  - Status: Blocked by libsox upstream issue
+  - Status: cysox wrapper bugs (see [docs/dev/known_limitations.md](docs/dev/known_limitations.md) §2)
 
   - Tracking: Documented in Known Limitations
 

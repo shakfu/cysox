@@ -149,11 +149,14 @@ licensecheck:
 		echo "no wheels in dist/ - run 'make wheel' to check bundled libraries"; \
 	fi
 
-# Run all QA checks (test, lint, typecheck, format)
-qa: test lint
-	@echo "All checks passed!"
+# Run all QA checks (test, lint, typecheck, format) without modifying anything.
+# `lint` and `format` above rewrite source; a check that edits the tree cannot
+# tell "clean" from "cleaned up", so qa uses the read-only variants.
+qa: test
+	@uv run ruff check --no-fix src/
 	@uv run mypy src/
-	@uv run ruff format src/
+	@uv run ruff format --check src/
+	@echo "All checks passed!"
 
 # ============================================================================
 # Distribution
