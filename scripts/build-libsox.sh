@@ -33,6 +33,9 @@ case "$(uname -s)" in
         BREW=$(brew --prefix)
         export CPPFLAGS="-I$BREW/include ${CPPFLAGS:-}"
         export LDFLAGS="-L$BREW/lib ${LDFLAGS:-}"
+        # Format seek handlers take uint64_t (unsigned long long on macOS) but
+        # sox_uint64_t is unsigned long; same width, but clang 16+ errors on it.
+        export CFLAGS="${CFLAGS:--g -O2} -Wno-error=incompatible-function-pointer-types"
         ;;
     *)
         AUDIO=(--with-coreaudio=no)

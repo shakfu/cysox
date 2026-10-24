@@ -22,6 +22,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+### Added
+
+- **Python 3.15 support**, with cp315 wheels.
+
+### Removed
+
+- **Python 3.9 support.** It reached end of life in October 2025. GitHub's Python builds for it skip Ubuntu 26.04, which `ubuntu-latest` now uses.
+
 ### Changed
 
 - **Wheels build libsox 14.4.2 from source** (`scripts/build-libsox.sh`) on Linux and macOS, with flac, ogg/vorbis, opus and LAME compiled in. The wheels need no system audio libraries.

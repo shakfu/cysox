@@ -4,7 +4,7 @@
 
 cysox requires:
 
-- Python 3.9 or later
+- Python 3.10 or later
 - libsox development libraries
 - A C compiler (for building from source)
 
