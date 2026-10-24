@@ -14,7 +14,7 @@ Applied by scripts/build-libsox.sh. Design: docs/dev/mp3_decoding.md.
   * libmp3lame for MP3 encoding
   * and libtwolame for MP2 encoding
   *
-@@ -27,6 +28,15 @@
+@@ -27,6 +28,19 @@
  #include <mad.h>
  #endif
  
@@ -25,12 +25,16 @@ Applied by scripts/build-libsox.sh. Design: docs/dev/mp3_decoding.md.
 +#if MPG123_API_VERSION < 48
 +#error "mp3 decoding needs libmpg123 1.32 or later"
 +#endif
++/* 1.33 (API 49) drops mpg123_open_handle from the portable API. */
++#if MPG123_API_VERSION < 49
++#define mpg123_open_handle64 mpg123_open_handle
++#endif
 +#endif
 +
  #if defined(HAVE_LAME_LAME_H)
  #include <lame/lame.h>
  #elif defined(HAVE_LAME_H)
-@@ -228,6 +238,12 @@
+@@ -228,6 +242,12 @@
    LSX_DLENTRIES_TO_PTRS(MAD_FUNC_ENTRIES, mad_dl);
  #endif /*HAVE_MAD_H*/
  
@@ -43,7 +47,7 @@ Applied by scripts/build-libsox.sh. Design: docs/dev/mp3_decoding.md.
  #if defined(HAVE_LAME) || defined(HAVE_TWOLAME)
    float *pcm_buffer;
    size_t pcm_buffer_size;
-@@ -662,7 +678,174 @@
+@@ -662,7 +682,174 @@
  
    return SOX_EOF;
  }
@@ -115,8 +119,8 @@ Applied by scripts/build-libsox.sh. Design: docs/dev/mp3_decoding.md.
 +  if (mpg123_reader64(p->mh, mpg123_read_cb,
 +        ft->seekable ? mpg123_lseek_cb : NULL, NULL) != MPG123_OK)
 +    return startread_fail(ft, "mpg123_reader64");
-+  if (mpg123_open_handle(p->mh, ft) != MPG123_OK)
-+    return startread_fail(ft, "mpg123_open_handle");
++  if (mpg123_open_handle64(p->mh, ft) != MPG123_OK)
++    return startread_fail(ft, "mpg123_open_handle64");
 +  if (mpg123_getformat(p->mh, &rate, &channels, &p->mpg123_encoding) != MPG123_OK)
 +    return startread_fail(ft, "No valid MP3 frame found");
 +
