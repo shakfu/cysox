@@ -13,8 +13,10 @@ cysox requires:
 ### macOS (Homebrew)
 
 ```bash
-brew install sox libsndfile mad libpng flac lame mpg123 libogg opus libvorbis
+brew install flac lame mpg123 libogg libvorbis opus opusfile libpng pkg-config
 ```
+
+`scripts/setup.sh` then builds libsox from source against these.
 
 ### Linux (Ubuntu/Debian)
 
@@ -46,6 +48,21 @@ Windows support is experimental. You need to:
 ```bash
 pip install cysox
 ```
+
+The wheels need no system libsox. Their format support:
+
+| Format | Read | Write |
+|--------|------|-------|
+| wav, aiff, au, raw, gsm | yes | yes |
+| flac, ogg/vorbis | yes | yes |
+| opus | yes | no |
+| mp3 | yes | yes |
+
+The wheels decode mp3 with libmpg123 rather than sox's usual libmad, which is GPL. Decoding is gapless: when a file carries a LAME tag, the encoder's delay and padding are trimmed, so lengths can differ from a libmad-based sox by up to a few thousand samples. See [mp3 decoding](dev/mp3_decoding.md).
+
+The wheels have no audio device drivers on Linux, so `cysox.play()` works only on macOS.
+
+The bundled libraries' licences ship in the wheel's `.dist-info/licenses/`; `licenses/README.md` in the repository lists them.
 
 ### From Source
 

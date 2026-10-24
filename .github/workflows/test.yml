@@ -28,7 +28,7 @@ jobs:
 
     - name: Install system dependencies
       run: |
-        brew install sox libsndfile mad libpng flac lame mpg123 libogg opus opusfile libvorbis
+        brew install flac lame mpg123 libogg libvorbis opus opusfile libpng pkg-config
 
     - name: Setup build environment
       run: |
@@ -74,6 +74,50 @@ jobs:
           libvorbis-dev \
           pkg-config \
           cmake
+
+    - name: Build and test
+      run: |
+        uv sync
+        uv run pytest tests/ -v
+
+  # test-linux uses the system libsox, which decodes mp3 with libmad. This job
+  # tests the patched libsox the wheels ship. Python versions do not change the
+  # libsox build, so it runs the oldest and newest only.
+  test-linux-bundled:
+    name: Test on Linux (bundled libsox)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.13"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libflac-dev \
+          libmp3lame-dev \
+          libmpg123-dev \
+          libogg-dev \
+          libopus-dev \
+          libopusfile-dev \
+          libpng-dev \
+          libvorbis-dev \
+          pkg-config \
+          cmake
+
+    - name: Build libsox
+      run: scripts/build-libsox.sh .
 
     - name: Build and test
       run: |

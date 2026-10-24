@@ -1,0 +1,221 @@
+Add an mp3 decoder backed by libmpg123 to sox 14.4.2's src/mp3.c.
+
+This patch modifies libsox and is licensed, like libsox, under the GNU
+Lesser General Public License version 2.1 or later (licenses/sox-LGPL-2.1.txt).
+Applied by scripts/build-libsox.sh. Design: docs/dev/mp3_decoding.md.
+
+--- a/src/mp3.c
++++ b/src/mp3.c
+@@ -1,6 +1,7 @@
+ /* MP3 support for SoX
+  *
+  * Uses libmad for MP3 decoding
++ * or libmpg123 (HAVE_MPG123_H): added for cysox, 2026-10-24
+  * libmp3lame for MP3 encoding
+  * and libtwolame for MP2 encoding
+  *
+@@ -27,6 +28,15 @@
+ #include <mad.h>
+ #endif
+ 
++#ifdef HAVE_MPG123_H
++/* int64_t offsets throughout, whatever _FILE_OFFSET_BITS is. */
++#define MPG123_PORTABLE_API
++#include <mpg123.h>
++#if MPG123_API_VERSION < 48
++#error "mp3 decoding needs libmpg123 1.32 or later"
++#endif
++#endif
++
+ #if defined(HAVE_LAME_LAME_H)
+ #include <lame/lame.h>
+ #elif defined(HAVE_LAME_H)
+@@ -228,6 +238,12 @@
+   LSX_DLENTRIES_TO_PTRS(MAD_FUNC_ENTRIES, mad_dl);
+ #endif /*HAVE_MAD_H*/
+ 
++#ifdef HAVE_MPG123_H
++  mpg123_handle *mh;
++  int mpg123_encoding;    /* MPG123_ENC_SIGNED_32 or MPG123_ENC_FLOAT_32 */
++  sox_bool mpg123_eof;
++#endif
++
+ #if defined(HAVE_LAME) || defined(HAVE_TWOLAME)
+   float *pcm_buffer;
+   size_t pcm_buffer_size;
+@@ -662,7 +678,174 @@
+ 
+   return SOX_EOF;
+ }
+-#else /* !HAVE_MAD_H */
++#elif defined(HAVE_MPG123_H)
++
++/* libmpg123 reads through sox's I/O, so it finds frames, skips tags, counts
++ * the length and seeks without help. */
++
++static int mpg123_read_cb(void *handle, void *buf, size_t len, size_t *got)
++{
++  sox_format_t *ft = (sox_format_t *)handle;
++
++  *got = lsx_readbuf(ft, buf, len);
++  return *got < len && lsx_error(ft) ? -1 : 0;
++}
++
++static int64_t mpg123_lseek_cb(void *handle, int64_t offset, int whence)
++{
++  sox_format_t *ft = (sox_format_t *)handle;
++
++  if (lsx_seeki(ft, (off_t)offset, whence) != SOX_SUCCESS)
++    return -1;
++  return (int64_t)lsx_tell(ft);
++}
++
++/* libsox frees priv without calling stopread when startread fails. */
++static int startread_fail(sox_format_t *ft, char const *what)
++{
++  priv_t *p = (priv_t *)ft->priv;
++
++  lsx_fail_errno(ft, SOX_EOF, "%s: %s", what, mpg123_strerror(p->mh));
++  mpg123_delete(p->mh);
++  p->mh = NULL;
++  return SOX_EOF;
++}
++
++static int startread(sox_format_t * ft)
++{
++  priv_t *p = (priv_t *)ft->priv;
++  sox_bool ignore_length = ft->signal.length == SOX_IGNORE_LENGTH;
++  const long *rates;
++  size_t i, nrates;
++  long rate;
++  int channels, err;
++
++  p->mh = mpg123_new(NULL, &err);
++  if (!p->mh) {
++    lsx_fail_errno(ft, SOX_EOF, "mpg123_new: %s", mpg123_plain_strerror(err));
++    return SOX_EOF;
++  }
++
++  /* QUIET: report through lsx_fail, not stderr. NO_FRANKENSTEIN: a sox
++   * signal cannot change format mid-stream; it also works around
++   * CVE-2024-10573 in libmpg123 < 1.32.8. */
++  if (mpg123_param(p->mh, MPG123_ADD_FLAGS,
++        MPG123_QUIET | MPG123_NO_FRANKENSTEIN, 0) != MPG123_OK)
++    return startread_fail(ft, "mpg123_param");
++  /* Trims encoder delay and padding using the LAME tag. */
++  if (mpg123_param(p->mh, MPG123_ADD_FLAGS, MPG123_GAPLESS, 0) != MPG123_OK)
++    lsx_warn("libmpg123 built without gapless decoding");
++
++  mpg123_format_none(p->mh);
++  mpg123_rates(&rates, &nrates);
++  for (i = 0; i < nrates; ++i)
++    mpg123_format(p->mh, rates[i], MPG123_MONO | MPG123_STEREO,
++        MPG123_ENC_SIGNED_32 | MPG123_ENC_FLOAT_32);
++
++  if (mpg123_reader64(p->mh, mpg123_read_cb,
++        ft->seekable ? mpg123_lseek_cb : NULL, NULL) != MPG123_OK)
++    return startread_fail(ft, "mpg123_reader64");
++  if (mpg123_open_handle(p->mh, ft) != MPG123_OK)
++    return startread_fail(ft, "mpg123_open_handle");
++  if (mpg123_getformat(p->mh, &rate, &channels, &p->mpg123_encoding) != MPG123_OK)
++    return startread_fail(ft, "No valid MP3 frame found");
++
++  ft->signal.rate = rate;
++  ft->signal.channels = (unsigned)channels;
++  ft->signal.precision = MP3_MAD_PRECISION;
++  ft->encoding.encoding = SOX_ENCODING_MP3;
++
++  /* mpg123_scan reads every frame header for an exact count, then returns
++   * to the current position. Without it the length is a guess. */
++  ft->signal.length = SOX_UNSPEC;
++  if (ft->seekable && !ignore_length && mpg123_scan(p->mh) == MPG123_OK) {
++    int64_t frames = mpg123_length64(p->mh);
++    if (frames > 0)
++      ft->signal.length = (uint64_t)frames * ft->signal.channels;
++  }
++
++  p->mpg123_eof = sox_false;
++  return SOX_SUCCESS;
++}
++
++static size_t sox_mp3read(sox_format_t * ft, sox_sample_t *buf, size_t len)
++{
++  priv_t *p = (priv_t *)ft->priv;
++  size_t done = 0;
++  SOX_SAMPLE_LOCALS;
++
++  /* Whole sample frames only, so channels stay aligned across calls. */
++  len -= len % ft->signal.channels;
++
++  /* Every path either advances done or sets mpg123_eof. */
++  while (done < len && !p->mpg123_eof) {
++    size_t bytes = 0, n, i;
++    int ret = mpg123_read(p->mh, buf + done, (len - done) * sizeof(*buf), &bytes);
++
++    n = bytes / sizeof(*buf);
++    if (p->mpg123_encoding == MPG123_ENC_FLOAT_32) {
++      float const *f = (float const *)(buf + done);
++      for (i = 0; i < n; ++i)
++        buf[done + i] = SOX_FLOAT_32BIT_TO_SAMPLE(f[i], ft->clips);
++    }
++    done += n;
++
++    switch (ret) {
++      case MPG123_OK:
++        if (!bytes) {
++          lsx_warn("mp3 decoder made no progress; stopping");
++          p->mpg123_eof = sox_true;
++        }
++        break;
++
++      case MPG123_NEW_FORMAT: {
++        long rate;
++        int channels;
++
++        mpg123_getformat(p->mh, &rate, &channels, &p->mpg123_encoding);
++        if (rate != ft->signal.rate || channels != (int)ft->signal.channels) {
++          lsx_fail_errno(ft, SOX_EFMT,
++              "mp3 format changed mid-stream to %ld Hz, %d channels", rate, channels);
++          p->mpg123_eof = sox_true;
++        }
++        break;
++      }
++
++      case MPG123_DONE:
++        p->mpg123_eof = sox_true;
++        break;
++
++      default:
++        lsx_fail_errno(ft, SOX_EOF, "mp3 decode: %s", mpg123_strerror(p->mh));
++        p->mpg123_eof = sox_true;
++        break;
++    }
++  }
++  return done;
++}
++
++static int stopread(sox_format_t * ft)
++{
++  priv_t *p = (priv_t *)ft->priv;
++
++  mpg123_delete(p->mh);  /* implies mpg123_close */
++  p->mh = NULL;
++  return SOX_SUCCESS;
++}
++
++static int sox_mp3seek(sox_format_t * ft, uint64_t offset)
++{
++  priv_t *p = (priv_t *)ft->priv;
++
++  if (mpg123_seek64(p->mh, (int64_t)(offset / ft->signal.channels), SEEK_SET) < 0) {
++    lsx_fail_errno(ft, SOX_EOF, "mp3 seek: %s", mpg123_strerror(p->mh));
++    return SOX_EOF;
++  }
++  p->mpg123_eof = sox_false;
++  return SOX_SUCCESS;
++}
++
++#else /* !HAVE_MAD_H && !HAVE_MPG123_H */
+ static int startread(sox_format_t * ft)
+ {
+   lsx_fail_errno(ft,SOX_EOF,"SoX was compiled without MP3 decoding support");

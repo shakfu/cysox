@@ -22,6 +22,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+### Changed
+
+- **Wheels build libsox 14.4.2 from source** (`scripts/build-libsox.sh`) on Linux and macOS, with flac, ogg/vorbis, opus and LAME compiled in. The wheels need no system audio libraries.
+
+- **mp3 is decoded with libmpg123 instead of libmad.** libmad is GPL and cannot ship in an MIT wheel; loading it at runtime instead would make every user install it. sox 14.4.2 has no mpg123 support, so a patch adds it (`scripts/patches/`). Decoding is gapless, lengths are exact rather than estimated, and seeking is sample-exact. mp3 lengths can therefore differ from earlier releases. See `docs/dev/mp3_decoding.md`.
+
+### Fixed
+
+- **Linux wheels could not open flac, mp3, ogg or opus.** They bundled the manylinux image's libsox, which loads codecs as plugins from `/usr/lib64/sox`. The plugins were not in the wheel, and Debian-family systems have no such directory. Wheel builds now fail if any of these formats is missing.
+
+- **macOS wheels statically linked libmad (GPL-2.0+) while declaring MIT.**
+
+- **Wheels omitted the licences of the code they bundle.** The BSD and LGPL terms of the bundled libraries, and the notices in libsox's own sources, require their texts in binary distributions. They now ship in `.dist-info/licenses/`, indexed by `licenses/README.md`. `scripts/check-wheel-licenses.py` fails a wheel build that bundles a library without its licence.
+
 ## [0.2.0]
 
 ### Changed

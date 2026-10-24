@@ -41,10 +41,11 @@ def test_sox_format():
     assert f.encoding.reverse_nibbles == 0
 
 
-def test_sox_format_mp3():
+def test_sox_format_mp3(mp3_decoder):
     f = sox.Format("tests/data/s00.mp3")
     assert f.signal.channels == 2
-    assert f.signal.length == 506798
+    # libmad extrapolates from 25 CBR frames; libmpg123 counts all 220.
+    assert f.signal.length == (506880 if mp3_decoder == "mpg123" else 506798)
     assert f.signal.precision == 16
     assert f.signal.rate == 44100.0
 

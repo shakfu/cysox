@@ -75,7 +75,11 @@
 
 ### Licensing
 
-- [ ] **Drop `libmad` (GPL-2.0+) from the macOS bundle - it conflicts with cysox's MIT license**
+- [~] **Drop `libmad` (GPL-2.0+) from the macOS bundle - it conflicts with cysox's MIT license**
+
+  - **Implemented 2026-10-24 by replacing libmad with libmpg123; verified on Linux, not yet on macOS.** Neither C, D nor E below: sox 14.4.2 is patched to decode with libmpg123 (LGPL), so nothing GPL ships and mp3 reading needs no system library. Option C was built first and worked, but needed a system libmad and two loader patches. Two corrections to the analysis below: in 14.4.2 the flag is `--enable-dl-mad`, not `--with-mad=dyn`; and "sox has no mpg123 path, at any version" is false, since SoX_ng carried one from 2019 to 2024. See `docs/dev/mp3_decoding.md`.
+
+  - **Open:** run the macOS wheel build.
 
   - **This is live today, not hypothetical.** `scripts/setup.sh:53` lists `mad` in `DEPS`, and `:62-80` goes further: when Homebrew has no static lib it **downloads and builds `libmad.a` from source** and copies it into `lib/`. libmad is **GPL-2.0-or-later**. cysox is MIT (`LICENSE`, `pyproject.toml:6`). Statically linking a GPL library into a distributed MIT wheel makes the combined work GPL - so a published macOS wheel built this way cannot be offered under the license the project claims.
 
@@ -125,7 +129,9 @@
 
 ### Platform Support
 
-- [ ] **Bundle the common format handlers by default (mp3, flac, ogg/vorbis)**
+- [~] **Bundle the common format handlers by default (mp3, flac, ogg/vorbis)**
+
+  - **Implemented 2026-10-24 with the libmad item above; verified on Linux, not yet on macOS.** Codecs are compiled into libsox instead of loaded as plugins. A clean `python:3.12-slim` container reads wav/flac/ogg/opus/mp3 and writes wav/flac/ogg/mp3, with no system packages. sox 14.4.2 cannot write opus. cibuildwheel's `test-command` fails on a missing format and runs `tests/test_mp3_decode.py` against each wheel. Linux wheels ship no audio drivers, so `play()` works only on macOS.
 
   - **Motivation: this is the most likely first-run failure.** A user runs `pip install cysox`, points it at an mp3, and it fails - because format support is a property of whichever libsox the wheel linked, and the handlers ship as separate `libsox-fmt-*` packages on Debian. A wheel that silently depends on what the user happens to have already installed gives up most of the benefit of shipping a wheel at all. See the P2 ticket "Expose which formats this build actually supports" for the per-build variation that motivated both.
 

@@ -79,103 +79,31 @@ set_target_properties(_sox PROPERTIES OUTPUT_NAME "sox")
 target_include_directories(_sox PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 # Platform-specific configuration
-if(IS_MACOS)
-    # macOS configuration
-    set(LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
-
-    if(STATIC)
-        # Static linking using imported libraries to avoid target name conflicts
-        # Create imported static library for libsox (named libsox_static to avoid conflict)
-        add_library(libsox_static STATIC IMPORTED)
-        set_target_properties(libsox_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libsox.a")
-
-        add_library(libsndfile_static STATIC IMPORTED)
-        set_target_properties(libsndfile_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libsndfile.a")
-
-        add_library(libflac_static STATIC IMPORTED)
-        set_target_properties(libflac_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libFLAC.a")
-
-        add_library(libopus_static STATIC IMPORTED)
-        set_target_properties(libopus_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libopus.a")
-
-        add_library(libopusfile_static STATIC IMPORTED)
-        set_target_properties(libopusfile_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libopusfile.a")
-
-        add_library(libmp3lame_static STATIC IMPORTED)
-        set_target_properties(libmp3lame_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libmp3lame.a")
-
-        add_library(libmad_static STATIC IMPORTED)
-        set_target_properties(libmad_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libmad.a")
-
-        add_library(libmpg123_static STATIC IMPORTED)
-        set_target_properties(libmpg123_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libmpg123.a")
-
-        add_library(libvorbis_static STATIC IMPORTED)
-        set_target_properties(libvorbis_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libvorbis.a")
-
-        add_library(libvorbisfile_static STATIC IMPORTED)
-        set_target_properties(libvorbisfile_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libvorbisfile.a")
-
-        add_library(libvorbisenc_static STATIC IMPORTED)
-        set_target_properties(libvorbisenc_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libvorbisenc.a")
-
-        add_library(libogg_static STATIC IMPORTED)
-        set_target_properties(libogg_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libogg.a")
-
-        add_library(libpng16_static STATIC IMPORTED)
-        set_target_properties(libpng16_static PROPERTIES IMPORTED_LOCATION "${LIB_DIR}/libpng16.a")
-
-        # Link in dependency order
-        target_link_libraries(_sox PRIVATE
-            libsox_static
-            libsndfile_static
-            libflac_static
-            libopus_static
-            libopusfile_static
-            libmp3lame_static
-            libmad_static
-            libmpg123_static
-            libvorbis_static
-            libvorbisfile_static
-            libvorbisenc_static
-            libogg_static
-            libpng16_static
-        )
-    else()
-        # Dynamic linking
-        target_link_directories(_sox PRIVATE "${LIB_DIR}")
-        target_link_libraries(_sox PRIVATE
-            -lsox -lsndfile -lFLAC -lopus -lmp3lame
-            -lvorbis -lvorbisfile -lvorbisenc -lpng16
-        )
+if(IS_MACOS OR IS_LINUX)
+    # scripts/build-libsox.sh installs a static libsox and its sox.pc into
+    # lib/. Prefer it over a system libsox. It is static-only, so it needs the
+    # Libs.private flags.
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lib/pkgconfig/sox.pc")
+        set(ENV{PKG_CONFIG_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+        set(STATIC ON)
     endif()
 
-    # Always need zlib and CoreAudio framework
-    target_link_libraries(_sox PRIVATE -lz)
-    target_link_libraries(_sox PRIVATE "-framework CoreAudio")
-
-    if(DEBUG)
-        target_compile_options(_sox PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-        target_link_options(_sox PRIVATE -fsanitize=address)
-        target_compile_definitions(_sox PRIVATE DEBUG DEBUG_EFFECTS_CHAIN=1)
-    endif()
-
-elseif(IS_LINUX)
-    # Linux configuration - try pkg-config first, then fall back to find_path/find_library
     set(SOX_FOUND FALSE)
-
     find_package(PkgConfig QUIET)
     if(PkgConfig_FOUND)
         pkg_check_modules(SOX QUIET sox)
-        if(SOX_FOUND)
-            message(STATUS "Found sox via pkg-config")
-            target_include_directories(_sox PRIVATE ${SOX_INCLUDE_DIRS})
-            target_link_directories(_sox PRIVATE ${SOX_LIBRARY_DIRS})
-            target_link_libraries(_sox PRIVATE ${SOX_LIBRARIES})
-        endif()
     endif()
 
-    if(NOT SOX_FOUND)
+    if(SOX_FOUND AND STATIC)
+        message(STATUS "Linking libsox statically via pkg-config: ${SOX_STATIC_LDFLAGS}")
+        target_include_directories(_sox PRIVATE ${SOX_STATIC_INCLUDE_DIRS})
+        target_link_libraries(_sox PRIVATE ${SOX_STATIC_LDFLAGS})
+    elseif(SOX_FOUND)
+        message(STATUS "Found sox via pkg-config")
+        target_include_directories(_sox PRIVATE ${SOX_INCLUDE_DIRS})
+        target_link_directories(_sox PRIVATE ${SOX_LIBRARY_DIRS})
+        target_link_libraries(_sox PRIVATE ${SOX_LIBRARIES})
+    elseif(IS_LINUX)
         # Fallback: use find_path and find_library
         message(STATUS "pkg-config failed, using fallback method")
 
@@ -203,11 +131,16 @@ elseif(IS_LINUX)
         else()
             message(FATAL_ERROR "Could not find libsox. Please install libsox-dev.")
         endif()
+    else()
+        message(FATAL_ERROR "Could not find libsox. Run scripts/setup.sh.")
     endif()
 
     if(DEBUG)
         target_compile_options(_sox PRIVATE -fsanitize=address -fno-omit-frame-pointer)
         target_link_options(_sox PRIVATE -fsanitize=address)
+        if(IS_MACOS)
+            target_compile_definitions(_sox PRIVATE DEBUG DEBUG_EFFECTS_CHAIN=1)
+        endif()
     endif()
 
 elseif(IS_WINDOWS)

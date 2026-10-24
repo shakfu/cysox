@@ -32,6 +32,8 @@ Note that cysox only works on macOS and Linux.
 pip install cysox
 ```
 
+The wheels bundle libsox with wav, flac, ogg/vorbis, mp3 and opus (read only) support, and need no system audio libraries.
+
 ## Command Line Interface
 
 ```sh
@@ -876,7 +878,7 @@ sox.quit()
 ### macOS
 
 ```sh
-brew install sox libsndfile mad libpng flac lame mpg123 libogg opus opusfile libvorbis
+brew install flac lame mpg123 libogg libvorbis opus opusfile libpng pkg-config
 make
 make test
 ```

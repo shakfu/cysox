@@ -1,0 +1,843 @@
+Notices from sox 14.4.2 source files that carry terms besides the LGPL.
+Each is the comment block quoted verbatim from sox-14.4.2.tar.bz2
+(sha256 81a6956d4330e75b5827316e44ae381e6f1e8928003c6aa45896da9041ea149c).
+The rest of libsox is LGPL-2.1-or-later: see sox-LGPL-2.1.txt.
+
+========================================================================
+src/aiff.c
+------------------------------------------------------------------------
+/* libSoX SGI/Amiga AIFF format.
+ * Copyright 1991-2007 Guido van Rossum And Sundry Contributors
+ *
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Guido van Rossum And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ *
+ * Used by SGI on 4D/35 and Indigo.
+ * This is a subformat of the EA-IFF-85 format.
+ * This is related to the IFF format used by the Amiga.
+ * But, apparently, not the same.
+ * Also AIFF-C format output that is defined in DAVIC 1.4 Part 9 Annex B
+ * (usable for japanese-data-broadcasting, specified by ARIB STD-B24.)
+ */
+
+========================================================================
+src/aiff.h
+------------------------------------------------------------------------
+/* libSoX SGI/Amiga AIFF format.
+ * Copyright 1991-2007 Guido van Rossum And Sundry Contributors
+ *
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Guido van Rossum And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ *
+ * Used by SGI on 4D/35 and Indigo.
+ * This is a subformat of the EA-IFF-85 format.
+ * This is related to the IFF format used by the Amiga.
+ * But, apparently, not the same.
+ * Also AIFF-C format output that is defined in DAVIC 1.4 Part 9 Annex B
+ * (usable for japanese-data-broadcasting, specified by ARIB STD-B24.)
+ */
+
+========================================================================
+src/au.c
+------------------------------------------------------------------------
+/* libSoX Sun format with header (SunOS 4.1; see /usr/demo/SOUND).
+ * Copyright 1991, 1992, 1993 Guido van Rossum And Sundry Contributors.
+ *
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Guido van Rossum And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ *
+ * October 7, 1998 - cbagwell@sprynet.com
+ *   G.723 was using incorrect # of bits.  Corrected to 3 and 5 bits.
+ *
+ * NeXT uses this format also, but has more format codes defined.
+ * DEC uses a slight variation and swaps bytes.
+ * We support only the common formats, plus
+ * CCITT G.721 (32 kbit/s) and G.723 (24/40 kbit/s),
+ * courtesy of Sun's public domain implementation.
+ */
+
+========================================================================
+src/band.h
+------------------------------------------------------------------------
+/* libSoX Bandpass effect file.     July 5, 1991
+ * Copyright 1991 Lance Norskog And Sundry Contributors
+ *
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Lance Norskog And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ *
+ * Algorithm:  2nd order recursive filter.
+ * Formula stolen from MUSIC56K, a toolkit of 56000 assembler stuff.
+ * Quote:
+ *   This is a 2nd order recursive band pass filter of the form.
+ *   y(n)= a * x(n) - b * y(n-1) - c * y(n-2)
+ *   where :
+ *        x(n) = "IN"
+ *        "OUT" = y(n)
+ *        c = EXP(-2*pi*cBW/S_RATE)
+ *        b = -4*c/(1+c)*COS(2*pi*cCF/S_RATE)
+ *   if cSCL=2 (i.e. noise input)
+ *        a = SQT(((1+c)*(1+c)-b*b)*(1-c)/(1+c))
+ *   else
+ *        a = SQT(1-b*b/(4*c))*(1-c)
+ *   endif
+ *   note :     cCF is the center frequency in Hertz
+ *        cBW is the band width in Hertz
+ *        cSCL is a scale factor, use 1 for pitched sounds
+ *   use 2 for noise.
+ *
+ *
+ * July 1, 1999 - Jan Paul Schmidt <jps@fundament.org>
+ *
+ *   This looks like the resonator band pass in SPKit. It's a
+ *   second order all-pole (IIR) band-pass filter described
+ *   at the pages 186 - 189 in
+ *     Dodge, Charles & Jerse, Thomas A. 1985:
+ *       Computer Music -- Synthesis, Composition and Performance.
+ *       New York: Schirmer Books.
+ *   Reference from the SPKit manual.
+ */
+
+========================================================================
+src/bend.c
+------------------------------------------------------------------------
+/* Portions based on http://www.dspdimension.com/download smbPitchShift.cpp:
+ *
+ * COPYRIGHT 1999-2006 Stephan M. Bernsee <smb [AT] dspdimension [DOT] com>
+ *
+ *             The Wide Open License (WOL)
+ *
+ * Permission to use, copy, modify, distribute and sell this software and its
+ * documentation for any purpose is hereby granted without fee, provided that
+ * the above copyright notice and this license appear in all source copies. 
+ * THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT EXPRESS OR IMPLIED WARRANTY OF
+ * ANY KIND. See http://www.dspguru.com/wol.htm for more information.
+ */
+
+========================================================================
+src/chorus.c
+------------------------------------------------------------------------
+/* August 24, 1998
+ * Copyright (C) 1998 Juergen Mueller And Sundry Contributors
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Juergen Mueller And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ */
+
+========================================================================
+src/compand.c
+------------------------------------------------------------------------
+/* libSoX compander effect
+ *
+ * Written by Nick Bailey (nick@bailey-family.org.uk or
+ *                         n.bailey@elec.gla.ac.uk)
+ *
+ * Copyright 1999 Chris Bagwell And Nick Bailey
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Chris Bagwell And Nick Bailey are not responsible for
+ * the consequences of using this software.
+ */
+
+========================================================================
+src/dat.c
+------------------------------------------------------------------------
+/* libSoX text format file.  Tom Littlejohn, March 93.
+ *
+ * Reads/writes sound files as text.
+ *
+ * Copyright 1998-2006 Chris Bagwell and SoX Contributors
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Lance Norskog And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ */
+
+========================================================================
+src/earwax.c
+------------------------------------------------------------------------
+/* libSoX earwax - makes listening to headphones easier     November 9, 2000
+ *
+ * Copyright (c) 2000 Edward Beingessner And Sundry Contributors.
+ * This source code is freely redistributable and may be used for any purpose.
+ * This copyright notice must be maintained.  Edward Beingessner And Sundry
+ * Contributors are not responsible for the consequences of using this
+ * software.
+ *
+ * This effect takes a 44.1kHz stereo (CD format) signal that is meant to be
+ * listened to on headphones, and adds audio cues to move the soundstage from
+ * inside your head (standard for headphones) to outside and in front of the
+ * listener (standard for speakers). This makes the sound much easier to listen
+ * to on headphones.
+ */
+
+========================================================================
+src/echo.c
+------------------------------------------------------------------------
+/* libSoX Echo effect             August 24, 1998
+ *
+ * Copyright (C) 1998 Juergen Mueller And Sundry Contributors
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Juergen Mueller And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ *
+ *
+ * Flow diagram scheme for n delays ( 1 <= n <= MAX_ECHOS ):
+ *
+ *        * gain-in                                              ___
+ * ibuff -----------+------------------------------------------>|   |
+ *                  |       _________                           |   |
+ *                  |      |         |                * decay 1 |   |
+ *                  +----->| delay 1 |------------------------->|   |
+ *                  |      |_________|                          |   |
+ *                  |            _________                      | + |
+ *                  |           |         |           * decay 2 |   |
+ *                  +---------->| delay 2 |-------------------->|   |
+ *                  |           |_________|                     |   |
+ *                  :                 _________                 |   |
+ *                  |                |         |      * decay n |   |
+ *                  +--------------->| delay n |--------------->|___|
+ *                                   |_________|                  |
+ *                                                                | * gain-out
+ *                                                                |
+ *                                                                +----->obuff
+ * Usage:
+ *   echo gain-in gain-out delay-1 decay-1 [delay-2 decay-2 ... delay-n decay-n]
+ *
+ * Where:
+ *   gain-in, decay-1 ... decay-n :  0.0 ... 1.0      volume
+ *   gain-out :  0.0 ...      volume
+ *   delay-1 ... delay-n :  > 0.0 msec
+ *
+ * Note:
+ *   when decay is close to 1.0, the samples can begin clipping and the output
+ *   can saturate!
+ *
+ * Hint:
+ *   1 / out-gain > gain-in ( 1 + decay-1 + ... + decay-n )
+ */
+
+========================================================================
+src/echos.c
+------------------------------------------------------------------------
+/* libSoX Echo effect             August 24, 1998
+ *
+ * Copyright (C) 1998 Juergen Mueller And Sundry Contributors
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Juergen Mueller And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ *
+ *
+ * Flow diagram scheme for n delays ( 1 <= n <= MAX_ECHOS ):
+ *
+ *                                                    * gain-in  ___
+ * ibuff --+--------------------------------------------------->|   |
+ *         |                                          * decay 1 |   |
+ *         |               +----------------------------------->|   |
+ *         |               |                          * decay 2 | + |
+ *         |               |             +--------------------->|   |
+ *         |               |             |            * decay n |   |
+ *         |    _________  |  _________  |     _________   +--->|___|
+ *         |   |         | | |         | |    |         |  |      |
+ *         +-->| delay 1 |-+-| delay 2 |-+...-| delay n |--+      | * gain-out
+ *             |_________|   |_________|      |_________|         |
+ *                                                                +----->obuff
+ * Usage:
+ *   echos gain-in gain-out delay-1 decay-1 [delay-2 decay-2 ... delay-n decay-n]
+ *
+ * Where:
+ *   gain-in, decay-1 ... decay-n :  0.0 ... 1.0      volume
+ *   gain-out :  0.0 ...      volume
+ *   delay-1 ... delay-n :  > 0.0 msec
+ *
+ * Note:
+ *   when decay is close to 1.0, the samples can begin clipping and the output
+ *   can saturate!
+ *
+ * Hint:
+ *   1 / out-gain > gain-in ( 1 + decay-1 + ... + decay-n )
+ *
+ */
+
+========================================================================
+src/fade.c
+------------------------------------------------------------------------
+/* Ari Moisio <armoi@sci.fi> Aug 29 2000, based on skeleton effect
+ * Written by Chris Bagwell (cbagwell@sprynet.com) - March 16, 1999
+ *
+ * Copyright 1999 Chris Bagwell And Sundry Contributors
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Chris Bagwell And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ */
+
+========================================================================
+src/formats.c
+------------------------------------------------------------------------
+/* Find a named format in the formats library.
+ *
+ * (c) 2005-9 Chris Bagwell and SoX contributors.
+ * Copyright 1991 Lance Norskog And Sundry Contributors.
+ *
+ * This source code is freely redistributable and may be used for any
+ * purpose.  This copyright notice must be maintained.
+ *
+ * Lance Norskog, Sundry Contributors, Chris Bagwell and SoX contributors
+ * are not responsible for the consequences of using this software.
+ */
+
+========================================================================
+src/g711.c
+------------------------------------------------------------------------
+/* libSoX G711.c - G711 u-law, A-law and linear PCM conversions.
+ *
+ * Copyright (C) 2001 Chris Bagwell
+ *
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for any purpose and without fee is hereby granted, provided
+ * that the above copyright notice appear in all copies and that both that
+ * copyright notice and this permission notice appear in supporting
+ * documentation.  This software is provided "as is" without express or
+ * implied warranty.
+ */
+
+========================================================================
+src/g711.h
+------------------------------------------------------------------------
+/* libSoX G711.h - include for G711 u-law and a-law conversion routines
+ *
+ * Copyright (C) 2001 Chris Bagwell
+ *
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for any purpose and without fee is hereby granted, provided
+ * that the above copyright notice appear in all copies and that both that
+ * copyright notice and this permission notice appear in supporting
+ * documentation.  This software is provided "as is" without express or
+ * implied warranty.
+ */
+
+========================================================================
+src/gsm.c
+------------------------------------------------------------------------
+/* Copyright 1991, 1992, 1993 Guido van Rossum And Sundry Contributors.
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Guido van Rossum And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ */
+
+========================================================================
+src/hcom.c
+------------------------------------------------------------------------
+/* libSoX Macintosh HCOM format.
+ * These are really FSSD type files with Huffman compression,
+ * in MacBinary format.
+ * TODO: make the MacBinary format optional (so that .data files
+ * are also acceptable).  (How to do this on output?)
+ *
+ * September 25, 1991
+ * Copyright 1991 Guido van Rossum And Sundry Contributors
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Guido van Rossum And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ *
+ * April 28, 1998 - Chris Bagwell (cbagwell@sprynet.com)
+ *
+ *  Rearranged some functions so that they are declared before they are
+ *  used, clearing up some compiler warnings.  Because these functions
+ *  passed floats, it helped some dumb compilers pass stuff on the
+ *  stack correctly.
+ *
+ */
+
+========================================================================
+src/maud.c
+------------------------------------------------------------------------
+/* libSoX MAUD file format handler, by Lutz Vieweg 1993
+ *
+ * supports: mono and stereo, linear, a-law and u-law reading and writing
+ *
+ * an IFF format; description at http://lclevy.free.fr/amiga/MAUDINFO.TXT
+ *
+ * Copyright 1998-2006 Chris Bagwell and SoX Contributors
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Lance Norskog And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ */
+
+========================================================================
+src/mcompand.c
+------------------------------------------------------------------------
+/* multiband compander effect for SoX
+ * by Daniel Pouzzner <douzzer@mega.nu> 2002-Oct-8
+ *
+ * Compander code adapted from the SoX compand effect, by Nick Bailey
+ *
+ * SoX is Copyright 1999 Chris Bagwell And Nick Bailey This source code is
+ * freely redistributable and may be used for any purpose.  This copyright
+ * notice must be maintained.  Chris Bagwell And Nick Bailey are not
+ * responsible for the consequences of using this software.
+ *
+ *
+ * Usage:
+ *   mcompand quoted_compand_args [crossover_frequency
+ *      quoted_compand_args [...]]
+ *
+ *   quoted_compand_args are as for the compand effect:
+ *
+ *   attack1,decay1[,attack2,decay2...]
+ *                  in-dB1,out-dB1[,in-dB2,out-dB2...]
+ *                 [ gain [ initial-volume [ delay ] ] ]
+ *
+ *   Beware a variety of headroom (clipping) bugaboos.
+ *
+ * Implementation details:
+ *   The input is divided into bands using 4th order Linkwitz-Riley IIRs.
+ *   This is akin to the crossover of a loudspeaker, and results in flat
+ *   frequency response absent compander action.
+ *
+ *   The outputs of the array of companders is summed, and sample truncation
+ *   is done on the final sum.
+ *
+ *   Modifications to the predictive compression code properly maintain
+ *   alignment of the outputs of the array of companders when the companders
+ *   have different prediction intervals (volume application delays).  Note
+ *   that the predictive mode of the limiter needs some TLC - in fact, a
+ *   rewrite - since what's really useful is to assure that a waveform won't
+ *   be clipped, by slewing the volume in advance so that the peak is at
+ *   limit (or below, if there's a higher subsequent peak visible in the
+ *   lookahead window) once it's reached.  */
+
+========================================================================
+src/noisered.c
+------------------------------------------------------------------------
+/* noisered - Noise Reduction Effect.
+ *
+ * Written by Ian Turner (vectro@vectro.org)
+ *
+ * Copyright 1999 Ian Turner
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Authors are not responsible for the consequences of using this software.
+ */
+
+========================================================================
+src/opus.c
+------------------------------------------------------------------------
+/* libSoX Opus-in-Ogg sound format handler
+ * Copyright (C) 2013 John Stumpo <stump@jstump.com>
+ *
+ * Largely based on vorbis.c:
+ * libSoX Ogg Vorbis sound format handler
+ * Copyright 2001, Stan Seibert <indigo@aztec.asu.edu>
+ *
+ * Portions from oggenc, (c) Michael Smith <msmith@labyrinth.net.au>,
+ * ogg123, (c) Kenneth Arnold <kcarnold@yahoo.com>, and
+ * libvorbisfile (c) Xiphophorus Company
+ *
+ * May 9, 2001 - Stan Seibert (indigo@aztec.asu.edu)
+ * Ogg Vorbis handler initially written.
+ *
+ * July 5, 1991 - Skeleton file
+ * Copyright 1991 Lance Norskog And Sundry Contributors
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Lance Norskog And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ */
+
+========================================================================
+src/oss.c
+------------------------------------------------------------------------
+/* Copyright 1997 Chris Bagwell And Sundry Contributors
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Chris Bagwell And Sundry Contributors are not
+ * responsible for the consequences of using this software.
+ *
+ * Direct to Open Sound System (OSS) sound driver
+ * OSS is a popular unix sound driver for Intel x86 unices (eg. Linux)
+ * and several other unixes (such as SunOS/Solaris).
+ * This driver is compatible with OSS original source that was called
+ * USS, Voxware and TASD.
+ *
+ * added by Chris Bagwell (cbagwell@sprynet.com) on 2/19/96
+ * based on info grabed from vplay.c in Voxware snd-utils-3.5 package.
+ * and on LINUX_PLAYER patches added by Greg Lee
+ * which was originally from Directo to Sound Blaster device driver (sbdsp.c).
+ * SBLAST patches by John T. Kohl.
+ *
+ * Changes:
+ *
+ * Nov. 26, 1999 Stan Brooks <stabro@megsinet.net>
+ *   Moved initialization code common to startread and startwrite
+ *   into a single function ossdspinit().
+ *
+ */
+
+========================================================================
+src/phaser.c
+------------------------------------------------------------------------
+/* Effect: phaser     Copyright (C) 1998 Juergen Mueller And Sundry Contributors
+ *
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Juergen Mueller And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ *
+ * Flow diagram scheme:                                          August 24, 1998
+ *
+ *        * gain-in  +---+                     * gain-out
+ * ibuff ----------->|   |----------------------------------> obuff
+ *                   | + |  * decay
+ *                   |   |<------------+
+ *                   +---+  _______    |
+ *                     |   |       |   |
+ *                     +---| delay |---+
+ *                         |_______|
+ *                            /|\
+ *                             |
+ *                     +---------------+      +------------------+
+ *                     | Delay control |<-----| modulation speed |
+ *                     +---------------+      +------------------+
+ *
+ * The delay is controled by a sine or triangle modulation.
+ *
+ * Usage:
+ *   phaser gain-in gain-out delay decay speed [ -s | -t ]
+ *
+ * Where:
+ *   gain-in, decay : 0.0 .. 1.0             volume
+ *   gain-out       : 0.0 ..                 volume
+ *   delay          : 0.0 .. 5.0 msec
+ *   speed          : 0.1 .. 2.0 Hz          modulation speed
+ *   -s             : modulation by sine     (default)
+ *   -t             : modulation by triangle
+ *
+ * Note:
+ *   When decay is close to 1.0, the samples may begin clipping or the output
+ *   can saturate!  Hint:
+ *     in-gain < (1 - decay * decay)
+ *     1 / out-gain > gain-in / (1 - decay)
+ */
+
+========================================================================
+src/prc.c
+------------------------------------------------------------------------
+/* Psion Record format (format of sound files used for EPOC machines).
+ * The file normally has no extension, so SoX uses .prc (Psion ReCord).
+ * Based (heavily) on the wve.c format file.
+ * Hacked by Bert van Leeuwen (bert@e.co.za)
+ *
+ * Header check improved, ADPCM encoding added, and other improvements
+ * by Reuben Thomas <rrt@sc3d.org>, using file format info at
+ * http://software.frodo.looijaard.name/psiconv/formats/
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or (at
+ * your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this library; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * Includes code for ADPCM framing based on code carrying the
+ * following copyright:
+ *
+ *******************************************************************
+ Copyright 1992 by Stichting Mathematisch Centrum, Amsterdam, The
+ Netherlands.
+
+                        All Rights Reserved
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted,
+ provided that the above copyright notice appear in all copies and that
+ both that copyright notice and this permission notice appear in
+ supporting documentation, and that the names of Stichting Mathematisch
+ Centrum or CWI not be used in advertising or publicity pertaining to
+ distribution of the software without specific, written prior permission.
+
+ STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
+ THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
+ FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ ******************************************************************/
+
+========================================================================
+src/raw.c
+------------------------------------------------------------------------
+/* libSoX raw I/O
+ *
+ * Copyright 1991-2007 Lance Norskog And Sundry Contributors
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Lance Norskog And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ */
+
+========================================================================
+src/reverse.c
+------------------------------------------------------------------------
+/* June 1, 1992
+ * Copyright 1992 Guido van Rossum And Sundry Contributors
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Guido van Rossum And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ */
+
+========================================================================
+src/smp.c
+------------------------------------------------------------------------
+/*
+ * June 30, 1992
+ * Copyright 1992 Leigh Smith And Sundry Contributors
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Leigh Smith And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ */
+
+========================================================================
+src/sndio.c
+------------------------------------------------------------------------
+/*
+ * libsndio sound handler
+ *
+ * Copyright (c) 2009 Alexandre Ratchov <alex@caoua.org>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+========================================================================
+src/sox.h
+------------------------------------------------------------------------
+/* libSoX Library Public Interface
+ *
+ * Copyright 1999-2012 Chris Bagwell and SoX Contributors.
+ *
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Chris Bagwell And SoX Contributors are not responsible for
+ * the consequences of using this software.
+ */
+
+========================================================================
+src/sox_i.h
+------------------------------------------------------------------------
+/* libSoX Internal header
+ *
+ *   This file is meant for libSoX internal use only
+ *
+ * Copyright 2001-2012 Chris Bagwell and SoX Contributors
+ *
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Chris Bagwell And SoX Contributors are not responsible for
+ * the consequences of using this software.
+ */
+
+========================================================================
+src/stat.c
+------------------------------------------------------------------------
+/* libSoX statistics "effect" file.
+ *
+ * Compute various statistics on file and print them.
+ *
+ * Output is unmodified from input.
+ *
+ * July 5, 1991
+ * Copyright 1991 Lance Norskog And Sundry Contributors
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Lance Norskog And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ */
+
+========================================================================
+src/sunaudio.c
+------------------------------------------------------------------------
+/*
+ * Copyright 1997 Chris Bagwell And Sundry Contributors
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Rick Richardson, Lance Norskog And Sundry Contributors are not
+ * responsible for the consequences of using this software.
+ */
+
+========================================================================
+src/synth.c
+------------------------------------------------------------------------
+/* libSoX synth - Synthesizer Effect.
+ *
+ * Copyright (c) 2001-2009 SoX contributors
+ * Copyright (c) Jan 2001  Carsten Borchardt
+ *
+ * This source code is freely redistributable and may be used for any purpose.
+ * This copyright notice must be maintained.  The authors are not responsible
+ * for the consequences of using this software.
+ *
+ * Except for synth types: pluck, tpdf, pinknoise, & brownnoise, and
+ *            sweep types: linear, square & exp, which are:
+ *
+ * Copyright (c) 2006-2013 robs@users.sourceforge.net
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or (at
+ * your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this library; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+========================================================================
+src/tx16w.c
+------------------------------------------------------------------------
+/* libSoX Yamaha TX-16W sampler file support
+ *
+ * May 20, 1993
+ * Copyright 1993 Rob Talley   (rob@aii.com)
+ * This source code is freely redistributable and may be used for
+ * any purpose. This copyright notice and the following copyright
+ * notice must be maintained intact. No warranty whatsoever is
+ * provided. This code is furnished AS-IS as a component of the
+ * larger work Copyright 1991 Lance Norskog and Sundry Contributors.
+ * Much appreciation to ross-c  for his sampConv utility for SGI/IRIX
+ * from where these methods were derived.
+ *
+ * Jan 24, 1994
+ * Pat McElhatton, HP Media Technology Lab <patmc@apollo.hp.com>
+ * Handles reading of files which do not have the sample rate field
+ * set to one of the expected by looking at some other bytes in the
+ * attack/loop length fields, and defaulting to 33kHz if the sample
+ * rate is still unknown.
+ *
+ * January 12, 1995
+ * Copyright 1995 Mark Lakata (lakata@physics.berkeley.edu)
+ * Additions to tx16w.c SOX handler.  This version writes as well as
+ * reads TX16W format.
+ *
+ * July 31, 1998
+ * Cleaned up by Leigh Smith (leigh@psychokiller.dialix.oz.au)
+ * for incorporation into the main sox distribution.
+ *
+ * September 24, 1998
+ * Forced output to mono signed words to match input.  It was basically
+ * doing this anyways but now the user will see a display that it's been
+ * overridden.  cbagwell@sprynet.com
+ *
+ */
+
+========================================================================
+src/voc.c
+------------------------------------------------------------------------
+/* libSoX Sound Blaster VOC handler sources.
+ * Copyright 1991 Lance Norskog And Sundry Contributors
+ *
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Lance Norskog And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ *
+ * September 8, 1993
+ * Copyright 1993 T. Allen Grider - for changes to support block type 9
+ * and word sized samples.  Same caveats and disclaimer as above.
+ *
+ * February 22, 1996
+ * by Chris Bagwell (cbagwell@sprynet.com)
+ * Added support for block type 8 (extended) which allows for 8-bit stereo
+ * files.  Added support for saving stereo files and 16-bit files.
+ * Added VOC format info from audio format FAQ so I don't have to keep
+ * looking around for it.
+ *
+ * February 5, 2001
+ * For sox-12-17 by Annonymous (see notes ANN)
+ * Added comments and notes for each procedure.
+ * Fixed so this now works with pipes, input does not have to
+ * be seekable anymore (in startread() )
+ * Added support for uLAW and aLaw (aLaw not tested).
+ * Fixed support of multi-part VOC files, and files with
+ * block 9 but no audio in the block....
+ * The following need to be tested:  16-bit, 2 channel, and aLaw.
+ *
+ * December 10, 2001
+ * For sox-12-17-3 by Annonymous (see notes ANN)
+ * Patch for sox-12-17 merged with sox-12-17-3-pre3 code.
+ *
+ */
+
+========================================================================
+src/vorbis.c
+------------------------------------------------------------------------
+/* libSoX Ogg Vorbis sound format handler
+ * Copyright 2001, Stan Seibert <indigo@aztec.asu.edu>
+ *
+ * Portions from oggenc, (c) Michael Smith <msmith@labyrinth.net.au>,
+ * ogg123, (c) Kenneth Arnold <kcarnold@yahoo.com>, and
+ * libvorbisfile (c) Xiphophorus Company
+ *
+ * May 9, 2001 - Stan Seibert (indigo@aztec.asu.edu)
+ * Ogg Vorbis handler initially written.
+ *
+ * July 5, 1991 - Skeleton file
+ * Copyright 1991 Lance Norskog And Sundry Contributors
+ * This source code is freely redistributable and may be used for
+ * any purpose.  This copyright notice must be maintained.
+ * Lance Norskog And Sundry Contributors are not responsible for
+ * the consequences of using this software.
+ */
+
+========================================================================
+src/vox.c
+------------------------------------------------------------------------
+/* libSoX file format handler for Dialogic/Oki ADPCM VOX files.
+ *
+ * Copyright 1991-2007 Tony Seebregts And Sundry Contributors
+ *
+ * This source code is freely redistributable and may be used for any
+ * purpose.  This copyright notice must be maintained.
+ *
+ * Tony Seebregts And Sundry Contributors are not responsible for the
+ * consequences of using this software.
+ */
+

@@ -1,13 +1,14 @@
 name: Build Wheels
 
-on: [workflow_dispatch]
-  # push:
-  #   branches: [main]
-  #   tags:
-  #     - 'v*'
-  # pull_request:
-  #   branches: [main]
-  # workflow_dispatch:
+# Tags and manual runs build the full matrix in pyproject.toml. Pull requests
+# build one target per OS: the wheel tests exercise the shipped libsox, which
+# does not vary by Python version, and aarch64 runs under QEMU.
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build_wheels:
@@ -21,8 +22,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Limit to one target on pull requests
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "CIBW_BUILD=cp312-*" >> "$GITHUB_ENV"
+          echo "CIBW_ARCHS_LINUX=x86_64" >> "$GITHUB_ENV"
+
       - name: Set up QEMU for aarch64 emulation
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && github.event_name != 'pull_request'
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
@@ -39,7 +46,7 @@ jobs:
       - name: Setup macOS build environment
         if: runner.os == 'macOS'
         run: |
-          brew install sox libsndfile mad libpng flac lame mpg123 libogg opus opusfile libvorbis
+          brew install flac lame mpg123 libogg libvorbis opus opusfile libpng pkg-config
           bash scripts/setup.sh
 
       - name: Build wheels

@@ -50,6 +50,18 @@ def test_wav_str(test_wav) -> str:
     return str(test_wav)
 
 
+@pytest.fixture(scope="session")
+def mp3_decoder() -> str:
+    """The linked libsox's mp3 decoder: "mpg123" or "mad".
+
+    CMakeLists.txt links the patched libsox whenever scripts/build-libsox.sh
+    has installed it under lib/; otherwise a system libsox, which uses libmad.
+    CYSOX_MP3_DECODER overrides this, to test an installed wheel.
+    """
+    built = (PROJECT_ROOT / "lib" / "pkgconfig" / "sox.pc").exists()
+    return os.environ.get("CYSOX_MP3_DECODER") or ("mpg123" if built else "mad")
+
+
 @pytest.fixture
 def output_path(test_output_dir, request) -> Path:
     """Generate a unique output path for the current test.

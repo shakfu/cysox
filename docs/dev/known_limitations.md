@@ -264,7 +264,7 @@ is not intended for general use.
 
 - Static linking available for self-contained wheels
 
-- Homebrew dependencies: `sox libsndfile mad libpng flac lame mpg123 libogg opus opusfile libvorbis`
+- Homebrew dependencies: `flac lame mpg123 libogg libvorbis opus opusfile libpng pkg-config`
 
 ### Linux
 

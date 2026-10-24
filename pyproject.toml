@@ -4,6 +4,8 @@ version = "0.2.0"
 description = "A Pythonic audio processing library wrapping libsox"
 readme = "README.md"
 license = "MIT"
+# Bundled third-party code; see licenses/README.md.
+license-files = ["LICENSE", "licenses/*", "vendor/kissfft/COPYING"]
 authors = [
     { name = "Shakeeb Alireza", email = "shakfu@users.noreply.github.com" }
 ]
@@ -121,17 +123,25 @@ skip = "*-win* *-musllinux_*"
 # Python versions to build
 build = "cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*"
 
-# Test the wheel with a simple import
-test-requires = "pytest"
-test-command = "python -c \"import cysox; from cysox import sox; sox.init(); print(f'cysox {cysox.__version__}, libsox {sox.version()}'); sox.quit()\""
+# Require the bundled formats, which 0.2.0 shipped without, then run the mp3
+# decoder tests against the installed wheel: -I and an empty pythonpath keep
+# pytest from importing src/ instead.
+test-requires = ["pytest", "pytest-benchmark"]
+test-command = [
+    "python -c \"import cysox; from cysox import sox; sox.init(); print(f'cysox {cysox.__version__}, libsox {sox.version()}'); missing = [e for e in ('wav', 'flac', 'ogg', 'opus', 'mp3') if not sox.find_format(e, False)]; sox.quit(); assert not missing, f'missing formats: {missing}'\"",
+    "cd {project} && CYSOX_MP3_DECODER=mpg123 python -I -m pytest -p no:cacheprovider -o pythonpath= tests/test_mp3_decode.py",
+    "python -I {project}/scripts/check-wheel-licenses.py",
+]
 
 [tool.cibuildwheel.linux]
 archs = ["x86_64", "aarch64"]
 
-# Install dependencies in manylinux container
+# Build libsox from source into lib/ (see scripts/build-libsox.sh). The
+# distro sox package loads its codecs as plugins, which the wheel cannot find.
 before-all = [
-    "yum install -y epel-release || true",
-    "yum install -y sox sox-devel libsndfile-devel flac-devel libvorbis-devel opus-devel libpng-devel pkgconfig || (apt-get update && apt-get install -y libsox-dev libsndfile1-dev libflac-dev libvorbis-dev libopus-dev libpng-dev pkg-config)",
+    "yum install -y epel-release",
+    "yum install -y flac-devel libvorbis-devel libogg-devel opus-devel opusfile-devel lame-devel mpg123-devel libpng-devel zlib-devel pkgconfig",
+    "scripts/build-libsox.sh .",
 ]
 
 [tool.cibuildwheel.macos]
