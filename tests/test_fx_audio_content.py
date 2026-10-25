@@ -8,8 +8,6 @@ what is actually in the output and assert a direction and a magnitude.
 Levels are in dBFS via the ``measure`` helper in conftest.
 """
 
-import math
-
 import pytest
 
 import cysox

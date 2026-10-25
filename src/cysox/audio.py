@@ -24,7 +24,7 @@ import tempfile
 from array import array
 from pathlib import Path
 from types import TracebackType
-from typing import Callable, Dict, Iterator, List, Optional, Union
+from typing import Callable, Iterator, List, Optional, Union
 
 from . import sox
 from .fx.base import Effect, CompositeEffect, PythonEffect
@@ -214,7 +214,7 @@ def _check_flow_outcome(flow_state, label: str) -> None:
         raise exc_info[1].with_traceback(tb)
 
 
-def _filetype_hint(path: str) -> Optional[str]:
+def _filetype_hint(path: Union[str, Path]) -> Optional[str]:
     """Return an extension-based filetype when libsox knows that format.
 
     sox_ng registers an ``act`` ffmpeg pseudo-handler that can claim some
