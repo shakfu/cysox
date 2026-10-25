@@ -40,6 +40,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ### Removed
 
+- **macOS 11-13 support.** The wheels bundle Homebrew's codec libraries, which require the macOS version they were built on, so the wheels now require macOS 14.
+
 - **Python 3.9 support.** It reached end of life in October 2025. GitHub's Python builds for it skip Ubuntu 26.04, which `ubuntu-latest` now uses.
 
 ### Changed

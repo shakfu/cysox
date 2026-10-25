@@ -157,7 +157,8 @@ archs = ["native"]
 # macOS dependencies installed via Homebrew in workflow before cibuildwheel runs
 before-build = "pip install cython"
 
-# Use static linking to bundle libsox into the wheel
-environment = { STATIC = "1" }
+# Use static linking to bundle libsox into the wheel. The codecs are Homebrew
+# dylibs, whose minimum macOS is the runner's: 14.0 on macos-14.
+environment = { STATIC = "1", MACOSX_DEPLOYMENT_TARGET = "14.0" }
 
 
