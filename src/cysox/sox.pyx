@@ -196,52 +196,71 @@ ENOTSUP = SOX_ENOTSUP
 EINVAL = SOX_EINVAL
 
 
-# Encoding names and descriptions, addressed by the *symbolic* libsox
-# constant rather than by a literal index. Cython resolves each
-# SOX_ENCODING_* to the value in the linked sox.h at compile time, so this
-# table follows whichever libsox is built against. Hardcoding the indices
-# silently mislabels everything past an inserted member: SoX_ng added MP1 and
-# MP2, which moved MP3 from 22 to 24 and made ENCODINGS[24] report "AMR_WB"
-# for an MP3 file.
-_ENCODING_TABLE = {
-    <int>SOX_ENCODING_UNKNOWN:    ("UNKNOWN",     "encoding has not yet been determined"),
-    <int>SOX_ENCODING_SIGN2:      ("SIGN2",       "signed linear 2's comp: Mac"),
-    <int>SOX_ENCODING_UNSIGNED:   ("UNSIGNED",    "unsigned linear: Sound Blaster"),
-    <int>SOX_ENCODING_FLOAT:      ("FLOAT",       "floating point (binary format)"),
-    <int>SOX_ENCODING_FLOAT_TEXT: ("FLOAT_TEXT",  "floating point (text format)"),
-    <int>SOX_ENCODING_FLAC:       ("FLAC",        "FLAC compression"),
-    <int>SOX_ENCODING_HCOM:       ("HCOM",        "Mac FSSD files with Huffman compression"),
-    <int>SOX_ENCODING_WAVPACK:    ("WAVPACK",     "WavPack with integer samples"),
-    <int>SOX_ENCODING_WAVPACKF:   ("WAVPACKF",    "WavPack with float samples"),
-    <int>SOX_ENCODING_ULAW:       ("ULAW",        "u-law signed logs: US telephony, SPARC"),
-    <int>SOX_ENCODING_ALAW:       ("ALAW",        "A-law signed logs: non-US telephony, Psion"),
-    <int>SOX_ENCODING_G721:       ("G721",        "G.721 4-bit ADPCM"),
-    <int>SOX_ENCODING_G723:       ("G723",        "G.723 3 or 5 bit ADPCM"),
-    <int>SOX_ENCODING_CL_ADPCM:   ("CL_ADPCM",    "Creative Labs 8 --> 2,3,4 bit Compressed PCM"),
-    <int>SOX_ENCODING_CL_ADPCM16: ("CL_ADPCM16",  "Creative Labs 16 --> 4 bit Compressed PCM"),
-    <int>SOX_ENCODING_MS_ADPCM:   ("MS_ADPCM",    "Microsoft Compressed PCM"),
-    <int>SOX_ENCODING_IMA_ADPCM:  ("IMA_ADPCM",   "IMA Compressed PCM"),
-    <int>SOX_ENCODING_OKI_ADPCM:  ("OKI_ADPCM",   "Dialogic/OKI Compressed PCM"),
-    <int>SOX_ENCODING_DPCM:       ("DPCM",        "Differential PCM: Fasttracker 2 (xi)"),
-    <int>SOX_ENCODING_DWVW:       ("DWVW",        "Delta Width Variable Word"),
-    <int>SOX_ENCODING_DWVWN:      ("DWVWN",       "Delta Width Variable Word N-bit"),
-    <int>SOX_ENCODING_GSM:        ("GSM",         "GSM 6.10 33byte frame lossy compression"),
-    <int>SOX_ENCODING_MP3:        ("MP3",         "MP3 compression"),
-    <int>SOX_ENCODING_VORBIS:     ("VORBIS",      "Vorbis compression"),
-    <int>SOX_ENCODING_AMR_WB:     ("AMR_WB",      "AMR-WB compression"),
-    <int>SOX_ENCODING_AMR_NB:     ("AMR_NB",      "AMR-NB compression"),
-    <int>SOX_ENCODING_CVSD:       ("CVSD",        "Continuously Variable Slope Delta modulation"),
-    <int>SOX_ENCODING_LPC10:      ("LPC10",       "Linear Predictive Coding"),
-    <int>SOX_ENCODING_OPUS:       ("OPUS",        "Opus compression"),
-}
+# Master encoding table: (enum value, C member suffix, slug, description).
+#
+# The enum *values* come from whatever sox.h this was compiled against - they are
+# NOT positional. sox_ng inserted MP1/MP2 between GSM and MP3 and appended DSD, so
+# any table indexed by position silently mislabels everything after GSM. Encodings
+# the linked libsox does not define carry a negative sentinel and are filtered out.
+_ENCODING_TABLE = (
+    (SOX_ENCODING_UNKNOWN,    "UNKNOWN",    "unknown",          "encoding has not yet been determined"),
+    (SOX_ENCODING_SIGN2,      "SIGN2",      "signed-integer",   "signed linear 2's comp: Mac"),
+    (SOX_ENCODING_UNSIGNED,   "UNSIGNED",   "unsigned-integer", "unsigned linear: Sound Blaster"),
+    (SOX_ENCODING_FLOAT,      "FLOAT",      "float",            "floating point (binary format)"),
+    (SOX_ENCODING_FLOAT_TEXT, "FLOAT_TEXT", "float-text",       "floating point (text format)"),
+    (SOX_ENCODING_FLAC,       "FLAC",       "flac",             "FLAC compression"),
+    (SOX_ENCODING_HCOM,       "HCOM",       "hcom",             "Mac FSSD files with Huffman compression"),
+    (SOX_ENCODING_WAVPACK,    "WAVPACK",    "wavpack",          "WavPack with integer samples"),
+    (SOX_ENCODING_WAVPACKF,   "WAVPACKF",   "wavpackf",         "WavPack with float samples"),
+    (SOX_ENCODING_ULAW,       "ULAW",       "ulaw",             "u-law signed logs: US telephony, SPARC"),
+    (SOX_ENCODING_ALAW,       "ALAW",       "alaw",             "A-law signed logs: non-US telephony, Psion"),
+    (SOX_ENCODING_G721,       "G721",       "g721",             "G.721 4-bit ADPCM"),
+    (SOX_ENCODING_G723,       "G723",       "g723",             "G.723 3 or 5 bit ADPCM"),
+    (SOX_ENCODING_CL_ADPCM,   "CL_ADPCM",   "cl-adpcm",         "Creative Labs 8 --> 2,3,4 bit Compressed PCM"),
+    (SOX_ENCODING_CL_ADPCM16, "CL_ADPCM16", "cl-adpcm16",       "Creative Labs 16 --> 4 bit Compressed PCM"),
+    (SOX_ENCODING_MS_ADPCM,   "MS_ADPCM",   "ms-adpcm",         "Microsoft Compressed PCM"),
+    (SOX_ENCODING_IMA_ADPCM,  "IMA_ADPCM",  "ima-adpcm",        "IMA Compressed PCM"),
+    (SOX_ENCODING_OKI_ADPCM,  "OKI_ADPCM",  "oki-adpcm",        "Dialogic/OKI Compressed PCM"),
+    (SOX_ENCODING_DPCM,       "DPCM",       "dpcm",             "Differential PCM: Fasttracker 2 (xi)"),
+    (SOX_ENCODING_DWVW,       "DWVW",       "dwvw",             "Delta Width Variable Word"),
+    (SOX_ENCODING_DWVWN,      "DWVWN",      "dwvwn",            "Delta Width Variable Word N-bit"),
+    (SOX_ENCODING_GSM,        "GSM",        "gsm",              "GSM 6.10 33byte frame lossy compression"),
+    (CYSOX_ENCODING_MP1,      "MP1",        "mp1",              "MP1 compression (sox_ng only)"),
+    (CYSOX_ENCODING_MP2,      "MP2",        "mp2",              "MP2 compression (sox_ng only)"),
+    (SOX_ENCODING_MP3,        "MP3",        "mp3",              "MP3 compression"),
+    (SOX_ENCODING_VORBIS,     "VORBIS",     "vorbis",           "Vorbis compression"),
+    (SOX_ENCODING_AMR_WB,     "AMR_WB",     "amr-wb",           "AMR-WB compression"),
+    (SOX_ENCODING_AMR_NB,     "AMR_NB",     "amr-nb",           "AMR-NB compression"),
+    (SOX_ENCODING_CVSD,       "CVSD",       "cvsd",             "Continuously Variable Slope Delta modulation"),
+    (SOX_ENCODING_LPC10,      "LPC10",      "lpc10",            "Linear Predictive Coding"),
+    (SOX_ENCODING_OPUS,       "OPUS",       "opus",             "Opus compression"),
+    (CYSOX_ENCODING_DSD,      "DSD",        "dsd",              "Direct Stream Digital (sox_ng only)"),
+)
 
-# Index-addressable view of the above, so ENCODINGS[some_encoding_value] keeps
-# working. Values the linked libsox defines but cysox does not declare (SoX_ng
-# adds MP1, MP2 and DSD) read as UNRECOGNISED rather than shifting the rest.
+# Index-addressable view so ENCODINGS[encoding_value] works. Values the linked
+# libsox defines but this table does not declare read as UNRECOGNISED.
+_ENCODING_BY_VALUE = {
+    value: (member, desc)
+    for value, member, _slug, desc in _ENCODING_TABLE
+    if value >= 0
+}
 ENCODINGS = [
-    _ENCODING_TABLE.get(i, ("UNRECOGNISED", "not declared by this build of cysox"))
+    _ENCODING_BY_VALUE.get(i, ("UNRECOGNISED", "not declared by this build of cysox"))
     for i in range(<int>SOX_ENCODINGS)
 ]
+
+# enum value -> slug, for callers translating a sox_encoding_t to a name.
+ENCODING_NAMES = {
+    value: slug for value, _member, slug, _desc in _ENCODING_TABLE if value >= 0
+}
+
+# slug -> enum value. "unknown" is excluded deliberately: it is a read-side
+# result, not something a caller can request.
+ENCODING_TYPES = {
+    slug: value
+    for value, _member, slug, _desc in _ENCODING_TABLE
+    if value > 0
+}
 
 constant = SimpleNamespace(**{
     'INT8_MAX': SOX_INT8_MAX,
@@ -387,6 +406,34 @@ cdef class SignalInfo:
         wrapper._keepalive = keepalive
         return wrapper
 
+    @staticmethod
+    cdef SignalInfo copy_from_ptr(const sox_signalinfo_t* ptr):
+        """Snapshot ``ptr`` into an independently owned SignalInfo.
+
+        Used for members of structures libsox owns, so the wrapper stays valid
+        after the owner is freed - ``fmt.signal`` outliving ``fmt.close()`` is
+        an ordinary thing for callers to do.
+        """
+        if ptr is NULL:
+            return None
+        cdef SignalInfo wrapper = SignalInfo.__new__(SignalInfo)
+        wrapper.ptr = <sox_signalinfo_t*>calloc(1, sizeof(sox_signalinfo_t))
+        if wrapper.ptr is NULL:
+            raise SoxMemoryError("Failed to allocate SignalInfo")
+        memcpy(wrapper.ptr, ptr, sizeof(sox_signalinfo_t))
+        # mult is a pointer into the source struct - deep-copy it so freeing
+        # either wrapper cannot touch the other's memory.
+        wrapper.ptr.mult = NULL
+        if ptr.mult is not NULL:
+            wrapper.ptr.mult = <double*>malloc(sizeof(double))
+            if wrapper.ptr.mult is NULL:
+                free(wrapper.ptr)
+                wrapper.ptr = NULL
+                raise SoxMemoryError("Failed to allocate memory for mult")
+            wrapper.ptr.mult[0] = ptr.mult[0]
+        wrapper.owner = True
+        return wrapper
+
     @property
     def rate(self) -> sox_rate_t:
         """samples per second, 0 if unknown"""
@@ -527,6 +574,22 @@ cdef class EncodingInfo:
         wrapper.ptr = <sox_encodinginfo_t*>ptr
         wrapper.owner = owner
         wrapper._keepalive = keepalive
+        return wrapper
+
+    @staticmethod
+    cdef EncodingInfo copy_from_ptr(const sox_encodinginfo_t* ptr):
+        """Snapshot ``ptr`` into an independently owned EncodingInfo.
+
+        See SignalInfo.copy_from_ptr - same rationale.
+        """
+        if ptr is NULL:
+            return None
+        cdef EncodingInfo wrapper = EncodingInfo.__new__(EncodingInfo)
+        wrapper.ptr = <sox_encodinginfo_t*>calloc(1, sizeof(sox_encodinginfo_t))
+        if wrapper.ptr is NULL:
+            raise SoxMemoryError("Failed to allocate EncodingInfo")
+        memcpy(wrapper.ptr, ptr, sizeof(sox_encodinginfo_t))
+        wrapper.owner = True
         return wrapper
 
     @property
@@ -1604,30 +1667,41 @@ cdef class Format:
         format. This matters because ``sox_add_effect()`` treats its ``in``
         argument as in/out and writes the effect's output signal back through
         it. Handing it this format's own struct let effects overwrite the
-        input file's metadata: adding a ``trim`` rewrote ``length`` from
-        502840 to 88200, after which the reader hit "premature EOF" and
-        produced half the requested audio.
+        input file's metadata. libsox also frees the struct in ``close()``, so
+        a view would dangle after the natural ``signal = f.signal`` outside a
+        ``with`` block.
 
-        libsox's own examples pass a separate scratch signal for exactly this
-        reason. Returning a copy makes that the default and removes the
-        footgun. A consequence worth knowing: the returned object does not
-        track later changes to the format, so read the property again rather
-        than holding on to the result.
+        The returned object does not track later changes to the format; read
+        the property again rather than holding on to the result. For chain
+        construction that needs write-back, use :attr:`signal_view`.
         """
         self._check_open()
-        return SignalInfo(
-            rate=self.ptr.signal.rate,
-            channels=self.ptr.signal.channels,
-            precision=self.ptr.signal.precision,
-            length=self.ptr.signal.length,
-            mult=self.ptr.signal.mult[0] if self.ptr.signal.mult is not NULL else 0.0,
-        )
+        return SignalInfo.copy_from_ptr(&self.ptr.signal)
 
     @property
     def encoding(self) -> EncodingInfo:
-        """Encoding information (format, bits per sample, compression)."""
+        """Encoding information (format, bits per sample, compression).
+
+        A snapshot, for the same reason as :attr:`signal`.
+        """
         self._check_open()
-        return EncodingInfo.from_ptr(&self.ptr.encoding, False, self)
+        return EncodingInfo.copy_from_ptr(&self.ptr.encoding)
+
+    @property
+    def signal_view(self) -> SignalInfo:
+        """Live, *aliasing* view of the format's signal struct.
+
+        Unlike :attr:`signal` this shares memory with libsox, so
+        ``sox_add_effect()`` writing back the negotiated signal is visible here
+        and to the format itself - which is what effects-chain construction
+        relies on.
+
+        The flip side: it is only valid while the format is open. Reading it
+        after :meth:`close` is a use-after-free. Prefer :attr:`signal` unless
+        you specifically need the write-back.
+        """
+        self._check_open()
+        return SignalInfo.from_ptr(&self.ptr.signal, False, self)
 
     @property
     def filetype(self) -> str:
@@ -2178,9 +2252,11 @@ cdef class EffectsChain:
     """Effects chain structure."""
     cdef sox_effects_chain_t* ptr
     cdef bint owner
-    # Strong reference to the object that owns the memory `ptr` points
-    # into, for non-owning wrappers. Without it, `Format(p).signal` frees
-    # the Format while the SignalInfo still points into its struct.
+    # libsox stores the two encodinginfo pointers and dereferences them during
+    # flow_effects(), so the chain must outlive whatever owns those structs.
+    cdef object _in_encoding
+    cdef object _out_encoding
+    # Strong reference for non-owning wrappers from from_ptr().
     cdef object _keepalive
     # libsox init generation this chain was created in.
     cdef unsigned long _generation
@@ -2188,6 +2264,8 @@ cdef class EffectsChain:
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
+        self._in_encoding = None
+        self._out_encoding = None
         self._keepalive = None
         self._generation = _libsox_generation
 
@@ -2214,6 +2292,8 @@ cdef class EffectsChain:
             out_encoding.ptr if out_encoding else NULL)
         if self.ptr == NULL:
             raise SoxEffectError("Failed to create effects chain")
+        self._in_encoding = in_encoding
+        self._out_encoding = out_encoding
         self.owner = True
         self._keepalive = (in_encoding, out_encoding)
 
@@ -2318,11 +2398,8 @@ cdef class EffectsChain:
         # SOX_EOF is normal completion, not a failure. A length-limiting
         # effect such as `trim` ends the chain by signalling end-of-stream,
         # and libsox reports that the same way it reports a callback abort.
-        # The output written up to that point is complete and correct
-        # (verified: trim 0.5 1.0 yields exactly 1.000s, matching sox(1)).
         # Callers that need to tell cancellation from normal termination must
-        # track it in their callback -- SOX_EOF alone cannot distinguish them,
-        # since sox.pxd:46 defines it as "End Of File or other error".
+        # track it in their callback -- SOX_EOF alone cannot distinguish them.
         if result != SOX_SUCCESS and result != SOX_EOF:
             raise SoxEffectError(f"Failed to flow effects: {strerror(result)}")
         return result

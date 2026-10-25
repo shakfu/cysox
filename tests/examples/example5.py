@@ -98,7 +98,7 @@ def main():
             chunk = all_samples[i:i + MAX_SAMPLES]
             number_written = output_format.write(chunk)
             if number_written != len(chunk):
-                print(f"Error: Failed to write all samples to output file")
+                print("Error: Failed to write all samples to output file")
                 sys.exit(1)
             samples_written += number_written
         

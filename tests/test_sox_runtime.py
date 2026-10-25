@@ -101,7 +101,9 @@ class TestSoxRuntimeThreadSafety:
             try:
                 for i in range(100):
                     chain_id = thread_id * 1000 + i
-                    cb = lambda done, data: True
+                    def cb(done, data):
+                        return True
+
                     sox._runtime.register_callback(chain_id, cb, None)
                     entry = sox._runtime.get_callback(chain_id)
                     assert entry is not None
@@ -120,8 +122,12 @@ class TestSoxRuntimeThreadSafety:
 
     def test_callback_isolation(self):
         """Callbacks registered with different chain_ids are independent."""
-        cb1 = lambda done, data: True
-        cb2 = lambda done, data: False
+        def cb1(done, data):
+            return True
+
+        def cb2(done, data):
+            return False
+
 
         sox._runtime.register_callback(111, cb1, "data1")
         sox._runtime.register_callback(222, cb2, "data2")

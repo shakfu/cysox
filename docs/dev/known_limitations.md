@@ -145,6 +145,20 @@ No upstream fix is expected, as changing this behavior would require significant
 The memory-based I/O functions (`open_mem_read`, `open_mem_write`,
 `open_memstream_write`) do not work.
 
+### Affected Functions
+
+- `sox.open_mem_read()` - Read audio from memory buffer
+
+- `sox.open_mem_write()` - Write audio to memory buffer
+
+- `sox.open_memstream_write()` - Write audio to dynamically-sized memory stream
+
+### Symptoms
+
+- Functions may return `None` or raise exceptions
+
+- Written data may be truncated or corrupted
+
 ### Root Cause
 
 **This is a defect in cysox, not in libsox.** An earlier version of this

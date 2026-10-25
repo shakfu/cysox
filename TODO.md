@@ -8,124 +8,45 @@
 
 - `[!]` Blocked
 
----
+## Critical
 
-## P1 - High Priority
+## High
 
-### Correctness
+### Release Gates
 
-- [x] **`convert()` silently changes the sample encoding: float in -> integer out**
+- [ ] **PRE-PUBLISH GATE: find a licence for sox's in-tree lpc10**
 
-  - **Fixed 2026-08-01** in `src/cysox/audio.py` (`_build_output_encoding`), tests in `tests/test_sox_encoding.py`. Reproduced first: float32 in -> `signed-integer`/32 out, while int16 and int24 round-tripped correctly. Two corrections to the analysis below, found while fixing:
-
-    1. Step 2's stated rationale is wrong. Passing an unsupported encoding to libsox does **not** make float -> mp3 "start failing" - libsox silently substitutes the handler default and writes an uncapturable stderr warning. The guard is still needed, but to suppress that warning and to handle (2), not to prevent a failure.
-
-    2. **The guard is load-bearing for `bits=`, which the analysis missed.** Pairing the inherited encoding with an explicit `bits=` can produce a pair the format rejects - WAV cannot write float at 16 bits - and libsox then discards the *width* and writes float/32, silently ignoring `bits=16`. That is the same class of bug the fix exists to remove. So the probe must test the `(encoding, bits)` pair jointly, and an explicit `bits=` outranks an inherited encoding. Resolution: inherited encoding is a preference and falls back to the handler default; an explicit `encoding=` that the format cannot write raises `ValueError` rather than silently substituting. Non-PCM source encodings (flac -> wav) fall back through the same path.
-
-  - **The same bug was live in four sibling functions - also fixed 2026-08-01.** `convert()` was not the only writer that opened its output with no `encoding=`. Confirmed by repro before fixing: float32 in -> `signed-integer`/32 out from `slice_loop()` and `stutter()`, and the same in `split_by_silence()`. `concat()` was the odd one out - it already propagated the encoding, but by hand and *without* the supports-check, so float32 -> mp3 forced an unsupported pair on libsox and took the silent-substitution path. All five now route through `_build_output_encoding()`.
-
-    - The temp-file hop matters: `slice_loop`/`stutter`/`split_by_silence` write an intermediate WAV and re-read it, so encoding has to survive *both* hops or preservation is undone mid-pipeline. The temp deliberately keeps the *input's* encoding rather than the caller's, so an explicit `encoding=` never degrades resolution before the effects chain runs; `convert()` applies it on the final hop.
-
-    - All five gained an `encoding=` parameter for symmetry with `convert()`.
-
-    - Checked while here: `precision` and `encoding.bits_per_sample` are genuinely different quantities - a float32 WAV reports `precision=25` (mantissa bits) and `bits_per_sample=32`. Pairing them as-is is correct, so the loose end flagged during the `convert()` fix is benign.
-
-  - **Severity: data corruption, silent.** A float WAV converted to a WAV comes back as 32-bit *integer* PCM. Nothing errors, the file is valid, the samples are numerically reasonable - but any consumer that reads it as declared-in / expects float gets a different format than it put in. This was found downstream in [sk-engines](https://github.com/shakfu/sk-engines), where 32-bit int and 32-bit float WAV are the single most damaging confusion on the target device: the firmware reads file bytes straight into float audio frames with no format check on that path, so an int32 file plays as full-scale noise. The workaround there is to route around `convert()` for WAV output entirely - decode to headerless `.f32` and re-encode with a hand-written WAV writer.
-
-  - **Reproduce** (cysox 0.1.11, Linux, libsox 14.4.2):
-
-    ```python
-    import cysox
-    # in.wav = 32-bit IEEE float, mono, 44100
-    cysox.convert('in.wav', 'out.wav', sample_rate=48000, channels=1)
-    print(cysox.info('out.wav').encoding)   # -> 'signed-integer'   (expected: 'float')
-    ```
-
-    Converting to `out.f32` instead gives correct raw floats, which is why the bug is specifically in
-    how the *output format* is opened, not in the effects chain or the sample pipeline.
-
-  - **Root cause.** `convert()` (`src/cysox/audio.py:261`) builds an output `SignalInfo` carrying `rate`/`channels`/`precision` and then opens the output with
-
-    ```python
-    output_fmt = sox.Format(output_path, signal=out_signal, mode="w")   # audio.py:326
-    ```
-
-    with **no `encoding=`**. `sox.Format.__init__` accepts an `EncodingInfo` and passes it to
-    `sox_open_write` (`src/cysox/sox.pyx:1164`), but when it is NULL libsox picks the format handler's
-    default for the given precision - for WAV at 32-bit that is `SIGN2`, not `FLOAT`. So the input's
-    encoding *type* is dropped on the floor while its precision is preserved, which is exactly the
-    combination that produces a plausible-looking wrong file. Note `info()` already reads and reports
-    `encoding` (`audio.py:215`), so the information is available; `convert()` just never propagates it.
-
-  - **Suggested fix** (two parts, the first is the actual bug):
-
-    1. **Default to preserving the input encoding.** Build an `EncodingInfo` from `input_fmt.encoding` (type + bits) and pass it to the output `Format`.
-
-    2. **Guard it against formats that cannot represent it**, so converting float WAV -> mp3 does not start failing. `sox.format_supports_encoding` already exists and answers exactly this - verified:
-
-       ```python
-       e = sox.EncodingInfo(encoding=3, bits_per_sample=32)      # FLOAT / 32
-       sox.format_supports_encoding('x.wav', e)   # True
-       sox.format_supports_encoding('x.mp3', e)   # False  -> fall back to the handler default
-       ```
-
-  - **Also worth adding while in here:** an explicit `encoding=` parameter on `convert()` (accepting the same names `info()` returns - `'float'`, `'signed-integer'`, ...), so callers can *state* the output encoding rather than relying on either the input or a handler default. `bits=` without a matching `encoding=` is currently under-specified for any format supporting more than one encoding at a given width.
-
-  - **Tests to add:** round-trip each of float32 / int16 / int24 WAV through `convert()` and assert `info(out).encoding == info(in).encoding`; assert float -> mp3 still succeeds via the fallback; assert an explicit `encoding=` overrides the input. `tests/test_sox_encoding.py` is the natural home.
+  - `licenses/README.md` records no licence statement in lpc10's sources. It is statically linked into every wheel.
 
 ### Licensing
 
 - [~] **Drop `libmad` (GPL-2.0+) from the macOS bundle - it conflicts with cysox's MIT license**
 
-  - **Implemented 2026-10-24 by replacing libmad with libmpg123; verified on Linux, not yet on macOS.** Neither C, D nor E below: sox 14.4.2 is patched to decode with libmpg123 (LGPL), so nothing GPL ships and mp3 reading needs no system library. Option C was built first and worked, but needed a system libmad and two loader patches. Two corrections to the analysis below: in 14.4.2 the flag is `--enable-dl-mad`, not `--with-mad=dyn`; and "sox has no mpg123 path, at any version" is false, since SoX_ng carried one from 2019 to 2024. See `docs/dev/mp3_decoding.md`.
+  - **Implemented 2026-10-24 by replacing libmad with libmpg123; verified on Linux, not yet on macOS.** This is option A in `docs/dev/licensing-decisions.md`, which that record calls impossible: sox 14.4.2 is patched to decode with libmpg123 (LGPL), so nothing GPL ships and mp3 reading needs no system library. Option C was built first and worked, but needed a system libmad and two loader patches. Two more corrections to that record: in 14.4.2 the flag is `--enable-dl-mad`, not `--with-mad=dyn`; and "sox has no mpg123 path, at any version" is false, since SoX_ng carried one from 2019 to 2024. See `docs/dev/mp3_decoding.md`.
 
   - **Open:** run the macOS wheel build.
 
-  - **This is live today, not hypothetical.** `scripts/setup.sh:53` lists `mad` in `DEPS`, and `:62-80` goes further: when Homebrew has no static lib it **downloads and builds `libmad.a` from source** and copies it into `lib/`. libmad is **GPL-2.0-or-later**. cysox is MIT (`LICENSE`, `pyproject.toml:6`). Statically linking a GPL library into a distributed MIT wheel makes the combined work GPL - so a published macOS wheel built this way cannot be offered under the license the project claims.
+- [ ] **Satisfy the LGPL §6 relinking obligation for the wheels**
 
-  - **Scope: macOS only.** The Linux branch (`setup.sh:11-28`) links system libsox via pkg-config and bundles nothing, so it inherits whatever the distro built and is not affected by this.
+  - The notices ship in `dist-info/licenses/` (`licenses/README.md`), which also points to the source and scripts needed to relink libsox. Decide whether that satisfies §6.
 
-  - **CORRECTION 2026-08-01: the fix is not "remove `mad` from `DEPS`", and that was already tried.** This ticket originally claimed libmad was redundant because `DEPS` also carries `mpg123`, and that removing `mad` would leave mp3 working through mpg123. That premise is false, and acting on it breaks the build. Evidence:
+  - Every wheel statically links libsox (LGPL-2.1+) into `cysox/sox.*.so`: `CMakeLists.txt` sets `STATIC` whenever `lib/pkgconfig/sox.pc` exists, and `scripts/build-libsox.sh` builds only a static library. libmpg123 and LAME ship as shared libraries. Static linking triggers §6, which dynamic linking satisfies outright - `Makefile:175` already runs `delocate-wheel`, so building libsox shared is the cheap cure. This is what `soundfile` and PyAV do.
 
-    - **sox has no mpg123 path, at any version.** `configure.ac` declares `SOX_FMT_REQ([mp3], [MAD LAME TWOLAME])` - decode is libmad, encode is LAME/TwoLAME. The word "mpg123" appears nowhere in sox's ChangeLog for any release. Debian's `libsox_fmt_mp3.so` links `libmad.so.0`, `libmp3lame.so.0`, `libtwolame.so.0` and no mpg123. libsox binds its mp3 decoder at **compile** time, so a prebuilt libsox compiled against libmad cannot be redirected to mpg123 by changing what we copy alongside it.
+  - The alternative is publishing the object files or an equivalent relinking mechanism per release, which is more standing work than the linking change.
 
-    - **The two libraries are there for two different consumers.** `DEPS` is the union of the dependency closures of the two bundle roots: Homebrew `sox` depends on `mad` (and *not* on mpg123); Homebrew `libsndfile` depends on `mpg123`, lame, flac, libogg, libvorbis, opus. libmad is sox's mp3 decoder; mpg123 is libsndfile's. They are not two copies of one decision.
+  - Note libmpg123 is LGPL-2.1-**only**, so if cysox itself is ever relicensed it must be exactly LGPL-2.1, not LGPL-3.
 
-    - **This was already attempted and reverted.** `3ffc8ac` "make libmad optional" (2026-03-10 00:46) made the CMake link conditional and left the comment `# libmad is optional (mpg123 provides the same MP3 decoding)`. `c66195a` "fix libmod" (01:00, fourteen minutes later) reverted it exactly *and* added the from-source libmad build to `setup.sh` - i.e. replaced "link it if present" with machinery guaranteeing it is always present. The duplicated comment block still at `setup.sh:58-61` is the fingerprint of that hurried edit. (That `3ffc8ac` failed specifically on undefined `mad_*` symbols is inference from the revert's shape and timing; the commit message does not say. Confirming needs a macOS box.)
+  - Rejected options and their evidence are in [docs/dev/licensing-decisions.md](docs/dev/licensing-decisions.md).
 
-  - **Framing correction: this is a mislabeling, not a forbidden combination.** MIT is GPL-compatible, so *combining* cysox with libmad is permitted. What is not permitted is conveying the result as MIT. The wheel is currently GPL-encumbered in substance while its metadata (`pyproject.toml:6`) advertises MIT. That means "stop shipping libmad" and "relabel the wheel" are both valid cures - see option E.
+### Correctness
 
-  - **Solution space, investigated 2026-08-01.** Three live options (C, D, E); two dead ends (A, B):
+- [ ] **Audit every `from_ptr` call site for ownership**
 
-    | # | approach | keeps mp3 read? | verdict |
-    |---|---|---|---|
-    | A | route mp3 decode through mpg123 | - | **impossible** - no such path exists in sox |
-    | B | let libsndfile's handler cover mp3 (it has mpg123) | - | **does not work** - tested |
-    | C | build libsox from source with `--with-mad=dyn` | yes | **viable** - preferred |
-    | D | drop mp3 decode from the bundle | no (write still works) | viable, cheapest |
-    | E | keep libmad, convey the *wheel* under GPL | yes | viable, no build work, high downstream cost |
+  - `sox_create_effects_chain(in_enc, out_enc)` stores both pointers and dereferences them during `flow_effects()`. `EffectsChain.__init__` now keeps Python references so a temporary `EncodingInfo` cannot be collected out from under the chain - but that was one instance of a general problem.
 
-    - **B, tested directly:** `sox.Format('x.mp3', filetype='sndfile')` fails on two different mp3 files while the default handler opens both. sox 14.4.2's sndfile handler advertises only `aiff` and `flac`; it does not claim mp3 regardless of what the linked libsndfile can do.
+  - `Effect.in_signal`/`out_signal` are still raw views into `effp->...`, and `add_effect()` passes `in_signal.ptr` straight through. Classify each `from_ptr` site as "borrowed, owner outlives it" or "needs a snapshot", and convert the second kind.
 
-    - **C is the standard answer to exactly this problem.** sox's `SOX_DL_LIB` macro (`m4/sox.m4`) defines a `dyn` mode: `--with-mad=dyn` sets `AC_DEFINE([DL_MAD], 1, [Define to dlopen() ...])`, so sox **dlopen()s libmad at runtime** instead of linking it. Nothing GPL is then distributed in the wheel - the user supplies libmad or does without. This is essentially the Debian model, where mp3 lives in a separately-packaged plugin that libsox dlopens (which is why `libsox.so.3` itself has no libmad dependency). **Cost:** the macOS branch currently copies Homebrew's *prebuilt* `libsox.a`, so C means building libsox from source in `setup.sh` - a real change in the packaging story, not a one-line edit. It also makes mp3 decode conditional at runtime, which is another argument for the `supported_formats()` ticket in P2.
-
-    - **D is the cheap fallback.** Note that decode and encode are separable: **LAME is LGPL-2.1**, so mp3 *writing* is unaffected by any of this. Only *reading* depends on GPL libmad. Whether sox will build an encode-only mp3 handler with `mad` absent is unverified - `SOX_FMT_REQ` may require the decoder - so this needs checking before committing to it.
-
-    - **E costs no build work but taxes every downstream user.** Keep libmad as-is; convey the binary wheel under GPL-2.0+ instead of MIT. The *source* can stay MIT - it is only the distributed artifact that must carry GPL terms, along with the source-offer obligation for the GPL components. Legally coherent and it preserves mp3 read for free, but it makes everyone who `pip install`s cysox subject to GPL, which for a library binding is usually the outcome you least want. Listed for completeness, not recommended.
-
-  - **Bundling libmad as a `.dylib` instead of a `.a` does NOT help - considered and rejected.** Worth recording because the mechanical change is small enough to look attractive:
-
-    - *Technically it is nearly free.* Homebrew's `mad` ships **only** a dylib - which is exactly why `setup.sh:58-80` builds the static lib from source. `copy_lib` (`setup.sh:50`) already copies `*.dylib`, so `libmad.dylib` is most likely already landing in `lib/`. `Makefile:167` already runs `delocate-wheel`, which bundles dylibs into the wheel. And the dynamic branch of `CMakeLists.txt` (the `else()` at :143) already links without `-lmad` entirely.
-
-    - *Legally it changes nothing.* Static-vs-dynamic is the distinction **LGPL** draws (its §6 relinking allowance); GPL-2.0 has no equivalent. GPL obligations attach to **distribution** of the GPL work and works based on it. Putting `libmad.dylib` inside the wheel *is* distributing libmad - arguably more plainly than static linking does. The variable that matters is whether libmad ships in the wheel at all, not how it is linked. That is precisely why C works: with `--with-mad=dyn` the wheel contains no libmad at all.
-
-  - **Note on libsox itself:** libsox is LGPL-2.1+ (only the `sox`/`play`/`rec`/`soxi` frontends are GPL-2.0+), so MIT bindings over it are fine, but static linking carries LGPL relinking obligations. Dynamic linking is the simpler story for wheels. Worth a short LICENSING section in the README stating what is linked and under what terms.
-
-  - MP3 patents expired in 2017, so licensing is the only remaining constraint here.
-
-  - **Recommended sequencing:** decide C vs D vs E first, because it determines whether the bundling ticket below is "copy Homebrew's prebuilt libs" or "build libsox from source" - a materially different project. Do not start by deleting `mad` from `DEPS`; that is the path already reverted once.
-
-  - **Caveat on all of the above:** this is the standard reading of the GPL, not legal advice. Option E in particular - publishing wheels under GPL while the source stays MIT - is worth confirming with someone qualified before acting on it.
+  - Two bugs of this shape have already shipped and been fixed (the `Format.signal` use-after-free and `convert()`'s aliased `signal_view`), so the class is demonstrated, not theoretical.
 
 ### Platform Support
 
@@ -179,11 +100,17 @@
 
   - Debug mode usage
 
----
-
-## P2 - Medium Priority
+## Medium
 
 ### Testing
+
+- [ ] **Deepen the remaining exists-only test assertions**
+
+  - The two `fx` suites now assert behaviour (duration, level, spectral tilt) rather than `assert output_path.exists()`, which is what surfaced the `convert()` signal-negotiation bug. The same treatment has not been applied elsewhere.
+
+  - Remaining, by count of `assert ... exists()`: `tests/test_slice_outputs.py` (15), `tests/test_audiohit_features.py` (14), `tests/test_cli.py` (7), `tests/test_high_level_api.py` (5).
+
+  - The slice and audiohit suites are the most valuable: they cover `slice_loop`/`split_by_silence`, which do their own duration arithmetic and could hide the same class of bug. `tests/audio_metrics.py` provides the measurement helpers.
 
 - [ ] **Integrate ASAN into CI** (requires custom Python build)
 
@@ -193,34 +120,30 @@
 
 ### API / Usability
 
-*Both found alongside the `convert()` encoding bug above, while writing a tool that uses cysox as its preferred backend and needs to decide at runtime whether it can handle a given file.*
-
 - [ ] **Expose which formats this build actually supports**
 
-  - libsox format support is a **build-time** property, and the common ones are frequently absent: Debian ships mp3/flac/ogg as separate `libsox-fmt-*` packages, so `pip install cysox` on a machine with a stock `libsox-dev` yields a library that cannot open the formats most users have.
+  - libsox format support is a **build-time** property. The wheels now bundle their own sox_ng with mp3/flac/ogg/opus compiled in, but a source build links whatever the system provides - and Debian ships mp3/flac/ogg as separate `libsox-fmt-*` packages, so `pip install cysox` against a stock `libsox-dev` yields a library that cannot open the formats most users have.
 
-  - **Validated 2026-08-01** against the vendored libsox in this repo. The API gap is real, but the original example does not generalise - which formats are missing is per-build:
+  - **Validated 2026-08-01.** Which formats are missing is per-build:
 
     | build | mp3 | flac | ogg | opus |
     |---|---|---|---|---|
     | machine the bug was reported from | absent | absent | - | - |
     | this repo's vendored libsox | present | present | present | **absent** |
 
-    So the ticket should not be closed on the grounds that "mp3 works here" - on this build the hole is
-    `opus`, and `find_format('opus')` is the only way to discover it.
-  - Today the only ways to find out are to call the private-ish `cysox.sox.find_format(ext, False)` or to attempt the conversion and catch the failure. A downstream tool that wants to *prefer* cysox and fall back to ffmpeg has to reach into `cysox.sox` to do it. Confirmed: `cysox.__all__` exports nothing format-related, and neither `supported_formats` nor `supports` exists on the public API.
+    So the ticket should not be closed on the grounds that "mp3 works here" - on that build the hole was `opus`, and `find_format('opus')` is the only way to discover it.
 
-  - Suggested: a public `cysox.supported_formats()` (or `cysox.supports('mp3')`) on the high-level API, plus a line in the README/install docs stating that format support depends on the linked libsox build and naming the packages needed for mp3/flac/ogg. This is the single most likely reason a new user's first `cysox.convert()` fails.
+  - Today the only ways to find out are to call the private-ish `cysox.sox.find_format(ext, False)` or to attempt the conversion and catch the failure. A downstream tool that wants to *prefer* cysox and fall back to ffmpeg has to reach into `cysox.sox` to do it. `cysox.__all__` exports nothing format-related.
+
+  - Suggested: a public `cysox.supported_formats()` (or `cysox.supports('mp3')`), plus a line in the install docs stating that format support depends on the linked libsox build and naming the packages needed for mp3/flac/ogg.
 
 - [ ] **Route libsox's own diagnostics through Python**
 
   - libsox writes warnings and errors straight to the process's stderr from C, so a caller sees unattributed text it cannot capture, suppress, or attach to the file that caused it. Two seen in normal use: `formats: no handler for detected file type 'flac'` (which is *also* raised as a Python exception, so it double-reports) and `wav: wave header missing extended part of fmt chunk` (benign, emitted for any 44-byte float WAV - which is what a lot of hardware writes).
 
-  - **Validated 2026-08-01.** Confirmed uncapturable: under `contextlib.redirect_stderr(io.StringIO())` a `cysox.info()` on a 44-byte float WAV still prints `wav: wave header missing extended part of fmt chunk` to the terminal and the buffer captures `''`
+  - **Validated 2026-08-01.** Confirmed uncapturable: under `contextlib.redirect_stderr(io.StringIO())` a `cysox.info()` on a 44-byte float WAV still prints to the terminal and the buffer captures `''` - it is written to fd 2 from C, below Python's `sys.stderr`.
 
-    - it is written to fd 2 from C, below Python's `sys.stderr`. (The flac double-report could not be checked here; this build has a working flac handler.)
-
-  - **Raised in priority by the `convert()` encoding fix.** That fix has to choose between preserving the input encoding and falling back to the format default, and every fallback libsox performs itself emits one of these uncapturable lines (`formats: mp3 can't encode Floating Point PCM`, `formats: wav can't encode Floating Point PCM to 16-bit`). The fix avoids emitting them by probing with `format_supports_encoding` first - verified silent - but any *legitimate* libsox warning on a conversion still lands on the caller's stderr unattributed.
+  - `_build_output_encoding()` avoids emitting the encoding-fallback warnings by probing with `format_supports_encoding` first, but any legitimate libsox warning on a conversion still lands on the caller's stderr unattributed.
 
   - Suggested: install a `sox_get_globals()->output_message_handler` that forwards to the `logging` module, with a way to silence it. Would make cysox embeddable in tools with their own output.
 
@@ -232,13 +155,11 @@
 
   - Sync: pyproject.toml, `__init__.py`, CHANGELOG.md
 
-- [ ] **Add release automation**
+- [ ] **Tag-triggered wheel publishing with PyPI trusted publishing**
 
-  - GitHub Actions workflow for PyPI publishing
+  - `.github/workflows/build-wheel.yml` is `workflow_dispatch`-only (the push/tag triggers are commented out) and there is no publish job, so releases go out via a manual `make publish`.
 
-  - Automatic changelog generation
-
-  - Git tag creation
+  - Wire it to tags and use PyPI trusted publishing before the release cadence picks up.
 
 ### Code Quality
 
@@ -248,42 +169,86 @@
 
   - isort import sorting
 
----
+## Low
 
-## P3 - Low Priority
+### Performance
+
+- [ ] **Release the GIL around blocking libsox calls**
+
+  - There is no `with nogil` anywhere in `src/cysox/sox.pyx`: `sox_read`, `sox_write` and `sox_flow_effects` all run holding the GIL.
+
+  - The docs advertise concurrent processing on separate `Format` objects (`docs/dev/known_limitations.md` §3, `docs/dev/architecture.md`), and `tests/test_thread_safety.py` exercises it, but threads cannot actually overlap file I/O or effect flow. The claim is only true in the sense that it does not crash.
+
+  - `flow_effects` needs care: the progress callback re-acquires the GIL via `_flow_effects_callback_wrapper`, which is already correct, so the release has to wrap the call without breaking that path.
+
+- [ ] **Move the `split_by_silence` peak scan into Cython**
+
+  - The per-sample Python loop is gone (now `read_into` + `max`/`min`), but the reduction is still Python-level: measured 1.6x faster, x222 -> x356 realtime on the scan alone for a 57s file.
+
+  - Remaining cost is the `max`/`min` pass, which is the floor without Cython or numpy. Block reads were tried and made no difference - `read_into` is not the bottleneck.
+
+  - Worth doing only if profiling of a real workload says so; the pathological case is already fixed.
+
+### API / Usability
+
+- [ ] **Wrap the high-value effects that only `fx.Raw` reaches**
+
+  - `fx.Raw(name, *args)` now makes all of them usable, so this is ergonomics rather than capability.
+
+  - Best candidates, by how often they are structural: `compand` (the standard dynamics tool - the mastering presets currently approximate it with `gain`/`norm`), `vad` (voice activity detection, directly relevant to `auto_trim`), `noisered` (the cleanup preset category), `stats` (analysis), `synth` (test-tone generation).
+
+  - 27 of 66 effects in a typical build have typed classes. Full list of the unwrapped ones is in `docs/api/effects.md` under "Raw - Untyped Effects".
+
+- [ ] **Decide whether a trailing `Remix`/`Channels` should set the output channel count**
+
+  - Today it does not: `convert()` opens the output file *before* negotiating the chain, so its channel count comes from the input or from `channels=`, and an in-chain effect that changes channel count is converted back to that target. `fx.Remix(mix=["1"])` therefore yields the left channel duplicated across a stereo file, not a mono file.
+
+  - This is consistent with how an in-chain `fx.Rate` behaves, is lossless, and is documented in `convert()`'s docstring and in `tests/test_fx_outputs.py::TestConversionEffects::test_remix_left_only`. `channels=1` is the documented way to get mono.
+
+  - Changing it means opening the output after the chain is negotiated, which is what sox's own driver does but needs restructuring: `sox.EffectsChain` requires the output encoding at construction.
+
+- [ ] **Implement or remove `PythonEffect` and `CEffect`**
+
+  - Both are exported from `cysox.fx` and appear in the architecture diagram, but `PythonEffect.process()` is never called by `convert()`/`play()` (raises `NotImplementedError`) and `CEffect.register()` raises because the low-level API has no `register_effect_handler`.
+
+  - Declared-but-unimplemented classes in a public namespace read as features. Either wire them up or drop them to a design note.
+
+### Code Structure
+
+- [ ] **Extract the shared segment-write path in `audio.py`**
+
+  - `slice_loop`, `stutter` and `split_by_silence` each do: open input -> compute sample ranges -> read segment -> optional temp-file effects hop -> write. That is roughly 100 lines of triplicated logic.
+
+  - A shared `_write_segment(input_fmt, start, end, out_path, effects, encoding)` would give the encoding handling a single place to live - it currently has to be kept correct in three.
+
+- [ ] **Split `audio.py` (1600+ lines) and `sox.pyx` (2500+ lines)**
+
+  - `audio.py` holds twelve top-level functions of 60-210 lines each in one module.
+
+  - `sox.pyx` would read better split along the struct boundaries `sox.pxd` already draws.
+
+  - Cosmetic; do it when touching these files for another reason.
 
 ### Features
 
 - [ ] **Implement playlist parsing**
 
-  - File: `src/cysox/sox.pyx` lines 2136-2148 (commented out)
+  - File: `src/cysox/sox.pyx` lines 2472-2483 (commented out)
 
   - Requires: Callback mechanism for playlist entries
 
-- [!] **Fix memory I/O functions** (BLOCKED)
+- [ ] **Fix memory I/O functions** (BLOCKED) #blocked
 
   - Functions: `open_mem_read()`, `open_mem_write()`, `open_memstream_write()`
 
-  - Status: Blocked by libsox upstream issue
+  - Status: cysox wrapper bugs (see [docs/dev/known_limitations.md](docs/dev/known_limitations.md) §2)
 
   - Tracking: Documented in Known Limitations
 
----
-
-## Backlog
+### Backlog
 
 - [ ] Async/await support for effects processing
 
 - [ ] NumPy-native array returns (optional dependency)
 
 - [ ] Audio visualization helpers (waveform, spectrogram)
-
----
-
-## References
-
-- [CHANGELOG.md](CHANGELOG.md) - Version history
-
-- [docs/dev/high_level_api.md](docs/dev/high_level_api.md) - High-level API documentation and extension guide
-
-- [libsox documentation](https://sourceforge.net/p/sox/code/ci/master/tree/src/sox.h)

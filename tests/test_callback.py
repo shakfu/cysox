@@ -140,8 +140,7 @@ def test_callback_abort():
         # An aborting callback ends the chain early, which libsox reports as
         # SOX_EOF -- the same status a length-limiting effect like `trim`
         # returns on normal completion. flow_effects() therefore returns the
-        # status rather than raising; raising here used to make a correct
-        # `trim` look like a failure and truncated its output.
+        # status rather than raising.
         result = chain.flow_effects(callback=abort_callback)
         assert result == sox.EOF
 

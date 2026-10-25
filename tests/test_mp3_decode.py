@@ -87,7 +87,13 @@ class TestSeek:
             f.seek(start)
             got = f.read(4096)
 
-        assert got == full[start : start + 4096]
+        # Measured: libmpg123's generic and NEON64 synths differ from a linear
+        # decode by up to one float32 ulp after seeking to every other frame;
+        # its x86-64 synth is exact. 256 is one ulp at full scale. A one-sample
+        # misalignment differs by millions.
+        expected = full[start : start + 4096]
+        assert len(got) == len(expected)
+        assert max(abs(a - b) for a, b in zip(got, expected)) <= 256
 
 
 class TestHandles:

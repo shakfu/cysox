@@ -216,6 +216,8 @@ EINVAL: int
 SOX_SEEK_SET: int
 
 ENCODINGS: List[Tuple[str, str]]
+ENCODING_NAMES: Dict[int, str]
+ENCODING_TYPES: Dict[str, int]
 
 # High-level API functions
 def info(path: Union[str, Any]) -> Dict[str, Any]: ...

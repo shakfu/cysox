@@ -2,6 +2,7 @@
 
 from typing import List
 
+from . import _validate
 from .base import Effect
 
 
@@ -34,11 +35,11 @@ class Reverb(Effect):
         *,
         wet_only: bool = False,
     ):
-        self.reverberance = reverberance
-        self.hf_damping = hf_damping
-        self.room_scale = room_scale
-        self.stereo_depth = stereo_depth
-        self.pre_delay = pre_delay
+        self.reverberance = _validate.percent(reverberance, "reverberance")
+        self.hf_damping = _validate.percent(hf_damping, "hf_damping")
+        self.room_scale = _validate.percent(room_scale, "room_scale")
+        self.stereo_depth = _validate.percent(stereo_depth, "stereo_depth")
+        self.pre_delay = _validate.non_negative(pre_delay, "pre_delay")
         self.wet_gain = wet_gain
         self.wet_only = wet_only
 
@@ -87,6 +88,12 @@ class Echo(Effect):
     ):
         if len(delays) != len(decays):
             raise ValueError("delays and decays must have same length")
+        if not delays:
+            raise ValueError("echo requires at least one delay/decay pair")
+        for d in delays:
+            _validate.positive(d, "delay")
+        for d in decays:
+            _validate.in_range(d, 0, 1, "decay")
         self.gain_in = gain_in
         self.gain_out = gain_out
         self.delays = delays

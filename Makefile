@@ -29,7 +29,7 @@ gcc -std=c11 -o build/$1 \
 endef
 
 .PHONY: all sync build rebuild test testpy leaks leaks-valgrind lint typecheck format qa \
-        wheel sdist delocate strip check publish publish-test \
+        wheel sdist delocate strip check publish publish-test licensecheck \
         examples-p examples-c benchmark benchmark-save benchmark-compare \
         docs docs-clean docs-serve docs-deploy clean reset distclean help
 
@@ -140,10 +140,13 @@ typecheck:
 format:
 	@uv run ruff format src/
 
+# Verify the libsox about to be linked carries no GPL code
+licensecheck:
+	@python3 scripts/check_licenses.py libs
+
 # Run all QA checks (test, lint, typecheck, format) without modifying anything.
 # `lint` and `format` above rewrite source; a check that edits the tree cannot
-# tell "clean" from "cleaned up", so qa uses the read-only variants and only
-# reports success once every step has actually run.
+# tell "clean" from "cleaned up", so qa uses the read-only variants.
 qa: test
 	@uv run ruff check --no-fix src/
 	@uv run mypy src/
@@ -268,6 +271,7 @@ help:
 	@echo "Code Quality:"
 	@echo "  lint          - Run ruff linter with auto-fix"
 	@echo "  typecheck     - Run mypy type checker"
+	@echo "  licensecheck  - Verify the libsox to be linked carries no GPL code"
 	@echo "  format        - Format code with ruff"
 	@echo "  qa            - Run all QA checks (test, lint, typecheck, format)"
 	@echo ""

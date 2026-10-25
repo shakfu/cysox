@@ -854,3 +854,31 @@ cdef extern from "sox.h":
         size_t base_buffer_len, # Size of base_buffer, in bytes. 
         const char * filename # Filename from which to extract basename. 
     )
+
+
+cdef extern from *:
+    """
+    #include "sox.h"
+
+    /* sox_ng added encodings to the middle and end of sox_encoding_t, which
+     * shifts every value after GSM.  Never hard-code these numbers: expose the
+     * real enum values, and a negative sentinel where the build predates them,
+     * so the Python-side tables key off whatever this libsox actually uses.
+     *   DSD      added in sox_ng 14.6
+     *   MP1/MP2  added in sox_ng 14.7 (between GSM and MP3) */
+    #if SOX_LIB_VERSION_CODE >= SOX_LIB_VERSION(14, 6, 0)
+    #define CYSOX_ENCODING_DSD ((int)SOX_ENCODING_DSD)
+    #else
+    #define CYSOX_ENCODING_DSD (-1)
+    #endif
+    #if SOX_LIB_VERSION_CODE >= SOX_LIB_VERSION(14, 7, 0)
+    #define CYSOX_ENCODING_MP1 ((int)SOX_ENCODING_MP1)
+    #define CYSOX_ENCODING_MP2 ((int)SOX_ENCODING_MP2)
+    #else
+    #define CYSOX_ENCODING_MP1 (-2)
+    #define CYSOX_ENCODING_MP2 (-3)
+    #endif
+    """
+    const int CYSOX_ENCODING_DSD
+    const int CYSOX_ENCODING_MP1
+    const int CYSOX_ENCODING_MP2

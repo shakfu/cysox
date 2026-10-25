@@ -328,7 +328,7 @@ class TestBatch:
         out_dir = test_output_dir / "batch_struct"
         if out_dir.exists():
             shutil.rmtree(out_dir)
-        processed = cysox.batch(batch_input_dir, out_dir)
+        cysox.batch(batch_input_dir, out_dir)
         assert (out_dir / "a.wav").exists()
         assert (out_dir / "b.wav").exists()
         assert (out_dir / "sub" / "c.wav").exists()
@@ -404,3 +404,100 @@ class TestBatch:
             cysox.batch(
                 "/nonexistent/dir", test_output_dir / "nope"
             )
+
+
+class TestBatchErrorHandling:
+    """batch(skip_errors=...) and the encoding= passthrough."""
+
+    def _make_dir(self, tmp_path, test_wav_str):
+        import shutil
+
+        src = tmp_path / "in"
+        src.mkdir()
+        shutil.copy(test_wav_str, src / "good1.wav")
+        shutil.copy(test_wav_str, src / "good2.wav")
+        # A file with an audio extension that is not audio at all.
+        (src / "broken.wav").write_bytes(b"definitely not a wav file")
+        return src
+
+    def test_batch_aborts_on_error_by_default(self, tmp_path, test_wav_str):
+        src = self._make_dir(tmp_path, test_wav_str)
+        with pytest.raises(Exception):
+            cysox.batch(src, tmp_path / "out")
+
+    def test_batch_skips_errors_when_asked(self, tmp_path, test_wav_str):
+        src = self._make_dir(tmp_path, test_wav_str)
+        processed = cysox.batch(src, tmp_path / "out", skip_errors=True)
+        assert len(processed) == 2, processed
+        assert all("broken" not in p for p in processed)
+        for p in processed:
+            assert cysox.info(p).samples > 0
+
+    def test_on_error_reports_what_was_skipped(self, tmp_path, test_wav_str):
+        src = self._make_dir(tmp_path, test_wav_str)
+        failures = []
+        cysox.batch(
+            src,
+            tmp_path / "out",
+            skip_errors=True,
+            on_error=lambda path, exc: failures.append((path, exc)),
+        )
+        assert len(failures) == 1
+        path, exc = failures[0]
+        assert "broken.wav" in path
+        assert isinstance(exc, Exception)
+
+    def test_on_error_not_called_when_all_succeed(self, tmp_path, test_wav_str):
+        import shutil
+
+        src = tmp_path / "clean"
+        src.mkdir()
+        shutil.copy(test_wav_str, src / "a.wav")
+        failures = []
+        processed = cysox.batch(
+            src, tmp_path / "out", skip_errors=True,
+            on_error=lambda p, e: failures.append(p),
+        )
+        assert len(processed) == 1
+        assert failures == []
+
+    def test_batch_forwards_encoding(self, tmp_path, test_wav_str):
+        import shutil
+
+        src = tmp_path / "in"
+        src.mkdir()
+        shutil.copy(test_wav_str, src / "a.wav")
+        processed = cysox.batch(src, tmp_path / "out", encoding="float", bits=32)
+        assert len(processed) == 1
+        assert cysox.info(processed[0]).encoding == "float"
+
+
+class TestAutoTrimEncoding:
+    @pytest.fixture
+    def float_wav(self, tmp_path, test_wav_str):
+        """A 32-bit float source, so encoding changes are observable."""
+        path = tmp_path / "float32.wav"
+        cysox.convert(test_wav_str, path, encoding="float", bits=32)
+        assert cysox.info(str(path)).encoding == "float"
+        return str(path)
+
+    def test_auto_trim_defaults_to_input_encoding(self, tmp_path, float_wav):
+        """Without encoding=, the input's float encoding must survive."""
+        out = tmp_path / "trimmed.wav"
+        cysox.auto_trim(float_wav, out)
+        info = cysox.info(str(out))
+        assert info.encoding == "float"
+        assert info.samples > 0
+
+    def test_auto_trim_forwards_encoding(self, tmp_path, float_wav):
+        """An explicit encoding= overrides the inherited one."""
+        out = tmp_path / "trimmed.wav"
+        cysox.auto_trim(float_wav, out, encoding="signed-integer")
+        info = cysox.info(str(out))
+        assert info.encoding == "signed-integer"
+        assert info.samples > 0
+
+    def test_auto_trim_rejects_unwritable_encoding(self, tmp_path, test_wav_str):
+        """A 16-bit WAV cannot hold float; that must be an error, not a silent swap."""
+        with pytest.raises(ValueError, match="cannot encode"):
+            cysox.auto_trim(test_wav_str, tmp_path / "bad.wav", encoding="float")

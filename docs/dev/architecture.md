@@ -89,7 +89,6 @@ The `onset` module is implemented in Cython with `nogil` inner loops for perform
 Five detection algorithms are implemented: HFC, Flux, Energy, Complex, and Superflux. See the [Onset Detection API](../api/onset.md) for details.
 
 ---
-
 ## Memory Ownership Model
 
 Wrapper objects hold raw C pointers, so every one of them has to answer three

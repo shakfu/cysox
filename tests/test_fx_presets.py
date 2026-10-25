@@ -1,13 +1,71 @@
 """Tests for composite effect presets.
 
-Tests that all presets can be instantiated and applied successfully.
+Instantiation tests check the preset objects themselves. The output tests
+check what each preset does to the signal -- valid, non-silent audio with the
+expected shape -- rather than only that a file appeared. Measurements come
+from `tests/audio_metrics.py`.
+
+Coverage over presets is parametrised from `ALL_PRESETS`, so a newly added
+preset is covered automatically instead of needing a hand-written test.
+
 Output files are preserved in build/test_output/fx_presets/
 """
 
 import pytest
+
 import cysox
 from cysox import fx
 from cysox.fx.base import CompositeEffect
+from cysox.__main__ import ALL_PRESETS
+from audio_metrics import assert_audio, assert_ratio, measure
+
+
+# Effects that legitimately change duration. A preset built only from effects
+# outside these two sets must come out exactly as long as it went in.
+TIME_CHANGING = {"speed", "tempo", "trim", "pad", "repeat", "rate", "silence"}
+TAIL_ADDING = {"echo", "echos", "reverb", "chorus", "flanger", "delay"}
+
+
+def effect_names(preset):
+    """Flattened sox effect names a preset expands to."""
+    from cysox.audio import _expand_effects
+
+    return {e.name for e in _expand_effects([preset])}
+
+
+def expected_output_rate(preset, source_rate: float) -> float:
+    """Rate ``convert()`` will open the output at for this preset (0.2.0+)."""
+    from types import SimpleNamespace
+
+    from cysox.audio import _expand_effects, _predict_chain_output
+
+    return _predict_chain_output(
+        _expand_effects([preset]), SimpleNamespace(rate=source_rate, channels=2)
+    )[0]
+
+
+def duration_class(preset):
+    """'exact', 'tail', or 'changes' -- how a preset may affect duration."""
+    names = effect_names(preset)
+    if names & TIME_CHANGING:
+        return "changes"
+    if names & TAIL_ADDING:
+        return "tail"
+    return "exact"
+
+
+# Presets that embed a downward `rate` and so are truncated by the
+# signal-negotiation defect characterised in test_fx_outputs.py.
+RATE_TRUNCATED = {"Telephone": 8000, "WalkieTalkie": 8000, "LoFiHipHop": 22050}
+
+# Presets carrying a downward `pitch`, which convert() also mis-negotiates:
+# pitch must not change duration, but negative cents scale it by
+# 2 ** (cents / 1200). Value is the preset's pitch shift in cents.
+PITCH_SHORTENED = {"HauntedVoice": -500}
+
+# Every preset that the negotiation defect touches. Excluded from the generic
+# duration check and covered explicitly in TestPresetsAffectedByNegotiationBug.
+NEGOTIATION_AFFECTED = set(RATE_TRUNCATED) | set(PITCH_SHORTENED) | {"DoubleTime"}
 
 
 class TestDrumPresetInstantiation:
@@ -79,62 +137,6 @@ class TestDrumPresetInstantiation:
     def test_loop_ready_defaults(self):
         preset = fx.LoopReady()
         assert isinstance(preset, CompositeEffect)
-
-
-class TestDrumPresetOutputs:
-    """Test drum preset audio outputs."""
-
-    def test_half_time_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.HalfTime()])
-        assert output_path.exists()
-
-    def test_half_time_speed_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.HalfTime(preserve_pitch=False)])
-        assert output_path.exists()
-
-    def test_double_time_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.DoubleTime()])
-        assert output_path.exists()
-
-    def test_drum_punch_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.DrumPunch()])
-        assert output_path.exists()
-
-    def test_drum_crisp_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.DrumCrisp()])
-        assert output_path.exists()
-
-    def test_drum_fat_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.DrumFat()])
-        assert output_path.exists()
-
-    def test_breakbeat_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.Breakbeat()])
-        assert output_path.exists()
-
-    def test_vintage_break_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.VintageBreak()])
-        assert output_path.exists()
-
-    def test_drum_room_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.DrumRoom()])
-        assert output_path.exists()
-
-    def test_gated_reverb_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.GatedReverb()])
-        assert output_path.exists()
-
-    def test_drum_slice_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.DrumSlice()])
-        assert output_path.exists()
-
-    def test_reverse_cymbal_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.ReverseCymbal()])
-        assert output_path.exists()
-
-    def test_loop_ready_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.LoopReady()])
-        assert output_path.exists()
 
 
 class TestPresetInstantiation:
@@ -406,215 +408,321 @@ class TestPresetInstantiation:
         assert isinstance(preset, CompositeEffect)
 
 
-class TestPresetOutputs:
-    """Test that presets produce valid audio output files."""
+class TestAllPresetOutputs:
+    """Every preset, checked for the properties all of them must have."""
 
-    # Voice presets
-    def test_chipmunk_output(self, test_wav_str, output_path):
+    @pytest.mark.parametrize("name", ALL_PRESETS)
+    def test_preset_produces_valid_audio(
+        self, name, test_wav_str, output_path_factory, source_metrics
+    ):
+        """No preset may emit silence or drop a channel."""
+        preset = getattr(fx, name)()
+        out = output_path_factory(name)
+        cysox.convert(test_wav_str, out, effects=[preset])
+        m = assert_audio(
+            out,
+            rate=expected_output_rate(preset, source_metrics.rate),
+            channels=source_metrics.channels,
+            min_peak=0.001,
+        )
+        # A preset that collapsed to a fraction of the source, or ballooned,
+        # is a bug even when the exact factor is preset-specific.
+        assert 0.05 <= m.duration / source_metrics.duration <= 4.0, (
+            f"{name}: duration {m.duration:.3f}s from a {source_metrics.duration:.3f}s "
+            "source is out of any plausible range"
+        )
+
+    @pytest.mark.parametrize("name", ALL_PRESETS)
+    def test_duration_matches_preset_composition(
+        self, name, test_wav_str, output_path_factory, source_metrics
+    ):
+        """Duration must follow from the effects the preset is built from.
+
+        A preset with no time-changing effect that still changes length is
+        the signature of the negotiation defect, so this is the check that
+        would have caught it.
+        """
+        preset = getattr(fx, name)()
+        kind = duration_class(preset)
+        if kind == "changes":
+            pytest.skip(f"{name} contains a deliberately time-changing effect")
+
+        out = output_path_factory(name)
+        cysox.convert(test_wav_str, out, effects=[preset])
+        m = measure(out)
+
+        if kind == "exact":
+            assert_ratio(m.duration, source_metrics.duration, 0.02, f"{name} duration")
+        else:  # tail-adding: may grow a little, must never shrink
+            assert m.duration >= source_metrics.duration - 0.02, (
+                f"{name}: duration shrank to {m.duration:.3f}s from "
+                f"{source_metrics.duration:.3f}s"
+            )
+            assert m.duration <= source_metrics.duration + 3.0, (
+                f"{name}: tail of {m.duration - source_metrics.duration:.3f}s is implausible"
+            )
+
+
+class TestPresetBehaviour:
+    """Targeted checks that a preset does the thing its name promises."""
+
+    def test_chipmunk_is_faster_and_brighter(
+        self, test_wav_str, output_path, source_metrics
+    ):
         cysox.convert(test_wav_str, output_path, effects=[fx.Chipmunk()])
-        assert output_path.exists()
+        m = assert_audio(output_path)
+        assert m.duration < source_metrics.duration * 0.8, "Chipmunk did not speed up"
+        assert m.zcr > source_metrics.zcr * 1.3, "Chipmunk did not raise pitch"
 
-    def test_deep_voice_output(self, test_wav_str, output_path):
+    def test_deep_voice_is_slower_and_darker(
+        self, test_wav_str, output_path, source_metrics
+    ):
         cysox.convert(test_wav_str, output_path, effects=[fx.DeepVoice()])
-        assert output_path.exists()
+        m = assert_audio(output_path)
+        assert m.duration > source_metrics.duration * 1.2, "DeepVoice did not slow down"
+        assert m.zcr < source_metrics.zcr * 0.8, "DeepVoice did not lower pitch"
 
-    def test_robot_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.Robot()])
-        assert output_path.exists()
+    def test_half_time_doubles_duration(self, test_wav_str, output_path, source_metrics):
+        cysox.convert(test_wav_str, output_path, effects=[fx.HalfTime()])
+        assert_audio(
+            output_path, duration=source_metrics.duration * 2, duration_tol=0.03
+        )
 
-    def test_haunted_voice_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.HauntedVoice()])
-        assert output_path.exists()
+    def test_half_time_preserves_pitch_by_default(
+        self, test_wav_str, output_path_factory, source_metrics
+    ):
+        """preserve_pitch=True uses tempo; False uses speed and drops pitch."""
+        kept = output_path_factory("kept")
+        dropped = output_path_factory("dropped")
+        cysox.convert(test_wav_str, kept, effects=[fx.HalfTime()])
+        cysox.convert(test_wav_str, dropped, effects=[fx.HalfTime(preserve_pitch=False)])
+        mk, md = measure(kept), measure(dropped)
+        assert_ratio(mk.zcr, source_metrics.zcr, 0.2, "HalfTime should preserve pitch")
+        assert md.zcr < source_metrics.zcr * 0.8, (
+            "HalfTime(preserve_pitch=False) should lower pitch"
+        )
 
-    def test_vocal_clarity_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.VocalClarity()])
-        assert output_path.exists()
+    def test_drum_slice_extracts_requested_window(self, test_wav_str, output_path):
+        """DrumSlice(start=0) trims to exactly its duration."""
+        cysox.convert(test_wav_str, output_path, effects=[fx.DrumSlice(start=0, duration=0.5)])
+        assert_audio(output_path, duration=0.5, duration_tol=0.05)
 
-    def test_whisper_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.Whisper()])
-        assert output_path.exists()
-
-    # Lo-Fi presets
-    def test_telephone_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.Telephone()])
-        assert output_path.exists()
-
-    def test_am_radio_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.AMRadio()])
-        assert output_path.exists()
-
-    def test_megaphone_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.Megaphone()])
-        assert output_path.exists()
-
-    def test_underwater_output(self, test_wav_str, output_path):
+    def test_underwater_is_darker(self, test_wav_str, output_path, source_metrics):
         cysox.convert(test_wav_str, output_path, effects=[fx.Underwater()])
-        assert output_path.exists()
+        m = assert_audio(output_path)
+        assert m.zcr < source_metrics.zcr * 0.85, "Underwater did not dull the signal"
 
-    def test_vinyl_warmth_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.VinylWarmth()])
-        assert output_path.exists()
+    def test_mastering_presets_normalise(self, test_wav_str, output_path_factory):
+        """Mastering presets end at a controlled peak, not wherever they land."""
+        for name in ("BroadcastLimiter", "WarmMaster", "BrightMaster", "LoudnessMaster"):
+            out = output_path_factory(name)
+            cysox.convert(test_wav_str, out, effects=[getattr(fx, name)()])
+            m = assert_audio(out)
+            assert 0.8 <= m.peak <= 1.0, f"{name}: peak {m.peak:.3f} not normalised"
 
-    def test_lofi_hiphop_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.LoFiHipHop()])
-        assert output_path.exists()
+    def test_bright_master_is_brighter_than_warm_master(
+        self, test_wav_str, output_path_factory
+    ):
+        warm = output_path_factory("warm")
+        bright = output_path_factory("bright")
+        cysox.convert(test_wav_str, warm, effects=[fx.WarmMaster()])
+        cysox.convert(test_wav_str, bright, effects=[fx.BrightMaster()])
+        assert measure(bright).zcr > measure(warm).zcr, (
+            "BrightMaster should be brighter than WarmMaster"
+        )
 
-    def test_cassette_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.Cassette()])
-        assert output_path.exists()
+    def test_reverb_presets_add_energy(self, test_wav_str, output_path_factory, source_metrics):
+        """Spatial presets add a tail, so mean level rises."""
+        for name in ("SmallRoom", "LargeHall", "Bathroom"):
+            out = output_path_factory(name)
+            cysox.convert(test_wav_str, out, effects=[getattr(fx, name)()])
+            m = assert_audio(out)
+            assert m.mean_abs > source_metrics.mean_abs, (
+                f"{name}: no energy added ({m.mean_abs:.5f} vs {source_metrics.mean_abs:.5f})"
+            )
 
-    # Spatial presets
-    def test_small_room_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.SmallRoom()])
-        assert output_path.exists()
+    def test_reverb_presets_scale_with_size(self, test_wav_str, output_path_factory):
+        """A bigger space must add more than a smaller one."""
+        small = output_path_factory("small")
+        large = output_path_factory("large")
+        cysox.convert(test_wav_str, small, effects=[fx.SmallRoom()])
+        cysox.convert(test_wav_str, large, effects=[fx.LargeHall()])
+        assert measure(large).mean_abs > measure(small).mean_abs, (
+            "LargeHall should add more than SmallRoom"
+        )
 
-    def test_large_hall_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.LargeHall()])
-        assert output_path.exists()
 
-    def test_cathedral_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.Cathedral()])
-        assert output_path.exists()
+class TestPresetsFormerlyBrokenByNegotiation:
+    """Presets that the signal-negotiation defect used to damage.
 
-    def test_bathroom_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.Bathroom()])
-        assert output_path.exists()
+    Before the fix, four presets came out truncated: Telephone, WalkieTalkie
+    and LoFiHipHop embed a downward `rate`, and HauntedVoice a negative
+    `pitch`. Telephone -- the preset the README leads with -- kept 18% of the
+    audio. See test_fx_outputs.TestSignalNegotiationRegression for the cause.
+    """
 
-    def test_stadium_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.Stadium()])
-        assert output_path.exists()
+    @pytest.mark.parametrize("name", sorted(RATE_TRUNCATED))
+    def test_rate_preset_preserves_duration(
+        self, name, test_wav_str, output_path_factory, source_metrics
+    ):
+        """An embedded rate change must not shorten the output.
 
-    # Broadcast presets
-    def test_podcast_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.Podcast()])
-        assert output_path.exists()
+        Since 0.2.0 the output file is opened at the preset's target rate
+        rather than being resampled back to the source rate.
+        """
+        out = output_path_factory(name)
+        cysox.convert(test_wav_str, out, effects=[getattr(fx, name)()])
+        assert_audio(
+            out,
+            rate=RATE_TRUNCATED[name],
+            channels=source_metrics.channels,
+            duration=source_metrics.duration,
+            duration_tol=0.02,
+        )
 
-    def test_radio_dj_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.RadioDJ()])
-        assert output_path.exists()
+    def test_double_time_halves_duration(
+        self, test_wav_str, output_path, source_metrics
+    ):
+        cysox.convert(test_wav_str, output_path, effects=[fx.DoubleTime()])
+        assert_audio(
+            output_path, duration=source_metrics.duration / 2, duration_tol=0.03
+        )
 
-    def test_voiceover_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.Voiceover()])
-        assert output_path.exists()
-
-    def test_intercom_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.Intercom()])
-        assert output_path.exists()
-
-    def test_walkie_talkie_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.WalkieTalkie()])
-        assert output_path.exists()
-
-    # Musical presets
-    def test_eighties_chorus_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.EightiesChorus()])
-        assert output_path.exists()
-
-    def test_dreamy_pad_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.DreamyPad()])
-        assert output_path.exists()
-
-    def test_slowed_reverb_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.SlowedReverb()])
-        assert output_path.exists()
-
-    def test_slapback_echo_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.SlapbackEcho()])
-        assert output_path.exists()
-
-    def test_dub_delay_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.DubDelay()])
-        assert output_path.exists()
-
-    def test_jet_flanger_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.JetFlanger()])
-        assert output_path.exists()
-
-    def test_shoegaze_wash_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.ShoegazeWash()])
-        assert output_path.exists()
-
-    # Mastering presets
-    def test_broadcast_limiter_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.BroadcastLimiter()])
-        assert output_path.exists()
-
-    def test_warm_master_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.WarmMaster()])
-        assert output_path.exists()
-
-    def test_bright_master_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.BrightMaster()])
-        assert output_path.exists()
-
-    def test_loudness_master_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.LoudnessMaster()])
-        assert output_path.exists()
-
-    # Cleanup presets
-    def test_remove_rumble_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.RemoveRumble()])
-        assert output_path.exists()
-
-    def test_remove_hiss_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.RemoveHiss()])
-        assert output_path.exists()
-
-    def test_remove_hum_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.RemoveHum()])
-        assert output_path.exists()
-
-    def test_clean_voice_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.CleanVoice()])
-        assert output_path.exists()
-
-    def test_tape_restoration_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.TapeRestoration()])
-        assert output_path.exists()
-
-    # Transition presets
-    def test_fade_in_out_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.FadeInOut()])
-        assert output_path.exists()
-
-    def test_crossfade_ready_output(self, test_wav_str, output_path):
-        cysox.convert(test_wav_str, output_path, effects=[fx.CrossfadeReady()])
-        assert output_path.exists()
+    def test_haunted_voice_preserves_duration(
+        self, test_wav_str, output_path, source_metrics
+    ):
+        """Pitch must not shorten; the reverb/echo tail may lengthen a little."""
+        cysox.convert(test_wav_str, output_path, effects=[fx.HauntedVoice()])
+        m = measure(output_path)
+        assert m.duration >= source_metrics.duration - 0.02, (
+            f"HauntedVoice shortened to {m.duration:.3f}s from "
+            f"{source_metrics.duration:.3f}s"
+        )
+        assert m.duration <= source_metrics.duration + 2.0
 
 
 class TestPresetChaining:
-    """Test that presets can be chained with other effects."""
+    """Presets combined with other effects."""
 
-    def test_cleanup_then_preset(self, test_wav_str, output_path):
-        """Apply cleanup first, then a creative preset."""
-        cysox.convert(test_wav_str, output_path, effects=[
-            fx.RemoveRumble(),
-            fx.VinylWarmth(),
-        ])
-        assert output_path.exists()
+    def test_cleanup_then_preset(self, test_wav_str, output_path, source_metrics):
+        """Cleanup first, then a creative preset."""
+        cysox.convert(
+            test_wav_str, output_path, effects=[fx.RemoveRumble(), fx.VinylWarmth()]
+        )
+        assert_audio(
+            output_path,
+            rate=source_metrics.rate,
+            channels=source_metrics.channels,
+            duration=source_metrics.duration,
+        )
 
-    def test_preset_then_mastering(self, test_wav_str, output_path):
-        """Apply creative preset, then mastering."""
-        cysox.convert(test_wav_str, output_path, effects=[
-            fx.EightiesChorus(),
-            fx.BroadcastLimiter(),
-        ])
-        assert output_path.exists()
+    def test_preset_then_mastering(self, test_wav_str, output_path, source_metrics):
+        """A mastering preset at the end controls the final peak."""
+        cysox.convert(
+            test_wav_str,
+            output_path,
+            effects=[fx.EightiesChorus(), fx.BroadcastLimiter()],
+        )
+        m = assert_audio(output_path, channels=source_metrics.channels)
+        assert 0.8 <= m.peak <= 1.0, f"final peak {m.peak:.3f} not limited"
 
-    def test_multiple_presets(self, test_wav_str, output_path):
-        """Chain multiple presets together."""
-        cysox.convert(test_wav_str, output_path, effects=[
-            fx.CleanVoice(),
-            fx.SmallRoom(),
-            fx.WarmMaster(),
-        ])
-        assert output_path.exists()
+    def test_multiple_presets(self, test_wav_str, output_path, source_metrics):
+        cysox.convert(
+            test_wav_str,
+            output_path,
+            effects=[fx.CleanVoice(), fx.SmallRoom(), fx.WarmMaster()],
+        )
+        assert_audio(
+            output_path,
+            rate=source_metrics.rate,
+            channels=source_metrics.channels,
+            duration=source_metrics.duration,
+        )
 
     def test_preset_with_base_effects(self, test_wav_str, output_path):
-        """Mix presets with base effect classes."""
-        cysox.convert(test_wav_str, output_path, effects=[
-            fx.Volume(db=-3),
-            fx.Telephone(),
-            fx.Normalize(),
-        ])
-        assert output_path.exists()
+        """Presets and base effects mix; Telephone still truncates (known bug)."""
+        cysox.convert(
+            test_wav_str,
+            output_path,
+            effects=[fx.Volume(db=-3), fx.Telephone(), fx.Normalize()],
+        )
+        m = assert_audio(output_path)
+        assert_ratio(m.peak, 0.8913, 0.05, "trailing Normalize sets the peak")
+
+    def test_chained_presets_compose(self, test_wav_str, output_path_factory, source_metrics):
+        """Chaining two presets differs from applying either alone."""
+        one = output_path_factory("one")
+        both = output_path_factory("both")
+        cysox.convert(test_wav_str, one, effects=[fx.SmallRoom()])
+        cysox.convert(test_wav_str, both, effects=[fx.SmallRoom(), fx.LargeHall()])
+        m1, m2 = measure(one), measure(both)
+        assert m2.mean_abs > m1.mean_abs, "second reverb added nothing"
+
+
+class TestPresetRegistrySync:
+    """The CLI's preset table must match what `cysox.fx` actually exports.
+
+    `__main__.PRESET_CATEGORIES` is maintained by hand. A preset added to
+    `fx` but not to that table is silently unreachable from
+    `cysox preset apply`; one listed but not exported makes the CLI raise
+    AttributeError. Nothing enforced either direction before this test.
+    """
+
+    def _exported_composites(self):
+        import inspect
+
+        return {
+            name
+            for name in dir(fx)
+            if inspect.isclass(getattr(fx, name))
+            and issubclass(getattr(fx, name), CompositeEffect)
+            and getattr(fx, name) is not CompositeEffect
+            and not inspect.isabstract(getattr(fx, name))
+        }
+
+    def test_cli_list_matches_fx_exports(self):
+        exported = self._exported_composites()
+        listed = set(ALL_PRESETS)
+
+        missing_from_cli = exported - listed
+        missing_from_fx = listed - exported
+
+        assert not missing_from_cli, (
+            f"presets exported by cysox.fx but absent from "
+            f"__main__.PRESET_CATEGORIES (unreachable from the CLI): "
+            f"{sorted(missing_from_cli)}"
+        )
+        assert not missing_from_fx, (
+            f"presets listed in __main__.PRESET_CATEGORIES but not exported by "
+            f"cysox.fx (the CLI would raise AttributeError): {sorted(missing_from_fx)}"
+        )
+
+    def test_no_duplicate_entries(self):
+        """A preset must appear in exactly one category."""
+        from cysox.__main__ import PRESET_CATEGORIES
+
+        seen = {}
+        for category, names in PRESET_CATEGORIES.items():
+            for name in names:
+                assert name not in seen, (
+                    f"{name} appears in both {seen[name]!r} and {category!r}"
+                )
+                seen[name] = category
+        assert len(seen) == len(ALL_PRESETS)
+
+    def test_every_listed_preset_resolves(self):
+        """get_preset_class() must find every advertised preset."""
+        from cysox.__main__ import get_preset_class
+
+        for name in ALL_PRESETS:
+            cls = get_preset_class(name)
+            assert cls is not None, f"get_preset_class({name!r}) returned None"
+            assert cls is getattr(fx, name)
+            # Lookup is documented as case-insensitive.
+            assert get_preset_class(name.lower()) is cls
+            assert get_preset_class(name.upper()) is cls
+
+    def test_presets_are_exported_in_all(self):
+        """Every preset must be in fx.__all__, or `from cysox.fx import *` misses it."""
+        missing = self._exported_composites() - set(fx.__all__)
+        assert not missing, f"presets missing from fx.__all__: {sorted(missing)}"

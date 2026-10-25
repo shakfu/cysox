@@ -450,6 +450,46 @@ fx.Dither(type='triangular')        # TPDF dither
 
 ---
 
+## Raw — Untyped Effects
+
+The typed classes above cover 27 of the effects libsox provides. `Raw` reaches
+the rest without waiting for a wrapper.
+
+```python
+fx.Raw('compand', '0.3,1', '6:-70,-60,-20', -5, -90, 0.2)
+fx.Raw('vad')
+fx.Raw('synth', 3, 'sine', 440)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `name` | str | required | The sox effect name, as `sox_find_effect` knows it. |
+| `*args` | any | — | Effect arguments in the order sox expects. Each is `str()`-ed. |
+
+Effects available in a typical build but without a typed class include:
+
+`compand`, `mcompand`, `noisered`, `vad`, `synth`, `stats`, `stat`, `phaser`,
+`tremolo`, `overdrive`, `deemph`, `riaa`, `sinc`, `biquad`, `dcshift`,
+`contrast`, `splice`, `stretch`, `swap`, `upsample`, `downsample`, `loudness`,
+`bend`, `delay`, `earwax`, `hilbert`, `oops`, `spectrogram`.
+
+`Raw` trades away the validation, defaults and autocomplete a typed class
+gives you, so prefer a typed class where one exists — and if you reach for
+`Raw` with the same effect repeatedly, that effect is a good candidate for a
+proper class. An unknown effect name raises `ValueError` when the chain is
+built, not at construction: the effect table belongs to libsox.
+
+`Raw` composes like any other effect, including inside a `CompositeEffect`:
+
+```python
+class Sparkle(fx.CompositeEffect):
+    @property
+    def effects(self):
+        return [fx.Raw('overdrive', 5, 20), fx.Normalize(level=-1)]
+```
+
+---
+
 ## Presets
 
 Presets are `CompositeEffect` subclasses that combine multiple effects into reusable chains. Use them exactly like single effects:

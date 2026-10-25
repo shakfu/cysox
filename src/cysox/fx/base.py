@@ -38,6 +38,57 @@ class Effect(ABC):
         return f"{self.__class__.__name__}({self._repr_args()})"
 
 
+class Raw(Effect):
+    """Escape hatch for any sox effect that has no typed class yet.
+
+    The typed classes cover 27 of the effects this libsox build provides.
+    ``Raw`` reaches the rest -- ``compand``, ``vad``, ``noisered``, ``synth``,
+    ``stats``, ``phaser``, ``overdrive`` and friends -- without waiting for a
+    wrapper, at the cost of the validation and autocomplete a typed class
+    gives you. Arguments are passed to sox verbatim; each is str()-ed.
+
+    Prefer a typed class where one exists. If you find yourself using ``Raw``
+    for the same effect repeatedly, that effect is a good candidate for a
+    proper class.
+
+    Args:
+        name: The sox effect name, as `sox_find_effect` knows it.
+        *args: Effect arguments, in the order sox expects them.
+
+    Raises:
+        ValueError: If `name` is empty.
+
+    Example:
+        >>> # Dynamic range compression, which has no typed class
+        >>> fx.Raw('compand', '0.3,1', '6:-70,-60,-20', -5, -90, 0.2)
+        >>> # Voice activity detection, trimming silence from the front
+        >>> fx.Raw('vad')
+        >>> # Mix with a synthesised tone
+        >>> fx.Raw('synth', 3, 'sine', 440)
+
+    Note:
+        An unknown effect name is reported by :func:`cysox.convert` when the
+        chain is built, not here -- the effect table belongs to libsox.
+    """
+
+    def __init__(self, name: str, *args: object):
+        if not name:
+            raise ValueError("Raw effect requires a sox effect name")
+        self._name = name
+        self._args = [str(a) for a in args]
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def to_args(self) -> List[str]:
+        return list(self._args)
+
+    def __repr__(self) -> str:
+        parts = [repr(self._name)] + [repr(a) for a in self._args]
+        return f"Raw({', '.join(parts)})"
+
+
 class CompositeEffect(Effect):
     """Base class for effects that combine multiple sox effects.
 

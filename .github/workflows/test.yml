@@ -3,9 +3,9 @@ name: Tests
 on:
   workflow_dispatch:
   push:
-    branches: [ main, develop ]
+    branches: [ main, dev ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, dev ]
 
 jobs:
   test-macos:
@@ -119,6 +119,9 @@ jobs:
     - name: Build libsox
       run: scripts/build-libsox.sh .
 
+    - name: Check libsox for GPL code
+      run: python3 scripts/check_licenses.py libs lib/libsox.a
+
     - name: Build and test
       run: |
         uv sync
@@ -189,7 +192,7 @@ jobs:
 
     - name: Lint with ruff
       run: |
-        ruff check src/
+        ruff check src/ tests/ scripts/
 
     - name: Type check with mypy
       run: |

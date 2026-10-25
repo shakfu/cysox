@@ -54,5 +54,6 @@ nav:
     - High-Level API: dev/high_level_api.md
     - Known Limitations: dev/known_limitations.md
     - mp3 Decoding: dev/mp3_decoding.md
+    - Licensing Decisions: dev/licensing-decisions.md
     - Contributing: contributing.md
     - Changelog: changelog.md

@@ -2,7 +2,7 @@
 # This file provides type hints for the low-level libsox API
 
 import enum
-from typing import Optional, List, Union, Tuple, Callable, Any
+from typing import Optional, List, Union, Tuple, Callable, Dict, Any
 from pathlib import Path
 import array
 
@@ -54,6 +54,7 @@ class EncodingInfo:
 class Format:
     filename: str
     signal: SignalInfo
+    signal_view: SignalInfo
     encoding: EncodingInfo
     filetype: str
     seekable: bool
@@ -237,6 +238,8 @@ EINVAL: int
 SOX_SEEK_SET: int
 
 ENCODINGS: List[Tuple[str, str]]
+ENCODING_NAMES: Dict[int, str]
+ENCODING_TYPES: Dict[str, int]
 
 # Cython compiles this from the linked sox.h, so the member *values* depend on
 # which libsox is built against. Always compare symbolically.

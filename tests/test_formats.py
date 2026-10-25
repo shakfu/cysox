@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-import pytest
 
 import cysox
 from cysox import fx

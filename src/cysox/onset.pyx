@@ -34,6 +34,11 @@ from cysox.kissfft cimport (
 
 import cython
 
+from array import array as _pyarray
+
+# Typecode for a 32-bit signed array, matching sox_sample_t.
+_INT32_TYPECODE = "i" if _pyarray("i").itemsize == 4 else "l"
+
 
 # Frame/hop sizes for analysis
 DEF DEFAULT_FRAME_SIZE = 1024
@@ -444,7 +449,22 @@ def detect_onsets(samples, int sample_rate, int channels,
         raise ValueError(f"Unknown method: {method}. "
                          "Use 'hfc', 'flux', 'energy', 'complex', or 'superflux'.")
 
-    cdef int num_samples = len(samples)
+    # Accept any buffer of int32 samples -- array('i'), memoryview, numpy --
+    # as well as the plain list this used to require. A list costs about 40
+    # bytes per sample once boxed (roughly 1 GB for five minutes of stereo)
+    # and every read below would go through the Python object protocol; a
+    # typed memoryview is 4 bytes per sample and indexes straight into C.
+    if isinstance(samples, (list, tuple)):
+        samples = _pyarray(_INT32_TYPECODE, samples)
+    cdef object mview = memoryview(samples)
+    if mview.format in ('B', 'b', 'c'):
+        # Raw bytes, e.g. from Format.read_buffer().
+        mview = mview.cast(_INT32_TYPECODE)
+    if not mview.c_contiguous:
+        raise ValueError("samples buffer must be C-contiguous")
+
+    cdef const int[::1] view = mview
+    cdef int num_samples = view.shape[0]
     cdef int mono_samples = num_samples // channels
 
     if mono_samples < frame_size:
@@ -531,12 +551,14 @@ def detect_onsets(samples, int sample_rate, int channels,
             build_mel_filterbank(mel_filterbank, n_mels, half_size,
                                  sample_rate, fmin, fmax)
 
-        # Convert to mono double (mix down channels, normalize from int32)
-        for i in range(mono_samples):
-            sample_val = 0.0
-            for j in range(channels):
-                sample_val += <double>samples[i * channels + j]
-            mono_buffer[i] = sample_val / (channels * 2147483648.0)  # Normalize from int32
+        # Convert to mono double (mix down channels, normalize from int32).
+        # Typed memoryview access means this runs without the GIL.
+        with nogil:
+            for i in range(mono_samples):
+                sample_val = 0.0
+                for j in range(channels):
+                    sample_val += <double>view[i * channels + j]
+                mono_buffer[i] = sample_val / (channels * 2147483648.0)
 
         # Compute onset detection function for each frame
         max_odf = 0.0
@@ -721,9 +743,28 @@ def detect(path, double threshold=0.3, double sensitivity=1.5,
 
     path = str(path)
     with sox.Format(path) as f:
-        samples = f.read(f.signal.length)
         sample_rate = int(f.signal.rate)
         channels = f.signal.channels
+        length = f.signal.length
+
+        # Read straight into one int32 buffer rather than materialising a
+        # Python list of boxed ints -- 4 bytes per sample instead of ~40.
+        # A bytearray is allocated once and viewed as int32; building an
+        # array('i') from bytes would double peak memory for the temporary.
+        if length > 0:
+            raw = bytearray(4 * length)
+            n = f.read_into(raw)
+            samples = memoryview(raw).cast(_INT32_TYPECODE)[:n]
+        else:
+            # Length unknown (some streams): accumulate in chunks.
+            acc = bytearray()
+            chunk = bytearray(4 * 65536)
+            while True:
+                n = f.read_into(chunk)
+                if n == 0:
+                    break
+                acc += chunk[: 4 * n]
+            samples = memoryview(acc).cast(_INT32_TYPECODE)
 
     return detect_onsets(samples, sample_rate, channels,
                          threshold=threshold, sensitivity=sensitivity,
