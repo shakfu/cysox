@@ -5,6 +5,9 @@ import threading
 from types import SimpleNamespace
 from cpython.buffer cimport PyObject_CheckBuffer, PyObject_GetBuffer, PyBuffer_Release, PyBUF_WRITABLE, PyBUF_C_CONTIGUOUS, Py_buffer
 from cpython.ref cimport PyObject
+from cpython.pythread cimport (
+    PyThread_type_lock, PyThread_allocate_lock, PyThread_acquire_lock,
+    PyThread_release_lock, PyThread_get_thread_ident, WAIT_LOCK)
 from libc.stdint cimport uintptr_t
 
 cimport cysox.sox
@@ -27,6 +30,42 @@ cdef bint _libsox_up = False
 # through a dangling pointer.
 cdef unsigned long _libsox_generation = 0
 
+# Number of libsox calls running without the GIL. sox_quit() frees the handler
+# tables those calls dispatch through, so it must not run while this is
+# nonzero -- e.g. from atexit while a daemon thread is still in sox_read().
+# Only modified with the GIL held.
+cdef Py_ssize_t _nogil_calls = 0
+
+# Serializes sox_flow_effects() across threads. The wheels build libsox
+# --disable-openmp, which compiles out the locking around its shared FFT cache
+# (effects_i_dsp.c), so two concurrent flows through rate, sinc, vad, noisered
+# etc. can realloc() the cache under each other. Reentrant per thread: a flow
+# callback may itself run a flow, while the outer flow is paused.
+cdef PyThread_type_lock _flow_lock = PyThread_allocate_lock()
+cdef long _flow_owner = 0
+cdef int _flow_depth = 0
+
+
+cdef int _flow_enter() except -1:
+    global _flow_owner, _flow_depth, _nogil_calls
+    cdef long me = PyThread_get_thread_ident()
+    if _flow_owner != me:
+        with nogil:
+            PyThread_acquire_lock(_flow_lock, WAIT_LOCK)
+        _flow_owner = me
+    _flow_depth += 1
+    _nogil_calls += 1
+    return 0
+
+
+cdef void _flow_exit() noexcept:
+    global _flow_owner, _flow_depth, _nogil_calls
+    _nogil_calls -= 1
+    _flow_depth -= 1
+    if _flow_depth == 0:
+        _flow_owner = 0
+        PyThread_release_lock(_flow_lock)
+
 
 # Internal C-level init/quit helpers (cdef not allowed inside Python classes)
 def _do_sox_init():
@@ -44,6 +83,9 @@ def _do_sox_init():
 def _do_sox_quit():
     """Call sox_quit(). Raises SoxInitError on failure."""
     global _libsox_up
+    if _nogil_calls:
+        raise SoxInitError(
+            "Cannot shut down libsox while a libsox call is in progress")
     # Cleared first: after sox_quit() the format handler tables are gone
     # whether or not it reported success.
     _libsox_up = False
@@ -1328,12 +1370,16 @@ cdef class Format:
     cdef object _keepalive
     # libsox init generation this format was opened in; see _libsox_generation.
     cdef unsigned long _generation
+    # True while libsox uses ptr without the GIL, in read/write or in a
+    # flow_effects() over a chain that holds this format.
+    cdef bint _busy
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
         self._keepalive = None
         self._generation = _libsox_generation
+        self._busy = False
 
     cdef inline bint _closeable(self) noexcept:
         """Whether sox_close() can safely be called on this format.
@@ -1438,6 +1484,28 @@ cdef class Format:
             raise SoxIOError("Operation on a closed Format")
         return 0
 
+    cdef inline int _check_idle(self) except -1:
+        """Raise if libsox is using this format in another call."""
+        if self._busy:
+            raise SoxIOError(
+                "Format is in use by libsox (a read, write or effects flow "
+                "is running); a Format must not be shared across threads")
+        return 0
+
+    cdef int _begin(self) except -1:
+        """Mark the format busy before handing ptr to libsox without the GIL."""
+        global _nogil_calls
+        self._check_open()
+        self._check_idle()
+        self._busy = True
+        _nogil_calls += 1
+        return 0
+
+    cdef void _end(self) noexcept:
+        global _nogil_calls
+        self._busy = False
+        _nogil_calls -= 1
+
     def read(self, length: int) -> list:
         """Read samples from the file into a Python list.
 
@@ -1453,12 +1521,16 @@ cdef class Format:
         """
         self._check_open()
         cdef size_t samples_read = 0
-        cdef sox_sample_t* buffer = <sox_sample_t*>malloc(length * sizeof(sox_sample_t))
+        cdef size_t n = length
+        cdef sox_sample_t* buffer = <sox_sample_t*>malloc(n * sizeof(sox_sample_t))
         if buffer == NULL:
             raise SoxMemoryError("Failed to allocate read buffer")
 
         try:
-            samples_read = sox_read(self.ptr, buffer, length)
+            self._begin()
+            with nogil:
+                samples_read = sox_read(self.ptr, buffer, n)
+            self._end()
             result = []
             for i in range(samples_read):
                 result.append(buffer[i])
@@ -1484,24 +1556,30 @@ cdef class Format:
         """
         self._check_open()
         cdef size_t samples_read = 0
-        cdef sox_sample_t* buffer = <sox_sample_t*>malloc(length * sizeof(sox_sample_t))
+        cdef size_t n = length
+        cdef sox_sample_t* buffer = <sox_sample_t*>malloc(n * sizeof(sox_sample_t))
         if buffer == NULL:
             raise SoxMemoryError("Failed to allocate read buffer")
 
-        samples_read = sox_read(self.ptr, buffer, length)
+        cdef size_t byte_count
+        cdef unsigned char[::1] result_view
+        try:
+            self._begin()
+            with nogil:
+                samples_read = sox_read(self.ptr, buffer, n)
+            self._end()
 
-        if samples_read == 0:
+            if samples_read == 0:
+                return memoryview(bytearray(0))
+
+            # Copy data from C buffer to Python bytearray
+            byte_count = samples_read * sizeof(sox_sample_t)
+            result = bytearray(byte_count)
+            result_view = result
+            memcpy(&result_view[0], buffer, byte_count)
+            return memoryview(result).cast('i', shape=[samples_read])
+        finally:
             free(buffer)
-            return memoryview(bytearray(0))
-
-        # Copy data from C buffer to Python bytearray, then free
-        cdef size_t byte_count = samples_read * sizeof(sox_sample_t)
-        result = bytearray(byte_count)
-        cdef unsigned char[::1] result_view = result
-        memcpy(&result_view[0], buffer, byte_count)
-
-        free(buffer)
-        return memoryview(result).cast('i', shape=[samples_read])
 
     def read_into(self, buffer) -> int:
         """Read samples from the file into a pre-allocated buffer.
@@ -1533,7 +1611,10 @@ cdef class Format:
         try:
             # Calculate how many samples fit in the buffer
             max_samples = pybuf.len // sizeof(sox_sample_t)
-            samples_read = sox_read(self.ptr, <sox_sample_t*>pybuf.buf, max_samples)
+            self._begin()
+            with nogil:
+                samples_read = sox_read(self.ptr, <sox_sample_t*>pybuf.buf, max_samples)
+            self._end()
             return samples_read
         finally:
             PyBuffer_Release(&pybuf)
@@ -1568,7 +1649,10 @@ cdef class Format:
 
             try:
                 length = pybuf.len // sizeof(sox_sample_t)
-                samples_written = sox_write(self.ptr, <sox_sample_t*>pybuf.buf, length)
+                self._begin()
+                with nogil:
+                    samples_written = sox_write(self.ptr, <sox_sample_t*>pybuf.buf, length)
+                self._end()
                 return samples_written
             finally:
                 PyBuffer_Release(&pybuf)
@@ -1583,13 +1667,18 @@ cdef class Format:
             try:
                 for i in range(length):
                     buffer[i] = samples[i]
-                return <int>sox_write(self.ptr, buffer, length)
+                self._begin()
+                with nogil:
+                    samples_written = sox_write(self.ptr, buffer, length)
+                self._end()
+                return <int>samples_written
             finally:
                 free(buffer)
 
     def seek(self, offset: int, whence: int = SOX_SEEK_SET) -> int:
         """Seek to a specific sample position."""
         self._check_open()
+        self._check_idle()
         cdef int result = sox_seek(self.ptr, offset, whence)
         if result != SOX_SUCCESS:
             raise SoxIOError(f"Failed to seek: {strerror(result)}")
@@ -1600,6 +1689,7 @@ cdef class Format:
         if self.ptr is NULL:
             # Already closed, return success
             return <int>SOX_SUCCESS
+        self._check_idle()
 
         if not self._closeable():
             # libsox is down, or was re-initialised since this format was
@@ -1981,11 +2071,14 @@ cdef class Effect:
     # into, for non-owning wrappers. Without it, `Format(p).signal` frees
     # the Format while the SignalInfo still points into its struct.
     cdef object _keepalive
+    # Formats passed to set_options(); libsox keeps their raw pointers.
+    cdef list _formats
 
     def __cinit__(self):
         self.ptr = NULL
         self.owner = False
         self._keepalive = None
+        self._formats = []
 
     def __dealloc__(self):
         if self.ptr is not NULL and self.owner is True:
@@ -2053,6 +2146,7 @@ cdef class Effect:
             raise SoxMemoryError("Failed to allocate argument array")
 
         cdef list byte_strings = []
+        cdef list formats = []
         cdef int result = SOX_EOF
         try:
             for i in range(argc):
@@ -2060,6 +2154,7 @@ cdef class Effect:
                 if isinstance(option, Format):
                     # For input/output effects, pass Format pointer cast to char*
                     argv[i] = <char*>(<Format>option).ptr
+                    formats.append(option)
                 elif isinstance(option, str):
                     # Encode string to bytes and keep reference
                     byte_str = option.encode('utf-8')
@@ -2080,6 +2175,7 @@ cdef class Effect:
                 f"Effect {self._name_or_unknown()!r} rejected options "
                 f"{self._describe_options(options)}"
             )
+        self._formats = formats
         return result
 
     def _name_or_unknown(self):
@@ -2260,6 +2356,8 @@ cdef class EffectsChain:
     cdef object _keepalive
     # libsox init generation this chain was created in.
     cdef unsigned long _generation
+    # Formats the input/output effects read and write; see flow_effects().
+    cdef list _formats
 
     def __cinit__(self):
         self.ptr = NULL
@@ -2267,6 +2365,7 @@ cdef class EffectsChain:
         self._in_encoding = None
         self._out_encoding = None
         self._keepalive = None
+        self._formats = []
         self._generation = _libsox_generation
 
     def __dealloc__(self):
@@ -2317,6 +2416,7 @@ cdef class EffectsChain:
             self.ptr, effect.ptr, in_signal.ptr, out_signal.ptr)
         if result != SOX_SUCCESS:
             raise SoxEffectError(f"Failed to add effect to chain: {strerror(result)}")
+        self._formats.extend(effect._formats)
         return result
 
     def flow_effects(self, callback=None, client_data=None):
@@ -2376,24 +2476,41 @@ cdef class EffectsChain:
                 "a chain without both is undefined in libsox."
             )
 
-        if callback is not None:
-            # Register the callback via the runtime singleton (thread-safe)
-            chain_id = <uintptr_t>self.ptr
-            _runtime.register_callback(chain_id, callback, client_data)
+        # libsox reads and writes these formats with the GIL released, so
+        # another thread must not close or use them until the flow returns.
+        cdef list held = []
+        cdef Format fmt
+        try:
+            for fmt in self._formats:
+                if fmt not in held:
+                    fmt._begin()
+                    held.append(fmt)
 
-            try:
-                # Call sox_flow_effects with our wrapper callback
-                result = sox_flow_effects(
-                    self.ptr,
-                    _flow_effects_callback_wrapper,
-                    <void*>chain_id
-                )
-            finally:
-                # Clean up callback storage
-                _runtime.unregister_callback(chain_id)
-        else:
-            # No callback, call with NULL
-            result = sox_flow_effects(self.ptr, NULL, NULL)
+            if callback is not None:
+                # Register the callback via the runtime singleton (thread-safe)
+                chain_id = <uintptr_t>self.ptr
+                _runtime.register_callback(chain_id, callback, client_data)
+
+                try:
+                    _flow_enter()
+                    with nogil:
+                        result = sox_flow_effects(
+                            self.ptr,
+                            _flow_effects_callback_wrapper,
+                            <void*>chain_id
+                        )
+                    _flow_exit()
+                finally:
+                    # Clean up callback storage
+                    _runtime.unregister_callback(chain_id)
+            else:
+                _flow_enter()
+                with nogil:
+                    result = sox_flow_effects(self.ptr, NULL, NULL)
+                _flow_exit()
+        finally:
+            for fmt in held:
+                fmt._end()
 
         # SOX_EOF is normal completion, not a failure. A length-limiting
         # effect such as `trim` ends the chain by signalling end-of-stream,
@@ -2412,6 +2529,7 @@ cdef class EffectsChain:
         """Adds an already-initialized effect to the end of the chain."""
         if self.ptr != NULL and effect.ptr != NULL:
             sox_push_effect_last(self.ptr, effect.ptr)
+            self._formats.extend(effect._formats)
 
     def pop_effect_last(self):
         """Removes and returns an effect from the end of the chain.
@@ -2434,6 +2552,7 @@ cdef class EffectsChain:
         """Shut down and delete all effects in the chain."""
         if self.ptr != NULL:
             sox_delete_effects(self.ptr)
+            self._formats = []
 
     @property
     def effects(self) -> list:

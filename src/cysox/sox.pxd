@@ -708,7 +708,7 @@ cdef extern from "sox.h":
         sox_format_t * ft, # Format pointer. 
         sox_sample_t *buf, # Buffer from which to read samples. 
         size_t len # Number of samples available in buf. 
-    )
+    ) nogil
 
     # Writes samples to an encoding session from a sample buffer.
     # @returns Number of samples encoded.
@@ -716,7 +716,7 @@ cdef extern from "sox.h":
         sox_format_t * ft,        # Format pointer. 
         const sox_sample_t * buf, # Buffer from which to read samples. 
         size_t len # Number of samples available in buf. 
-    )
+    ) nogil
 
     # Closes an encoding or decoding session.
     # @returns SOX_SUCCESS if successful.
@@ -786,7 +786,7 @@ cdef extern from "sox.h":
         sox_effects_chain_t * chain, # Effects chain to run. 
         sox_flow_effects_callback callback, # Callback for monitoring flow progress. 
         void * client_data # Data to pass into callback. 
-    )
+    ) nogil
 
     # Gets the number of clips that occurred while running an effects chain.
     # @returns the number of clips that occurred while running an effects chain.

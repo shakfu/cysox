@@ -1,30 +1,8 @@
 # TODO
 
-**Legend:**
-
-- `[ ]` Not started
-
-- `[~]` In progress
-
-- `[!]` Blocked
-
-## Critical
-
 ## High
 
-### Release Gates
-
-- [ ] **PRE-PUBLISH GATE: find a licence for sox's in-tree lpc10**
-
-  - `licenses/README.md` records no licence statement in lpc10's sources. It is statically linked into every wheel.
-
 ### Licensing
-
-- [~] **Drop `libmad` (GPL-2.0+) from the macOS bundle - it conflicts with cysox's MIT license**
-
-  - **Implemented 2026-10-24 by replacing libmad with libmpg123; verified on Linux, not yet on macOS.** This is option A in `docs/dev/licensing-decisions.md`, which that record calls impossible: sox 14.4.2 is patched to decode with libmpg123 (LGPL), so nothing GPL ships and mp3 reading needs no system library. Option C was built first and worked, but needed a system libmad and two loader patches. Two more corrections to that record: in 14.4.2 the flag is `--enable-dl-mad`, not `--with-mad=dyn`; and "sox has no mpg123 path, at any version" is false, since SoX_ng carried one from 2019 to 2024. See `docs/dev/mp3_decoding.md`.
-
-  - **Open:** run the macOS wheel build.
 
 - [ ] **Satisfy the LGPL §6 relinking obligation for the wheels**
 
@@ -50,41 +28,15 @@
 
 ### Platform Support
 
-- [~] **Bundle the common format handlers by default (mp3, flac, ogg/vorbis)**
-
-  - **Implemented 2026-10-24 with the libmad item above; verified on Linux, not yet on macOS.** Codecs are compiled into libsox instead of loaded as plugins. A clean `python:3.12-slim` container reads wav/flac/ogg/opus/mp3 and writes wav/flac/ogg/mp3, with no system packages. sox 14.4.2 cannot write opus. cibuildwheel's `test-command` fails on a missing format and runs `tests/test_mp3_decode.py` against each wheel. Linux wheels ship no audio drivers, so `play()` works only on macOS.
-
-  - **Motivation: this is the most likely first-run failure.** A user runs `pip install cysox`, points it at an mp3, and it fails - because format support is a property of whichever libsox the wheel linked, and the handlers ship as separate `libsox-fmt-*` packages on Debian. A wheel that silently depends on what the user happens to have already installed gives up most of the benefit of shipping a wheel at all. See the P2 ticket "Expose which formats this build actually supports" for the per-build variation that motivated both.
-
-  - **Licensing is the constraint, and mp3 *decode* is the one genuinely hard case** - see the Licensing item above, whose original "just use mpg123" premise was investigated and disproved on 2026-08-01. Everything except mp3 decode is BSD or LGPL and bundles cleanly:
-
-    | format | library | license | bundles cleanly? |
-    |---|---|---|---|
-    | mp3 encode | LAME | LGPL-2.1 | yes |
-    | flac | libFLAC | BSD-3-Clause | yes |
-    | ogg / vorbis | libogg, libvorbis | BSD-3-Clause | yes |
-    | opus | opus, opusfile | BSD-3-Clause | yes |
-    | **mp3 decode** | **libmad** | **GPL-2.0+** | **no - sox has no alternative decoder** |
-
-    mpg123 is *not* a substitute here: it is libsndfile's mp3 decoder, and sox cannot use it. Bundling
-    mp3 *reading* therefore means either `--with-mad=dyn` (dlopen, nothing GPL in the wheel) or
-    shipping without mp3 read.
-
-  - **Sequencing:** do the libmad removal first and independently. It is a small, self-contained correctness fix, whereas bundling is a packaging project - and shipping the bundle first would propagate the GPL problem into every wheel published from then on.
-
-  - **Cost to weigh:** this compounds the open Windows build-automation item below (more vendored deps, more CI matrix, more platform-specific breakage). Scoping to macOS + Linux first is reasonable; Windows already needs its own solution. Also decide precedence when a system libsox is present - bundled or system - and make it explicit rather than incidental.
-
-  - **What it does not retire:** the `supported_formats()` API ticket. Someone can still build against a system libsox, so runtime discovery stays necessary; bundling only makes the common case predictable, which is most but not all of the value.
-
 - [ ] **Implement Windows build automation**
 
-  - Current: Placeholder requiring manual environment variables
+  - Current: placeholder requiring manual environment variables. Linux and macOS wheels build libsox from source (`scripts/build-libsox.sh`); Windows needs the same.
 
   - Tasks:
 
     - [ ] Add vcpkg or conda integration for libsox
 
-    - [ ] Update setup.py with Windows library paths
+    - [ ] Add Windows library paths to `CMakeLists.txt`
 
     - [ ] Add Windows to CI matrix
 
@@ -108,7 +60,7 @@
 
   - The two `fx` suites now assert behaviour (duration, level, spectral tilt) rather than `assert output_path.exists()`, which is what surfaced the `convert()` signal-negotiation bug. The same treatment has not been applied elsewhere.
 
-  - Remaining, by count of `assert ... exists()`: `tests/test_slice_outputs.py` (15), `tests/test_audiohit_features.py` (14), `tests/test_cli.py` (7), `tests/test_high_level_api.py` (5).
+  - Remaining, by count of `assert ... exists()`: `tests/test_slice_outputs.py` (15), `tests/test_audiohit_features.py` (34), `tests/test_cli.py` (7), `tests/test_high_level_api.py` (5).
 
   - The slice and audiohit suites are the most valuable: they cover `slice_loop`/`split_by_silence`, which do their own duration arithmetic and could hide the same class of bug. `tests/audio_metrics.py` provides the measurement helpers.
 
@@ -122,20 +74,15 @@
 
 - [ ] **Expose which formats this build actually supports**
 
-  - libsox format support is a **build-time** property. The wheels now bundle their own sox_ng with mp3/flac/ogg/opus compiled in, but a source build links whatever the system provides - and Debian ships mp3/flac/ogg as separate `libsox-fmt-*` packages, so `pip install cysox` against a stock `libsox-dev` yields a library that cannot open the formats most users have.
+  - libsox format support is a **build-time** property. The wheels build libsox 14.4.2 with mp3/flac/ogg/opus compiled in, but a source build links whatever the system provides - and Debian ships mp3/flac/ogg as separate `libsox-fmt-*` packages, so `pip install cysox` against a stock `libsox-dev` yields a library that cannot open the formats most users have.
 
-  - **Validated 2026-08-01.** Which formats are missing is per-build:
-
-    | build | mp3 | flac | ogg | opus |
-    |---|---|---|---|---|
-    | machine the bug was reported from | absent | absent | - | - |
-    | this repo's vendored libsox | present | present | present | **absent** |
-
-    So the ticket should not be closed on the grounds that "mp3 works here" - on that build the hole was `opus`, and `find_format('opus')` is the only way to discover it.
+  - **Validated 2026-08-01.** Missing formats vary per build: one system libsox lacked mp3 and flac; the then-vendored build lacked opus.
 
   - Today the only ways to find out are to call the private-ish `cysox.sox.find_format(ext, False)` or to attempt the conversion and catch the failure. A downstream tool that wants to *prefer* cysox and fall back to ffmpeg has to reach into `cysox.sox` to do it. `cysox.__all__` exports nothing format-related.
 
   - Suggested: a public `cysox.supported_formats()` (or `cysox.supports('mp3')`), plus a line in the install docs stating that format support depends on the linked libsox build and naming the packages needed for mp3/flac/ogg.
+
+  - Also decide whether a source build prefers a system libsox or the vendored one, and document it.
 
 - [ ] **Route libsox's own diagnostics through Python**
 
@@ -155,11 +102,9 @@
 
   - Sync: pyproject.toml, `__init__.py`, CHANGELOG.md
 
-- [ ] **Tag-triggered wheel publishing with PyPI trusted publishing**
+- [ ] **Publish wheels to PyPI from CI with trusted publishing**
 
-  - `.github/workflows/build-wheel.yml` is `workflow_dispatch`-only (the push/tag triggers are commented out) and there is no publish job, so releases go out via a manual `make publish`.
-
-  - Wire it to tags and use PyPI trusted publishing before the release cadence picks up.
+  - `.github/workflows/build-wheel.yml` builds on `v*` tags but has no publish job, so releases go out via a manual `make publish`.
 
 ### Code Quality
 
@@ -173,13 +118,13 @@
 
 ### Performance
 
-- [ ] **Release the GIL around blocking libsox calls**
+- [ ] **Run effect flows in parallel across threads**
 
-  - There is no `with nogil` anywhere in `src/cysox/sox.pyx`: `sox_read`, `sox_write` and `sox_flow_effects` all run holding the GIL.
+  - `flow_effects()` releases the GIL, but `_flow_lock` in `sox.pyx` serializes flows: libsox built `--disable-openmp` leaves its shared FFT cache (`effects_i_dsp.c`) unlocked.
 
-  - The docs advertise concurrent processing on separate `Format` objects (`docs/dev/known_limitations.md` §3, `docs/dev/architecture.md`), and `tests/test_thread_safety.py` exercises it, but threads cannot actually overlap file I/O or effect flow. The claim is only true in the sense that it does not crash.
+  - Options: build libsox with OpenMP (adds a libgomp/libomp runtime to the wheels), or patch a mutex around the cache in `scripts/patches/`. Either way, a source build against a system libsox still needs the lock.
 
-  - `flow_effects` needs care: the progress callback re-acquires the GIL via `_flow_effects_callback_wrapper`, which is already correct, so the release has to wrap the call without breaking that path.
+  - `sox_version_info()` reports `sox_version_have_threads` for an OpenMP build, so the lock could be skipped at runtime when it is set.
 
 - [ ] **Move the `split_by_silence` peak scan into Cython**
 
@@ -221,7 +166,7 @@
 
   - A shared `_write_segment(input_fmt, start, end, out_path, effects, encoding)` would give the encoding handling a single place to live - it currently has to be kept correct in three.
 
-- [ ] **Split `audio.py` (1600+ lines) and `sox.pyx` (2500+ lines)**
+- [ ] **Split `audio.py` (1700+ lines) and `sox.pyx` (2800+ lines)**
 
   - `audio.py` holds twelve top-level functions of 60-210 lines each in one module.
 
@@ -233,17 +178,16 @@
 
 - [ ] **Implement playlist parsing**
 
-  - File: `src/cysox/sox.pyx` lines 2472-2483 (commented out)
+  - File: `src/cysox/sox.pyx`, commented-out `parse_playlist`
 
   - Requires: Callback mechanism for playlist entries
 
-- [ ] **Fix memory I/O functions** (BLOCKED) #blocked
+- [ ] **Fix memory I/O functions**
 
   - Functions: `open_mem_read()`, `open_mem_write()`, `open_memstream_write()`
 
   - Status: cysox wrapper bugs (see [docs/dev/known_limitations.md](docs/dev/known_limitations.md) §2)
 
-  - Tracking: Documented in Known Limitations
 
 ### Backlog
 

@@ -241,7 +241,7 @@ While cysox supports concurrent operations on separate `Format` objects and effe
 
 - Writing to different output files concurrently
 
-- Running separate effects chains in parallel
+- Running separate effects chains from different threads (flows run one at a time; see below)
 
 - Creating `SignalInfo`, `EncodingInfo`, and other value objects
 
@@ -258,6 +258,16 @@ initialization with double-checked locking, so racing callers get one
 `sox_init()` between them. `quit()` is a documented no-op; the real shutdown
 happens once, from the `atexit` handler. `_force_quit()` is not thread-safe and
 is not intended for general use.
+
+File reads and writes on different `Format` objects overlap across threads,
+since `sox_read` and `sox_write` run without the GIL. Effect flows release the
+GIL too, but a process-wide lock lets only one flow run at a time. The wheels
+build libsox `--disable-openmp`, which compiles out the lock on its shared FFT
+cache (`effects_i_dsp.c`); concurrent flows through `rate`, `sinc`, `vad`,
+`noisered` and other FFT-based effects would `realloc()` it under each other.
+
+A `Format` in use by libsox raises `SoxIOError` on `read`, `write`, `seek` or
+`close`, instead of racing.
 
 ### Recommendations
 

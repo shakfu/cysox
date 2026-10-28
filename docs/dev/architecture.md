@@ -273,6 +273,10 @@ The `convert()` function is the core of the high-level API. It bridges typed Pyt
 
 - Each `Format`, `EffectsChain`, and `Effect` instance should be used from a single thread. Separate instances can be used concurrently.
 
+- `sox_read`, `sox_write` and `sox_flow_effects` run without the GIL. A `Format` is marked busy for the call, and for the length of any flow whose chain holds it; `read`, `write`, `seek` and `close` on a busy format raise `SoxIOError`.
+
+- Flows are serialized by a process-wide lock, reentrant per thread. See `docs/dev/known_limitations.md` §3.
+
 ---
 
 ## Onset Detection Pipeline

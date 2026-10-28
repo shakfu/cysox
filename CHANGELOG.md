@@ -22,6 +22,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+### Changed
+
+- `Format.read()`, `read_buffer()`, `read_into()`, `write()` and `EffectsChain.flow_effects()` release the GIL while libsox runs, so other Python threads can run in the meantime. Flows from different threads still run one at a time: the wheels build libsox without OpenMP, which compiles out the lock on its shared FFT cache (`effects_i_dsp.c`).
+
+- Calling `read`, `write`, `seek` or `close` on a `Format` that libsox is using raises `SoxIOError`. This covers a call from another thread, and a call from a flow callback on a format in that chain. Without the GIL, these calls would race inside libsox.
+
+### Fixed
+
+- `flow_effects()` on a chain whose input or output `Format` was closed raises `SoxIOError`. It previously handed libsox the freed `sox_format_t`. Chains now keep references to the formats passed to `set_options()`.
+
 ## [0.3.0]
 
 ### Added
